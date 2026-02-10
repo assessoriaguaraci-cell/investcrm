@@ -80,6 +80,14 @@ export default function NewPropertyDialog() {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="code" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código (opcional — gerado automaticamente se vazio)</FormLabel>
+                <FormControl><Input {...field} placeholder="Ex: IL-2026-0001" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="property_type" render={({ field }) => (
                 <FormItem>
