@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
-import { MapPin, AlertTriangle } from "lucide-react";
+import { MapPin, AlertTriangle, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, totalInvestment, PRIORITY_LEVELS, OCCUPATION_STATUSES } from "@/lib/property-constants";
+import EditPropertyDialog from "./EditPropertyDialog";
 import type { Property } from "@/hooks/useProperties";
 
 interface Props {
@@ -16,50 +18,59 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function PropertyCard({ property, index }: Props) {
+  const [editOpen, setEditOpen] = useState(false);
   const investment = totalInvestment(property);
   const occLabel = OCCUPATION_STATUSES.find(o => o.value === property.occupation_status)?.label ?? "";
   const prioLabel = PRIORITY_LEVELS.find(p => p.value === property.priority)?.label ?? "";
 
   return (
-    <Draggable draggableId={property.id} index={index}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className={`rounded-lg border bg-card p-3 mb-2 shadow-sm transition-shadow cursor-grab active:cursor-grabbing ${
-            snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-mono font-semibold text-primary">{property.code}</span>
-            <Badge className={`text-[10px] px-1.5 py-0 ${priorityColors[property.priority] ?? ""}`}>
-              {prioLabel}
-            </Badge>
-          </div>
-
-          <div className="flex items-start gap-1 text-xs text-muted-foreground mb-1.5">
-            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-            <span className="line-clamp-1">
-              {[property.city, property.state].filter(Boolean).join(", ") || "Sem endereço"}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-medium">{formatCurrency(investment)}</span>
-            {property.listed_price ? (
-              <span className="text-muted-foreground">Anúncio: {formatCurrency(property.listed_price)}</span>
-            ) : null}
-          </div>
-
-          {property.occupation_status === "ocupado" && (
-            <div className="flex items-center gap-1 mt-1.5 text-[10px] text-destructive">
-              <AlertTriangle className="h-3 w-3" />
-              <span>{occLabel}</span>
+    <>
+      <Draggable draggableId={property.id} index={index}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            onClick={() => setEditOpen(true)}
+            className={`rounded-lg border bg-card p-3 mb-2 shadow-sm transition-shadow cursor-pointer group ${
+              snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-mono font-semibold text-primary">{property.code}</span>
+              <div className="flex items-center gap-1">
+                <Badge className={`text-[10px] px-1.5 py-0 ${priorityColors[property.priority] ?? ""}`}>
+                  {prioLabel}
+                </Badge>
+                <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </div>
-          )}
-        </div>
-      )}
-    </Draggable>
+
+            <div className="flex items-start gap-1 text-xs text-muted-foreground mb-1.5">
+              <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+              <span className="line-clamp-1">
+                {[property.city, property.state].filter(Boolean).join(", ") || "Sem endereço"}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium">{formatCurrency(investment)}</span>
+              {property.listed_price ? (
+                <span className="text-muted-foreground">Anúncio: {formatCurrency(property.listed_price)}</span>
+              ) : null}
+            </div>
+
+            {property.occupation_status === "ocupado" && (
+              <div className="flex items-center gap-1 mt-1.5 text-[10px] text-destructive">
+                <AlertTriangle className="h-3 w-3" />
+                <span>{occLabel}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </Draggable>
+
+      <EditPropertyDialog property={property} open={editOpen} onOpenChange={setEditOpen} />
+    </>
   );
 }
