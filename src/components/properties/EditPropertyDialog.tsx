@@ -145,7 +145,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
               <FormField control={form.control} name="city" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
+                  <CityCombobox value={field.value || ""} onValueChange={field.onChange} state={form.watch("state")} />
                   <FormMessage />
                 </FormItem>
               )} />
