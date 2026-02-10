@@ -54,7 +54,7 @@ export default function NewPropertyDialog() {
     try {
       await createProperty.mutateAsync({
         ...values,
-        code: "TEMP", // trigger will generate
+        code: values.code || "", // trigger will auto-generate if empty
         responsible_user_id: user?.id,
         state: values.state,
       });
