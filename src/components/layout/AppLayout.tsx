@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import logoImg from "@/assets/logo.png";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -50,7 +51,7 @@ export default function AppLayout() {
       {!isMobile && (
         <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
           <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
-            <Building2 className="h-7 w-7 text-sidebar-primary" />
+            <img src={logoImg} alt="Logo" className="h-7 w-7 object-contain" />
             <span className="text-lg font-bold text-sidebar-foreground">Imob CRM</span>
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -86,7 +87,7 @@ export default function AppLayout() {
           <aside className="relative w-72 flex flex-col bg-sidebar border-r border-sidebar-border animate-in slide-in-from-left">
             <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border">
               <div className="flex items-center gap-2">
-                <Building2 className="h-6 w-6 text-sidebar-primary" />
+                <img src={logoImg} alt="Logo" className="h-6 w-6 object-contain" />
                 <span className="text-lg font-bold text-sidebar-foreground">Imob CRM</span>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
@@ -132,7 +133,7 @@ export default function AppLayout() {
               <Menu className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
+              <img src={logoImg} alt="Logo" className="h-5 w-5 object-contain" />
               <span className="font-semibold">Imob CRM</span>
             </div>
             <ThemeToggle />
