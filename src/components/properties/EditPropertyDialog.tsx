@@ -44,6 +44,15 @@ interface Props {
 
 export default function EditPropertyDialog({ property, open, onOpenChange }: Props) {
   const updateProperty = useUpdateProperty();
+  const createChecklist = useCreateChecklistForStage();
+
+  // Ensure checklist exists for current stage when dialog opens
+  useEffect(() => {
+    if (open && property.id) {
+      createChecklist.mutate({ propertyId: property.id, stage: property.stage });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, property.id, property.stage]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
