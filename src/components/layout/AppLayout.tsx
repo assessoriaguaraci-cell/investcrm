@@ -49,9 +49,9 @@ export default function AppLayout() {
   return <div className="flex h-dvh overflow-hidden bg-background">
       {/* Desktop Sidebar */}
       {!isMobile && <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
-          <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
+          <div className="gap-2 px-6 py-5 border-b border-sidebar-border flex items-center justify-start">
             <img alt="Logo" className="h-7 w-7 object-contain" src="/lovable-uploads/83f17020-424b-4962-9231-0f0e7bf02806.png" />
-            <span className="text-lg font-bold text-sidebar-foreground">Imob CRM</span>
+            <span className="text-lg font-bold text-sidebar-foreground">Invest CRM</span>
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navItems.map(item => <button key={item.path} onClick={() => navigate(item.path)} className={cn("flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors", isActive(item.path) ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
