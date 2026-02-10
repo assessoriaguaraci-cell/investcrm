@@ -81,6 +81,14 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="code" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="property_type" render={({ field }) => (
                 <FormItem>
