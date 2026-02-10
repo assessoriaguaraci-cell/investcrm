@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -30,6 +33,18 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -57,6 +72,38 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Funnel stage colors
+        stage: {
+          "pre-auction": "hsl(var(--stage-pre-auction))",
+          documentation: "hsl(var(--stage-documentation))",
+          eviction: "hsl(var(--stage-eviction))",
+          renovation: "hsl(var(--stage-renovation))",
+          sale: "hsl(var(--stage-sale))",
+          "post-sale": "hsl(var(--stage-post-sale))",
+          tax: "hsl(var(--stage-tax))",
+          finished: "hsl(var(--stage-finished))",
+          "new-lead": "hsl(var(--stage-new-lead))",
+          screening: "hsl(var(--stage-screening))",
+          interested: "hsl(var(--stage-interested))",
+          waiting: "hsl(var(--stage-waiting))",
+          "in-service": "hsl(var(--stage-in-service))",
+          qualified: "hsl(var(--stage-qualified))",
+          "credit-approved": "hsl(var(--stage-credit-approved))",
+          "credit-rejected": "hsl(var(--stage-credit-rejected))",
+          financing: "hsl(var(--stage-financing))",
+          closed: "hsl(var(--stage-closed))",
+          lost: "hsl(var(--stage-lost))",
+        },
+        temp: {
+          cold: "hsl(var(--temp-cold))",
+          warm: "hsl(var(--temp-warm))",
+          hot: "hsl(var(--temp-hot))",
+        },
+        priority: {
+          low: "hsl(var(--priority-low))",
+          medium: "hsl(var(--priority-medium))",
+          high: "hsl(var(--priority-high))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -65,20 +112,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
