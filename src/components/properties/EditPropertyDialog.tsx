@@ -45,6 +45,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: {
+      code: property.code,
       property_type: property.property_type,
       state: property.state,
       city: property.city ?? "",
