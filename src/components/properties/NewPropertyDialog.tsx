@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateProperty } from "@/hooks/useProperties";
 import { useAuth } from "@/hooks/useAuth";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
+import CityCombobox from "./CityCombobox";
 import { toast } from "sonner";
 
 const schema = z.object({
