@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useUpdateProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
+import CityCombobox from "./CityCombobox";
 import { toast } from "sonner";
 
 const schema = z.object({
