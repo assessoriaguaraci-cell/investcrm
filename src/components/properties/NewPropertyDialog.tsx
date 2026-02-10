@@ -16,6 +16,7 @@ import CityCombobox from "./CityCombobox";
 import { toast } from "sonner";
 
 const schema = z.object({
+  code: z.string().optional(),
   property_type: z.enum(["casa", "casa_condominio", "apartamento", "apartamento_condominio", "terreno", "comercial"]),
   state: z.string().min(2, "Obrigatório"),
   city: z.string().optional(),
