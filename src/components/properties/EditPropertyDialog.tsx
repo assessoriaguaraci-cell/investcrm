@@ -249,6 +249,8 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
             </div>
           </form>
         </Form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
