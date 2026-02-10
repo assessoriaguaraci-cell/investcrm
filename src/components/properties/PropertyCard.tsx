@@ -1,0 +1,65 @@
+import { Draggable } from "@hello-pangea/dnd";
+import { MapPin, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency, totalInvestment, PRIORITY_LEVELS, OCCUPATION_STATUSES } from "@/lib/property-constants";
+import type { Property } from "@/hooks/useProperties";
+
+interface Props {
+  property: Property;
+  index: number;
+}
+
+const priorityColors: Record<string, string> = {
+  alta: "bg-[hsl(var(--priority-high))] text-white",
+  media: "bg-[hsl(var(--priority-medium))] text-white",
+  baixa: "bg-[hsl(var(--priority-low))] text-white",
+};
+
+export default function PropertyCard({ property, index }: Props) {
+  const investment = totalInvestment(property);
+  const occLabel = OCCUPATION_STATUSES.find(o => o.value === property.occupation_status)?.label ?? "";
+  const prioLabel = PRIORITY_LEVELS.find(p => p.value === property.priority)?.label ?? "";
+
+  return (
+    <Draggable draggableId={property.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`rounded-lg border bg-card p-3 mb-2 shadow-sm transition-shadow cursor-grab active:cursor-grabbing ${
+            snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-mono font-semibold text-primary">{property.code}</span>
+            <Badge className={`text-[10px] px-1.5 py-0 ${priorityColors[property.priority] ?? ""}`}>
+              {prioLabel}
+            </Badge>
+          </div>
+
+          <div className="flex items-start gap-1 text-xs text-muted-foreground mb-1.5">
+            <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+            <span className="line-clamp-1">
+              {[property.city, property.state].filter(Boolean).join(", ") || "Sem endereço"}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium">{formatCurrency(investment)}</span>
+            {property.listed_price ? (
+              <span className="text-muted-foreground">Anúncio: {formatCurrency(property.listed_price)}</span>
+            ) : null}
+          </div>
+
+          {property.occupation_status === "ocupado" && (
+            <div className="flex items-center gap-1 mt-1.5 text-[10px] text-destructive">
+              <AlertTriangle className="h-3 w-3" />
+              <span>{occLabel}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </Draggable>
+  );
+}
