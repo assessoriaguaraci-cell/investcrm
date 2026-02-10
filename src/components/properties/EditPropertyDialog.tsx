@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,9 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUpdateProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
+import PropertyChecklist from "./PropertyChecklist";
+import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -41,6 +44,15 @@ interface Props {
 
 export default function EditPropertyDialog({ property, open, onOpenChange }: Props) {
   const updateProperty = useUpdateProperty();
+  const createChecklist = useCreateChecklistForStage();
+
+  // Ensure checklist exists for current stage when dialog opens
+  useEffect(() => {
+    if (open && property.id) {
+      createChecklist.mutate({ propertyId: property.id, stage: property.stage });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, property.id, property.stage]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -75,10 +87,22 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Imóvel — {property.code}</DialogTitle>
         </DialogHeader>
+
+        <Tabs defaultValue="dados" className="w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+            <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="checklist" className="mt-4">
+            <PropertyChecklist propertyId={property.id} stage={property.stage} />
+          </TabsContent>
+
+          <TabsContent value="dados" className="mt-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="code" render={({ field }) => (
@@ -225,6 +249,8 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
             </div>
           </form>
         </Form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
