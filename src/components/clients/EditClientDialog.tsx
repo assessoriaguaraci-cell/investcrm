@@ -6,10 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateClient, type Client } from "@/hooks/useClients";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, WORK_REGIMES, MARITAL_STATUSES } from "@/lib/client-constants";
 import { BRAZILIAN_STATES } from "@/lib/property-constants";
+import LinkedProperties from "./LinkedProperties";
 import type { Database } from "@/integrations/supabase/types";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
@@ -121,7 +123,18 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
           <DialogDescription>{client.full_name}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        <Tabs defaultValue="dados" className="w-full mt-2">
+          <TabsList className="w-full">
+            <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+            <TabsTrigger value="imoveis" className="flex-1">Imóveis</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="imoveis" className="mt-4">
+            <LinkedProperties clientId={client.id} />
+          </TabsContent>
+
+          <TabsContent value="dados" className="mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Nome completo *</Label>
             <Input value={fullName} onChange={e => setFullName(e.target.value)} />
@@ -259,6 +272,8 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
             {updateClient.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

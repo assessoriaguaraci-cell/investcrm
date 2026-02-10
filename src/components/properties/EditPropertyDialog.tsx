@@ -13,6 +13,7 @@ import { useUpdateProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
 import PropertyChecklist from "./PropertyChecklist";
+import LinkedClients from "./LinkedClients";
 import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
 import { toast } from "sonner";
 
@@ -96,10 +97,15 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
           <TabsList className="w-full">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
             <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+            <TabsTrigger value="clientes" className="flex-1">Clientes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="checklist" className="mt-4">
             <PropertyChecklist propertyId={property.id} stage={property.stage} />
+          </TabsContent>
+
+          <TabsContent value="clientes" className="mt-4">
+            <LinkedClients propertyId={property.id} />
           </TabsContent>
 
           <TabsContent value="dados" className="mt-4">
