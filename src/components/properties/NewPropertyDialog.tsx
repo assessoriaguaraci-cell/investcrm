@@ -12,9 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateProperty } from "@/hooks/useProperties";
 import { useAuth } from "@/hooks/useAuth";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
+import CityCombobox from "./CityCombobox";
 import { toast } from "sonner";
 
 const schema = z.object({
+  code: z.string().optional(),
   property_type: z.enum(["casa", "casa_condominio", "apartamento", "apartamento_condominio", "terreno", "comercial"]),
   state: z.string().min(2, "Obrigatório"),
   city: z.string().optional(),
@@ -52,7 +54,7 @@ export default function NewPropertyDialog() {
     try {
       await createProperty.mutateAsync({
         ...values,
-        code: "TEMP", // trigger will generate
+        code: values.code || "", // trigger will auto-generate if empty
         responsible_user_id: user?.id,
         state: values.state,
       });
@@ -78,6 +80,14 @@ export default function NewPropertyDialog() {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="code" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código (opcional — gerado automaticamente se vazio)</FormLabel>
+                <FormControl><Input {...field} placeholder="Ex: IL-2026-0001" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="property_type" render={({ field }) => (
                 <FormItem>
@@ -134,7 +144,7 @@ export default function NewPropertyDialog() {
               <FormField control={form.control} name="city" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
+                  <CityCombobox value={field.value || ""} onValueChange={field.onChange} state={form.watch("state")} />
                   <FormMessage />
                 </FormItem>
               )} />

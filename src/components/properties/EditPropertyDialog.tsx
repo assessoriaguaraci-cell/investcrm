@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useUpdateProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
+import CityCombobox from "./CityCombobox";
 import { toast } from "sonner";
 
 const schema = z.object({
+  code: z.string().min(1, "Código obrigatório"),
   property_type: z.enum(["casa", "casa_condominio", "apartamento", "apartamento_condominio", "terreno", "comercial"]),
   state: z.string().min(2, "Obrigatório"),
   city: z.string().optional(),
@@ -43,6 +45,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: {
+      code: property.code,
       property_type: property.property_type,
       state: property.state,
       city: property.city ?? "",
@@ -78,6 +81,14 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="code" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="property_type" render={({ field }) => (
                 <FormItem>
@@ -134,7 +145,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
               <FormField control={form.control} name="city" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
+                  <CityCombobox value={field.value || ""} onValueChange={field.onChange} state={form.watch("state")} />
                   <FormMessage />
                 </FormItem>
               )} />

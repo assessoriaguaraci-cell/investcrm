@@ -1,10 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { Building2, Loader2 } from "lucide-react";
 import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
+import { totalInvestment } from "@/lib/property-constants";
 import KanbanColumn from "@/components/properties/KanbanColumn";
 import NewPropertyDialog from "@/components/properties/NewPropertyDialog";
+import PropertyFilters, { EMPTY_FILTERS, type PropertyFilterValues } from "@/components/properties/PropertyFilters";
 import type { Database } from "@/integrations/supabase/types";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
@@ -12,15 +14,33 @@ type PropertyStage = Database["public"]["Enums"]["property_stage"];
 export default function Properties() {
   const { data: properties, isLoading } = useProperties();
   const updateProperty = useUpdateProperty();
+  const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
+
+  const filtered = useMemo(() => {
+    if (!properties) return [];
+    return properties.filter(p => {
+      if (filters.search && !p.code.toLowerCase().includes(filters.search.toLowerCase())) return false;
+      if (filters.stage && p.stage !== filters.stage) return false;
+      if (filters.property_type && p.property_type !== filters.property_type) return false;
+      if (filters.state && p.state !== filters.state) return false;
+      if (filters.city && p.city !== filters.city) return false;
+      if (filters.priority && p.priority !== filters.priority) return false;
+      if (filters.occupation_status && p.occupation_status !== filters.occupation_status) return false;
+      const inv = totalInvestment(p);
+      if (filters.price_min && inv < Number(filters.price_min)) return false;
+      if (filters.price_max && inv > Number(filters.price_max)) return false;
+      return true;
+    });
+  }, [properties, filters]);
 
   const grouped = useMemo(() => {
-    const map: Record<string, typeof properties> = {};
+    const map: Record<string, typeof filtered> = {};
     PROPERTY_STAGES.forEach(s => (map[s.value] = []));
-    properties?.forEach(p => {
+    filtered.forEach(p => {
       if (map[p.stage]) map[p.stage]!.push(p);
     });
     return map;
-  }, [properties]);
+  }, [filtered]);
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -50,8 +70,10 @@ export default function Properties() {
         <NewPropertyDialog />
       </div>
 
+      <PropertyFilters filters={filters} onFiltersChange={setFilters} />
+
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto">
+        <div className="flex-1 overflow-x-auto mt-4">
           <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
             {PROPERTY_STAGES.map(stage => (
               <KanbanColumn
