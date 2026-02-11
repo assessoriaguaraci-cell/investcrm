@@ -36,18 +36,23 @@ export default function NewTaskDialog() {
   const { data: clients } = useClients();
   const { data: properties } = useProperties();
 
+  const selectedProperty = propertyId && propertyId !== "none"
+    ? properties?.find((p) => p.id === propertyId)
+    : null;
+
   const handleSubmit = () => {
     if (!description.trim() || !user) return;
+    const responsibleId = selectedProperty?.responsible_user_id || user.id;
     createActivity.mutate(
       {
         description: description.trim(),
         activity_type: activityType,
         due_date: dueDate || null,
-        client_id: clientId || null,
-        property_id: propertyId || null,
+        client_id: clientId && clientId !== "none" ? clientId : null,
+        property_id: propertyId && propertyId !== "none" ? propertyId : null,
         notes: notes.trim() || null,
         created_by: user.id,
-        responsible_user_id: user.id,
+        responsible_user_id: responsibleId,
         status: "pendente",
       },
       {
