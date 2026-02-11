@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UsersRound, Check, X, ShieldCheck } from "lucide-react";
+import { UsersRound, Check, X, ShieldCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTeamMembers, type TeamMember } from "@/hooks/useTeamMembers";
 import { useIsManagerOrAdmin } from "@/hooks/useCurrentUserRole";
@@ -28,6 +31,10 @@ export default function TeamSettings() {
   const canManage = useIsManagerOrAdmin();
   const qc = useQueryClient();
 
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState("");
+
   const updateStatus = useMutation({
     mutationFn: async ({ userId, status }: { userId: string; status: string }) => {
       const { error } = await supabase
@@ -45,7 +52,6 @@ export default function TeamSettings() {
 
   const updateRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      // Remove all existing roles for user, then insert new one
       await supabase.from("user_roles").delete().eq("user_id", userId);
       if (role) {
         const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
@@ -59,6 +65,25 @@ export default function TeamSettings() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const inviteMember = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("invite-member", {
+        body: { email: inviteEmail.trim(), full_name: inviteName.trim(), role: inviteRole || undefined },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["team_members"] });
+      toast.success("Membro adicionado com sucesso");
+      setInviteEmail("");
+      setInviteName("");
+      setInviteRole("");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="text-muted-foreground text-sm">Carregando...</div>;
 
   const pending = members.filter((m) => m.status === "pending");
@@ -66,6 +91,53 @@ export default function TeamSettings() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {canManage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserPlus className="h-4 w-4" /> Adicionar membro
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-name" className="text-xs">Nome completo</Label>
+                <Input id="invite-name" placeholder="Nome do membro" value={inviteName} onChange={(e) => setInviteName(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-email" className="text-xs">Email</Label>
+                <Input id="invite-email" type="email" placeholder="email@exemplo.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Papel / Permissão</Label>
+                <Select value={inviteRole || "none"} onValueChange={(v) => setInviteRole(v === "none" ? "" : v)}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione um papel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem papel</SelectItem>
+                    {ROLE_OPTIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  size="sm"
+                  className="h-9 w-full gap-1.5"
+                  disabled={!inviteEmail.trim() || !inviteName.trim() || inviteMember.isPending}
+                  onClick={() => inviteMember.mutate()}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  {inviteMember.isPending ? "Adicionando..." : "Adicionar"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {canManage && pending.length > 0 && (
         <Card className="border-amber-500/50">
           <CardHeader>
