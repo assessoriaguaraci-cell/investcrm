@@ -638,8 +638,10 @@ export type Database = {
           content: string
           created_at: string
           created_by: string | null
+          days_since_auction: number | null
           id: string
           property_id: string
+          stage: string | null
           update_date: string
           updated_at: string
         }
@@ -647,8 +649,10 @@ export type Database = {
           content: string
           created_at?: string
           created_by?: string | null
+          days_since_auction?: number | null
           id?: string
           property_id: string
+          stage?: string | null
           update_date?: string
           updated_at?: string
         }
@@ -656,8 +660,10 @@ export type Database = {
           content?: string
           created_at?: string
           created_by?: string | null
+          days_since_auction?: number | null
           id?: string
           property_id?: string
+          stage?: string | null
           update_date?: string
           updated_at?: string
         }

@@ -130,7 +130,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
           </TabsContent>
 
           <TabsContent value="updates" className="mt-4">
-            <PropertyUpdates propertyId={property.id} />
+            <PropertyUpdates propertyId={property.id} currentStage={property.stage} auctionDate={property.auction_date} />
           </TabsContent>
 
           <TabsContent value="clientes" className="mt-4">

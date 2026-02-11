@@ -10,6 +10,8 @@ export interface PropertyUpdate {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  stage: string | null;
+  days_since_auction: number | null;
 }
 
 export function usePropertyUpdates(propertyId: string | undefined) {
@@ -31,12 +33,20 @@ export function usePropertyUpdates(propertyId: string | undefined) {
 export function useCreatePropertyUpdate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ propertyId, content, updateDate, userId }: {
+    mutationFn: async ({ propertyId, content, updateDate, userId, stage, daysSinceAuction }: {
       propertyId: string; content: string; updateDate: string; userId: string;
+      stage?: string; daysSinceAuction?: number;
     }) => {
       const { data, error } = await supabase
         .from("property_updates")
-        .insert({ property_id: propertyId, content, update_date: updateDate, created_by: userId })
+        .insert({
+          property_id: propertyId,
+          content,
+          update_date: updateDate,
+          created_by: userId,
+          stage: stage ?? null,
+          days_since_auction: daysSinceAuction ?? null,
+        })
         .select()
         .single();
       if (error) throw error;
