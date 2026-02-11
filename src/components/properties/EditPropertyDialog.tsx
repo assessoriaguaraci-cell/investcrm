@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUpdateProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
+import ResponsibleSelect from "./ResponsibleSelect";
 import PropertyChecklist from "./PropertyChecklist";
 import LinkedClients from "./LinkedClients";
 import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
@@ -33,6 +34,7 @@ const schema = z.object({
   area_total: z.coerce.number().min(0).optional().nullable(),
   area_useful: z.coerce.number().min(0).optional().nullable(),
   notes: z.string().optional().nullable(),
+  responsible_user_id: z.string().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -73,6 +75,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
       area_total: property.area_total,
       area_useful: property.area_useful,
       notes: property.notes,
+      responsible_user_id: property.responsible_user_id,
     },
   });
 
@@ -238,6 +241,16 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
                 </FormItem>
               )} />
             </div>
+
+            <FormField control={form.control} name="responsible_user_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Responsável</FormLabel>
+                <FormControl>
+                  <ResponsibleSelect value={field.value} onValueChange={field.onChange} className="h-9" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>

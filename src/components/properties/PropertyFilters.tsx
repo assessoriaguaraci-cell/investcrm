@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { PROPERTY_STAGES, PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import CityCombobox from "./CityCombobox";
 
 export interface PropertyFilterValues {
@@ -17,6 +18,7 @@ export interface PropertyFilterValues {
   occupation_status: string;
   price_min: string;
   price_max: string;
+  responsible_user_id: string;
 }
 
 export const EMPTY_FILTERS: PropertyFilterValues = {
@@ -29,6 +31,7 @@ export const EMPTY_FILTERS: PropertyFilterValues = {
   occupation_status: "",
   price_min: "",
   price_max: "",
+  responsible_user_id: "",
 };
 
 interface Props {
@@ -38,7 +41,7 @@ interface Props {
 
 export default function PropertyFilters({ filters, onFiltersChange }: Props) {
   const [expanded, setExpanded] = useState(false);
-
+  const { data: members } = useApprovedMembers();
   const update = (key: keyof PropertyFilterValues, value: string) => {
     const next = { ...filters, [key]: value };
     if (key === "state") next.city = "";
@@ -164,6 +167,17 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
               onChange={e => update("price_max", e.target.value)}
               className="h-9"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável</label>
+            <Select value={filters.responsible_user_id} onValueChange={v => update("responsible_user_id", v === "all" ? "" : v)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {members.map(m => <SelectItem key={m.user_id} value={m.user_id}>{m.full_name || "Sem nome"}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}
