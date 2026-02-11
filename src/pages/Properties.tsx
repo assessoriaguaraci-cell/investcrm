@@ -26,6 +26,7 @@ export default function Properties() {
       if (filters.city && p.city !== filters.city) return false;
       if (filters.priority && p.priority !== filters.priority) return false;
       if (filters.occupation_status && p.occupation_status !== filters.occupation_status) return false;
+      if (filters.responsible_user_id && p.responsible_user_id !== filters.responsible_user_id) return false;
       const inv = totalInvestment(p);
       if (filters.price_min && inv < Number(filters.price_min)) return false;
       if (filters.price_max && inv > Number(filters.price_max)) return false;

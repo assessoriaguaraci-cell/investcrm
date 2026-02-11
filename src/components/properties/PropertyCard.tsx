@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
-import { MapPin, AlertTriangle, Pencil } from "lucide-react";
+import { MapPin, AlertTriangle, Pencil, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, totalInvestment, PRIORITY_LEVELS, OCCUPATION_STATUSES } from "@/lib/property-constants";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import EditPropertyDialog from "./EditPropertyDialog";
 import type { Property } from "@/hooks/useProperties";
 
@@ -19,9 +20,11 @@ const priorityColors: Record<string, string> = {
 
 export default function PropertyCard({ property, index }: Props) {
   const [editOpen, setEditOpen] = useState(false);
+  const { data: members } = useApprovedMembers();
   const investment = totalInvestment(property);
   const occLabel = OCCUPATION_STATUSES.find(o => o.value === property.occupation_status)?.label ?? "";
   const prioLabel = PRIORITY_LEVELS.find(p => p.value === property.priority)?.label ?? "";
+  const responsibleName = members?.find(m => m.user_id === property.responsible_user_id)?.full_name;
 
   return (
     <>
@@ -64,6 +67,13 @@ export default function PropertyCard({ property, index }: Props) {
               <div className="flex items-center gap-1 mt-1.5 text-[10px] text-destructive">
                 <AlertTriangle className="h-3 w-3" />
                 <span>{occLabel}</span>
+              </div>
+            )}
+
+            {responsibleName && (
+              <div className="flex items-center gap-1 mt-1.5 text-[10px] text-muted-foreground">
+                <User className="h-3 w-3" />
+                <span className="truncate">{responsibleName}</span>
               </div>
             )}
           </div>

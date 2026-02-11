@@ -13,6 +13,7 @@ import { useCreateProperty } from "@/hooks/useProperties";
 import { useAuth } from "@/hooks/useAuth";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
+import ResponsibleSelect from "./ResponsibleSelect";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -31,6 +32,7 @@ const schema = z.object({
   area_total: z.coerce.number().min(0).optional(),
   area_useful: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
+  responsible_user_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -54,8 +56,8 @@ export default function NewPropertyDialog() {
     try {
       await createProperty.mutateAsync({
         ...values,
-        code: values.code || "", // trigger will auto-generate if empty
-        responsible_user_id: user?.id,
+        code: values.code || "",
+        responsible_user_id: values.responsible_user_id || user?.id || null,
         state: values.state,
       });
       toast.success("Imóvel cadastrado com sucesso!");
@@ -207,6 +209,16 @@ export default function NewPropertyDialog() {
                 </FormItem>
               )} />
             </div>
+
+            <FormField control={form.control} name="responsible_user_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Responsável</FormLabel>
+                <FormControl>
+                  <ResponsibleSelect value={field.value} onValueChange={field.onChange} className="h-9" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>

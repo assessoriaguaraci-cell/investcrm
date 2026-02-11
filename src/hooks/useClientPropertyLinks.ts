@@ -27,11 +27,33 @@ export function useCreateLink() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: TablesInsert<"client_property_links">) => {
+      // Auto-assign responsible from property to client
+      if (input.property_id) {
+        const { data: prop } = await supabase
+          .from("properties")
+          .select("responsible_user_id")
+          .eq("id", input.property_id)
+          .single();
+        if (prop?.responsible_user_id) {
+          // Set responsible on the link
+          input.responsible_user_id = prop.responsible_user_id;
+          // Also update the client's responsible if not set
+          await supabase
+            .from("clients")
+            .update({ responsible_user_id: prop.responsible_user_id })
+            .eq("id", input.client_id)
+            .is("responsible_user_id", null);
+        }
+      }
+
       const { data, error } = await supabase.from("client_property_links").insert(input).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["client_property_links"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client_property_links"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    },
   });
 }
 
