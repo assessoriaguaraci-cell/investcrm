@@ -23,6 +23,7 @@ import PropertyChecklist from "./PropertyChecklist";
 import LinkedClients from "./LinkedClients";
 import PropertyPhotoUpload from "./PropertyPhotoUpload";
 import PropertyStageTimeline from "./PropertyStageTimeline";
+import PropertyUpdates from "./PropertyUpdates";
 import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
 import { toast } from "sonner";
 
@@ -116,15 +117,20 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
         </DialogHeader>
 
         <Tabs defaultValue="dados" className="w-full">
-          <TabsList className="w-full">
+          <TabsList className="w-full flex-wrap h-auto gap-1">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
             <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+            <TabsTrigger value="updates" className="flex-1">Atualizações</TabsTrigger>
             <TabsTrigger value="clientes" className="flex-1">Clientes</TabsTrigger>
             <TabsTrigger value="historico" className="flex-1">Cronômetro</TabsTrigger>
           </TabsList>
 
           <TabsContent value="checklist" className="mt-4">
             <PropertyChecklist propertyId={property.id} stage={property.stage} />
+          </TabsContent>
+
+          <TabsContent value="updates" className="mt-4">
+            <PropertyUpdates propertyId={property.id} />
           </TabsContent>
 
           <TabsContent value="clientes" className="mt-4">

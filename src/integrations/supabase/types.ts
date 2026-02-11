@@ -633,6 +633,44 @@ export type Database = {
           },
         ]
       }
+      property_updates: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          property_id: string
+          update_date: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          property_id: string
+          update_date?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          property_id?: string
+          update_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_updates_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_filters: {
         Row: {
           created_at: string
