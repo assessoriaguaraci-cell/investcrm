@@ -77,6 +77,12 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete }: Props
               {activity.properties.code}
             </span>
           )}
+
+          {activity.responsible_profile && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              {activity.responsible_profile.full_name}
+            </Badge>
+          )}
         </div>
 
         {activity.notes && (
