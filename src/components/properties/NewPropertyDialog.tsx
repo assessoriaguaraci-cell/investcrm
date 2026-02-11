@@ -2,13 +2,17 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus } from "lucide-react";
+import { format } from "date-fns";
+import { Plus, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCreateProperty } from "@/hooks/useProperties";
 import { useAuth } from "@/hooks/useAuth";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
@@ -33,6 +37,8 @@ const schema = z.object({
   area_useful: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
   responsible_user_id: z.string().optional(),
+  auction_date: z.string().optional(),
+  drive_url: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -172,6 +178,43 @@ export default function NewPropertyDialog() {
               <FormItem>
                 <FormLabel>Link Google Maps</FormLabel>
                 <FormControl><Input {...field} placeholder="https://maps.google.com/..." /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="drive_url" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pasta do Drive</FormLabel>
+                <FormControl><Input {...field} placeholder="https://drive.google.com/..." /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="auction_date" render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Data de Arrematação</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                      >
+                        {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value + "T12:00:00") : undefined}
+                      onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : undefined)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )} />

@@ -7,6 +7,7 @@ import { totalInvestment } from "@/lib/property-constants";
 import KanbanColumn from "@/components/properties/KanbanColumn";
 import NewPropertyDialog from "@/components/properties/NewPropertyDialog";
 import PropertyFilters, { EMPTY_FILTERS, type PropertyFilterValues } from "@/components/properties/PropertyFilters";
+import SavedFiltersButton from "@/components/properties/SavedFiltersButton";
 import type { Database } from "@/integrations/supabase/types";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
@@ -72,6 +73,9 @@ export default function Properties() {
       </div>
 
       <PropertyFilters filters={filters} onFiltersChange={setFilters} />
+      <div className="mt-2">
+        <SavedFiltersButton currentFilters={filters} onLoadFilter={setFilters} />
+      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 overflow-x-auto mt-4">
