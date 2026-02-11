@@ -162,3 +162,20 @@ export function useUpdateChecklistNotes() {
     },
   });
 }
+
+/** Update the completed_at date of a checklist item */
+export function useUpdateChecklistDate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, completedAt, propertyId }: { id: string; completedAt: string; propertyId: string }) => {
+      const { error } = await supabase
+        .from("property_checklist_items")
+        .update({ completed_at: completedAt })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["property-checklist", vars.propertyId] });
+    },
+  });
+}
