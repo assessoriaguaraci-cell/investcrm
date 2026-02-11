@@ -68,7 +68,31 @@ export default function TeamSettings() {
     <div className="space-y-6 max-w-2xl">
       {canManage && pending.length > 0 && (
         <Card className="border-amber-500/50">
-...
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-amber-500" /> Solicitações pendentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-border rounded-lg border border-border">
+              {pending.map((m) => (
+                <div key={m.id} className="flex items-center justify-between px-4 py-3 gap-4 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{m.full_name || "Sem nome"}</p>
+                    {m.phone && <p className="text-xs text-muted-foreground">{m.phone}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="text-xs h-8 gap-1" onClick={() => updateStatus.mutate({ userId: m.user_id, status: "approved" })}>
+                      <Check className="h-3 w-3" /> Aprovar
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive text-xs h-8 gap-1" onClick={() => updateStatus.mutate({ userId: m.user_id, status: "rejected" })}>
+                      <X className="h-3 w-3" /> Recusar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       )}
 
