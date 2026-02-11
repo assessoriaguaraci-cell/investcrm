@@ -387,6 +387,7 @@ export type Database = {
           condo_value: number | null
           created_at: string
           documentation_cost: number | null
+          drive_url: string | null
           eviction_cost: number | null
           final_sale_price: number | null
           has_condo: boolean
@@ -399,6 +400,7 @@ export type Database = {
           notes: string | null
           occupation_status: Database["public"]["Enums"]["occupation_status"]
           other_costs: number | null
+          photo_url: string | null
           possession_date: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           property_type: Database["public"]["Enums"]["property_type"]
@@ -428,6 +430,7 @@ export type Database = {
           condo_value?: number | null
           created_at?: string
           documentation_cost?: number | null
+          drive_url?: string | null
           eviction_cost?: number | null
           final_sale_price?: number | null
           has_condo?: boolean
@@ -440,6 +443,7 @@ export type Database = {
           notes?: string | null
           occupation_status?: Database["public"]["Enums"]["occupation_status"]
           other_costs?: number | null
+          photo_url?: string | null
           possession_date?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           property_type?: Database["public"]["Enums"]["property_type"]
@@ -469,6 +473,7 @@ export type Database = {
           condo_value?: number | null
           created_at?: string
           documentation_cost?: number | null
+          drive_url?: string | null
           eviction_cost?: number | null
           final_sale_price?: number | null
           has_condo?: boolean
@@ -481,6 +486,7 @@ export type Database = {
           notes?: string | null
           occupation_status?: Database["public"]["Enums"]["occupation_status"]
           other_costs?: number | null
+          photo_url?: string | null
           possession_date?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           property_type?: Database["public"]["Enums"]["property_type"]
@@ -591,6 +597,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      property_stage_history: {
+        Row: {
+          created_at: string
+          entered_at: string
+          exited_at: string | null
+          id: string
+          property_id: string
+          stage: string
+        }
+        Insert: {
+          created_at?: string
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          property_id: string
+          stage: string
+        }
+        Update: {
+          created_at?: string
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          property_id?: string
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_stage_history_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_filters: {
+        Row: {
+          created_at: string
+          entity_type: string
+          filters: Json
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_type?: string
+          filters?: Json
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_type?: string
+          filters?: Json
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
