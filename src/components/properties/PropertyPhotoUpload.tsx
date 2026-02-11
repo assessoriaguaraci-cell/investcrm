@@ -17,8 +17,15 @@ export default function PropertyPhotoUpload({ propertyId, currentUrl, onUploaded
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem");
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Apenas imagens (JPEG, PNG, WebP, GIF) são permitidas");
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error("A imagem deve ter no máximo 10MB");
       return;
     }
 
