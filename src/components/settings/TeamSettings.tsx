@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UsersRound, Check, X, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useTeamMembers, type TeamMember } from "@/hooks/useTeamMembers";
+import { useIsManagerOrAdmin } from "@/hooks/useCurrentUserRole";
 
 const ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },
@@ -24,6 +25,7 @@ const STATUS_BADGES: Record<string, { label: string; variant: "default" | "secon
 
 export default function TeamSettings() {
   const { data: members = [], isLoading } = useTeamMembers();
+  const canManage = useIsManagerOrAdmin();
   const qc = useQueryClient();
 
   const updateStatus = useMutation({
@@ -64,43 +66,9 @@ export default function TeamSettings() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      {pending.length > 0 && (
+      {canManage && pending.length > 0 && (
         <Card className="border-amber-500/50">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2 text-amber-600">
-              <ShieldCheck className="h-4 w-4" /> Solicitações Pendentes ({pending.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="divide-y divide-border rounded-lg border border-border">
-              {pending.map((m) => (
-                <div key={m.id} className="flex items-center justify-between px-4 py-3 gap-4">
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{m.full_name || "Sem nome"}</p>
-                    {m.phone && <p className="text-xs text-muted-foreground">{m.phone}</p>}
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => updateStatus.mutate({ userId: m.user_id, status: "approved" })}
-                      disabled={updateStatus.isPending}
-                    >
-                      <Check className="h-3.5 w-3.5 mr-1" /> Aprovar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => updateStatus.mutate({ userId: m.user_id, status: "rejected" })}
-                      disabled={updateStatus.isPending}
-                    >
-                      <X className="h-3.5 w-3.5 mr-1" /> Recusar
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+...
         </Card>
       )}
 
@@ -113,7 +81,7 @@ export default function TeamSettings() {
         <CardContent>
           <div className="divide-y divide-border rounded-lg border border-border">
             {others.map((m) => (
-              <MemberRow key={m.id} member={m} onRoleChange={(role) => updateRole.mutate({ userId: m.user_id, role })} onStatusChange={(status) => updateStatus.mutate({ userId: m.user_id, status })} />
+              <MemberRow key={m.id} member={m} canManage={canManage} onRoleChange={(role) => updateRole.mutate({ userId: m.user_id, role })} onStatusChange={(status) => updateStatus.mutate({ userId: m.user_id, status })} />
             ))}
             {others.length === 0 && (
               <p className="px-4 py-3 text-sm text-muted-foreground">Nenhum membro encontrado</p>
@@ -125,9 +93,10 @@ export default function TeamSettings() {
   );
 }
 
-function MemberRow({ member, onRoleChange, onStatusChange }: { member: TeamMember; onRoleChange: (role: string) => void; onStatusChange: (status: string) => void }) {
+function MemberRow({ member, canManage, onRoleChange, onStatusChange }: { member: TeamMember; canManage: boolean; onRoleChange: (role: string) => void; onStatusChange: (status: string) => void }) {
   const statusInfo = STATUS_BADGES[member.status] ?? STATUS_BADGES.pending;
   const currentRole = member.roles[0] ?? "";
+  const roleLabel = ROLE_OPTIONS.find(r => r.value === currentRole)?.label ?? "Sem papel";
 
   return (
     <div className="flex items-center justify-between px-4 py-3 gap-4 flex-wrap">
@@ -139,26 +108,32 @@ function MemberRow({ member, onRoleChange, onStatusChange }: { member: TeamMembe
         {member.phone && <p className="text-xs text-muted-foreground">{member.phone}</p>}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <Select value={currentRole || "none"} onValueChange={(v) => onRoleChange(v === "none" ? "" : v)}>
-          <SelectTrigger className="h-8 w-36 text-xs">
-            <SelectValue placeholder="Papel" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Sem papel</SelectItem>
-            {ROLE_OPTIONS.map((r) => (
-              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {member.status === "approved" && (
-          <Button size="sm" variant="ghost" className="text-destructive text-xs h-8" onClick={() => onStatusChange("rejected")}>
-            Bloquear
-          </Button>
-        )}
-        {member.status === "rejected" && (
-          <Button size="sm" variant="ghost" className="text-xs h-8" onClick={() => onStatusChange("approved")}>
-            Reativar
-          </Button>
+        {canManage ? (
+          <>
+            <Select value={currentRole || "none"} onValueChange={(v) => onRoleChange(v === "none" ? "" : v)}>
+              <SelectTrigger className="h-8 w-36 text-xs">
+                <SelectValue placeholder="Papel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem papel</SelectItem>
+                {ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {member.status === "approved" && (
+              <Button size="sm" variant="ghost" className="text-destructive text-xs h-8" onClick={() => onStatusChange("rejected")}>
+                Bloquear
+              </Button>
+            )}
+            {member.status === "rejected" && (
+              <Button size="sm" variant="ghost" className="text-xs h-8" onClick={() => onStatusChange("approved")}>
+                Reativar
+              </Button>
+            )}
+          </>
+        ) : (
+          <Badge variant="secondary" className="text-xs">{roleLabel}</Badge>
         )}
       </div>
     </div>
