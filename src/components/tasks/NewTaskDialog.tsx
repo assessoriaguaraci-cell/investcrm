@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { useCreateActivity } from "@/hooks/useActivities";
 import { useClients } from "@/hooks/useClients";
 import { useProperties } from "@/hooks/useProperties";
 import { useAuth } from "@/hooks/useAuth";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import { toast } from "sonner";
 
 const ACTIVITY_TYPES = [
@@ -29,20 +30,30 @@ export default function NewTaskDialog() {
   const [dueDate, setDueDate] = useState("");
   const [clientId, setClientId] = useState("");
   const [propertyId, setPropertyId] = useState("");
+  const [responsibleUserId, setResponsibleUserId] = useState("");
   const [notes, setNotes] = useState("");
 
   const { user } = useAuth();
   const createActivity = useCreateActivity();
   const { data: clients } = useClients();
   const { data: properties } = useProperties();
-
+  const { data: members } = useApprovedMembers();
   const selectedProperty = propertyId && propertyId !== "none"
     ? properties?.find((p) => p.id === propertyId)
     : null;
 
+  // Auto-set responsible when property changes
+  useEffect(() => {
+    if (selectedProperty?.responsible_user_id) {
+      setResponsibleUserId(selectedProperty.responsible_user_id);
+    } else if (user) {
+      setResponsibleUserId(user.id);
+    }
+  }, [propertyId, selectedProperty, user]);
+
   const handleSubmit = () => {
     if (!description.trim() || !user) return;
-    const responsibleId = selectedProperty?.responsible_user_id || user.id;
+    const responsibleId = responsibleUserId || user.id;
     createActivity.mutate(
       {
         description: description.trim(),
@@ -124,6 +135,18 @@ export default function NewTaskDialog() {
                 <SelectItem value="none">Nenhum</SelectItem>
                 {properties?.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.code} — {p.city || "Sem cidade"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Responsável</Label>
+            <Select value={responsibleUserId || "none"} onValueChange={(v) => setResponsibleUserId(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem responsável</SelectItem>
+                {members.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id}>{m.full_name || "Sem nome"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUpdateActivity, type Activity } from "@/hooks/useActivities";
 import { useClients } from "@/hooks/useClients";
 import { useProperties } from "@/hooks/useProperties";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import { toast } from "sonner";
 
 const ACTIVITY_TYPES = [
@@ -34,11 +35,12 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   const [propertyId, setPropertyId] = useState("");
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"pendente" | "feito" | "atrasado">("pendente");
+  const [responsibleUserId, setResponsibleUserId] = useState("");
 
   const updateActivity = useUpdateActivity();
   const { data: clients } = useClients();
   const { data: properties } = useProperties();
-
+  const { data: members } = useApprovedMembers();
   useEffect(() => {
     if (activity) {
       setDescription(activity.description);
@@ -48,6 +50,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       setPropertyId(activity.property_id || "");
       setNotes(activity.notes || "");
       setStatus(activity.status);
+      setResponsibleUserId(activity.responsible_user_id || "");
     }
   }, [activity]);
 
@@ -63,6 +66,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
         property_id: propertyId && propertyId !== "none" ? propertyId : null,
         notes: notes.trim() || null,
         status,
+        responsible_user_id: responsibleUserId || activity.responsible_user_id,
         completed_at: status === "feito" ? new Date().toISOString() : null,
       },
       {
@@ -134,6 +138,18 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                 <SelectItem value="none">Nenhum</SelectItem>
                 {properties?.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.code} — {p.city || "Sem cidade"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Responsável</Label>
+            <Select value={responsibleUserId || "none"} onValueChange={(v) => setResponsibleUserId(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem responsável</SelectItem>
+                {members.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id}>{m.full_name || "Sem nome"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
