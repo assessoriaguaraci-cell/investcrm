@@ -40,10 +40,31 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Sem permissão" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { email, full_name, role } = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    if (!email || !full_name) {
+    const { email, full_name, role } = body;
+
+    if (!email || typeof email !== "string" || !full_name || typeof full_name !== "string") {
       return new Response(JSON.stringify({ error: "Email e nome são obrigatórios" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email) || email.length > 255) {
+      return new Response(JSON.stringify({ error: "Email inválido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (full_name.length < 2 || full_name.length > 255) {
+      return new Response(JSON.stringify({ error: "Nome deve ter entre 2 e 255 caracteres" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const validRoles = ["admin", "gestor", "comercial", "operacoes", "leitura"];
+    if (role && !validRoles.includes(role)) {
+      return new Response(JSON.stringify({ error: "Função inválida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Create user with a random password (they'll reset via email)
