@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CheckSquare, ListFilter } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import EditTaskDialog from "@/components/tasks/EditTaskDialog";
 import TaskCard from "@/components/tasks/TaskCard";
 import { toast } from "sonner";
 import { isPast, isToday } from "date-fns";
+import { useLocation } from "react-router-dom";
 
 const TYPE_OPTIONS = [
   { value: "all", label: "Todos os tipos" },
@@ -25,6 +26,20 @@ export default function Tasks() {
   const { data: activities, isLoading } = useActivities();
   const updateActivity = useUpdateActivity();
   const deleteActivity = useDeleteActivity();
+  const location = useLocation();
+
+  const dashboardFilter = (location.state as any)?.from === "dashboard"
+    ? (location.state as any)?.filter ?? null
+    : null;
+
+  useEffect(() => {
+    if (dashboardFilter) {
+      window.history.replaceState({}, "");
+    }
+  }, []);
+
+  // Default to "pending" tab when coming from dashboard
+  const defaultTab = dashboardFilter === "pending" ? "pending" : "pending";
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -126,7 +141,7 @@ export default function Tasks() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <Tabs defaultValue="pending">
+        <Tabs defaultValue={defaultTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="pending">Pendentes ({pending.length})</TabsTrigger>
             <TabsTrigger value="done">Concluídas ({done.length})</TabsTrigger>
