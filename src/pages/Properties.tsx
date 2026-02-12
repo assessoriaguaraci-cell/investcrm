@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Building2, Loader2, ArrowLeft, X } from "lucide-react";
+import { Building2, Loader2, ArrowLeft, X, ChevronRight } from "lucide-react";
 import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
 import { totalInvestment, formatCurrency } from "@/lib/property-constants";
 import KanbanColumn from "@/components/properties/KanbanColumn";
+import EditPropertyDialog from "@/components/properties/EditPropertyDialog";
 import NewPropertyDialog from "@/components/properties/NewPropertyDialog";
 import PropertyFilters, { EMPTY_FILTERS, type PropertyFilterValues } from "@/components/properties/PropertyFilters";
 import SavedFiltersButton from "@/components/properties/SavedFiltersButton";
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLocation, useNavigate } from "react-router-dom";
 import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
+import type { Property } from "@/hooks/useProperties";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
 
@@ -23,6 +25,7 @@ export default function Properties() {
   const { data: properties, isLoading } = useProperties();
   const updateProperty = useUpdateProperty();
   const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -139,7 +142,7 @@ export default function Properties() {
                     </div>
                     <div className="space-y-1.5 ml-5">
                       {stageItems.map(p => (
-                        <Card key={p.id} className="hover:shadow-sm transition-shadow">
+                        <Card key={p.id} className="hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setSelectedProperty(p)}>
                           <CardContent className="p-3 flex items-center justify-between">
                             <div>
                               <p className="font-semibold text-sm">{p.code}</p>
@@ -147,7 +150,10 @@ export default function Properties() {
                                 {p.city ? `${p.city}/${p.state}` : p.state}
                               </p>
                             </div>
-                            <p className="text-sm font-semibold">{formatCurrency(p.listed_price || p.purchase_price)}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold">{formatCurrency(p.listed_price || p.purchase_price)}</p>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
                           </CardContent>
                         </Card>
                       ))}
@@ -156,6 +162,13 @@ export default function Properties() {
                 );
               })}
           </div>
+        )}
+        {selectedProperty && (
+          <EditPropertyDialog
+            property={selectedProperty}
+            open={!!selectedProperty}
+            onOpenChange={(open) => { if (!open) setSelectedProperty(null); }}
+          />
         )}
       </div>
     );
