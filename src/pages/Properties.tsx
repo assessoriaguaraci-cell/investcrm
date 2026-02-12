@@ -1,22 +1,65 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, ArrowLeft, X } from "lucide-react";
 import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
-import { totalInvestment } from "@/lib/property-constants";
+import { totalInvestment, formatCurrency } from "@/lib/property-constants";
 import KanbanColumn from "@/components/properties/KanbanColumn";
 import NewPropertyDialog from "@/components/properties/NewPropertyDialog";
 import PropertyFilters, { EMPTY_FILTERS, type PropertyFilterValues } from "@/components/properties/PropertyFilters";
 import SavedFiltersButton from "@/components/properties/SavedFiltersButton";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useLocation, useNavigate } from "react-router-dom";
+import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
+
+type DashboardFilter = "active" | "sales_this_month" | null;
 
 export default function Properties() {
   const { data: properties, isLoading } = useProperties();
   const updateProperty = useUpdateProperty();
   const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  const dashboardFilter: DashboardFilter = (location.state as any)?.from === "dashboard"
+    ? (location.state as any)?.filter ?? null
+    : null;
+
+  // Clear nav state so refreshing doesn't re-apply
+  useEffect(() => {
+    if (dashboardFilter) {
+      window.history.replaceState({}, "");
+    }
+  }, []);
+
+  const [activeListView, setActiveListView] = useState<DashboardFilter>(dashboardFilter);
+
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  // Filtered items for the dashboard drill-down list views
+  const listItems = useMemo(() => {
+    if (!properties || !activeListView) return [];
+    if (activeListView === "active") {
+      return properties.filter(p => p.stage !== "finalizado");
+    }
+    if (activeListView === "sales_this_month") {
+      return properties.filter(p => {
+        if (!p.sale_date) return false;
+        const d = parseISO(p.sale_date);
+        return isAfter(d, monthStart) && isBefore(d, monthEnd);
+      });
+    }
+    return [];
+  }, [properties, activeListView]);
+
+  // Normal kanban filter
   const filtered = useMemo(() => {
     if (!properties) return [];
     return properties.filter(p => {
@@ -55,6 +98,53 @@ export default function Properties() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Dashboard drill-down list view
+  if (activeListView) {
+    const title = activeListView === "active" ? "Imóveis Ativos" : "Vendas do Mês";
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setActiveListView(null)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Kanban
+          </Button>
+          <h1 className="text-xl font-bold">{title}</h1>
+          <Badge variant="secondary">{listItems.length}</Badge>
+        </div>
+        {listItems.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-12">Nenhum imóvel encontrado.</p>
+        ) : (
+          <div className="space-y-2">
+            {listItems.map(p => {
+              const stage = PROPERTY_STAGES.find(s => s.value === p.stage);
+              return (
+                <Card key={p.id} className="hover:shadow-sm transition-shadow">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2.5 w-2.5 rounded-full ${stage?.color || "bg-muted"}`} />
+                      <div>
+                        <p className="font-semibold text-sm">{p.code}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.city ? `${p.city}/${p.state}` : p.state} · {stage?.label}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {activeListView === "sales_this_month" ? (
+                        <p className="text-sm font-semibold">{formatCurrency(p.final_sale_price)}</p>
+                      ) : (
+                        <p className="text-sm font-semibold">{formatCurrency(p.listed_price || p.purchase_price)}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }

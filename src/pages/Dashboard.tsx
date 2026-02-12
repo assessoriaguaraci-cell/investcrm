@@ -92,10 +92,10 @@ export default function Dashboard() {
   const isLoading = loadingProps || loadingClients || loadingActivities;
 
   const kpis = [
-    { label: "Imóveis Ativos", value: stats.activeProperties.toString(), icon: Building2, color: "text-primary", bgColor: "bg-primary/10" },
-    { label: "Leads Ativos", value: stats.activeClients.toString(), icon: Users, color: "text-info", bgColor: "bg-info/10" },
-    { label: "Vendas do Mês", value: stats.salesCount > 0 ? formatCurrency(stats.salesRevenue) : "0", subtitle: stats.salesCount > 0 ? `${stats.salesCount} venda${stats.salesCount > 1 ? "s" : ""}` : undefined, icon: TrendingUp, color: "text-success", bgColor: "bg-success/10" },
-    { label: "Pendências", value: stats.pendingActivities.toString(), subtitle: stats.overdueActivities > 0 ? `${stats.overdueActivities} atrasada${stats.overdueActivities > 1 ? "s" : ""}` : undefined, icon: AlertTriangle, color: stats.overdueActivities > 0 ? "text-destructive" : "text-warning", bgColor: stats.overdueActivities > 0 ? "bg-destructive/10" : "bg-warning/10" },
+    { label: "Imóveis Ativos", value: stats.activeProperties.toString(), icon: Building2, color: "text-primary", bgColor: "bg-primary/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "active" } }) },
+    { label: "Leads Ativos", value: stats.activeClients.toString(), icon: Users, color: "text-info", bgColor: "bg-info/10", onClick: () => navigate("/clients", { state: { from: "dashboard", filter: "active" } }) },
+    { label: "Vendas do Mês", value: stats.salesCount > 0 ? formatCurrency(stats.salesRevenue) : "0", subtitle: stats.salesCount > 0 ? `${stats.salesCount} venda${stats.salesCount > 1 ? "s" : ""}` : undefined, icon: TrendingUp, color: "text-success", bgColor: "bg-success/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "sales_this_month" } }) },
+    { label: "Pendências", value: stats.pendingActivities.toString(), subtitle: stats.overdueActivities > 0 ? `${stats.overdueActivities} atrasada${stats.overdueActivities > 1 ? "s" : ""}` : undefined, icon: AlertTriangle, color: stats.overdueActivities > 0 ? "text-destructive" : "text-warning", bgColor: stats.overdueActivities > 0 ? "bg-destructive/10" : "bg-warning/10", onClick: () => navigate("/tasks", { state: { from: "dashboard", filter: "pending" } }) },
   ];
 
   return (
@@ -112,7 +112,7 @@ export default function Dashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {kpis.map((kpi) => (
-          <Card key={kpi.label} className="hover:shadow-md transition-shadow">
+          <Card key={kpi.label} className="hover:shadow-md transition-shadow cursor-pointer" onClick={kpi.onClick}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className={`flex items-center justify-center h-9 w-9 rounded-lg ${kpi.bgColor}`}>

@@ -1,12 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, ArrowLeft } from "lucide-react";
 import { useClients, useUpdateClient } from "@/hooks/useClients";
-import { CLIENT_PIPELINES, CLIENT_STAGES } from "@/lib/client-constants";
+import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, formatPhone } from "@/lib/client-constants";
 import ClientKanbanColumn from "@/components/clients/ClientKanbanColumn";
 import NewClientDialog from "@/components/clients/NewClientDialog";
 import ClientFilters, { EMPTY_CLIENT_FILTERS, type ClientFilterValues } from "@/components/clients/ClientFilters";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useLocation } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
@@ -17,11 +21,31 @@ export default function Clients() {
   const updateClient = useUpdateClient();
   const [filters, setFilters] = useState<ClientFilterValues>(EMPTY_CLIENT_FILTERS);
   const [activePipeline, setActivePipeline] = useState<ClientPipeline>("inicial");
+  const location = useLocation();
+
+  const dashboardFilter = (location.state as any)?.from === "dashboard"
+    ? (location.state as any)?.filter ?? null
+    : null;
+
+  useEffect(() => {
+    if (dashboardFilter) {
+      window.history.replaceState({}, "");
+    }
+  }, []);
+
+  const [activeListView, setActiveListView] = useState<string | null>(dashboardFilter);
 
   const stagesForPipeline = useMemo(
     () => CLIENT_STAGES.filter(s => s.pipeline === activePipeline),
     [activePipeline]
   );
+
+  // Dashboard drill-down: active leads
+  const activeLeads = useMemo(() => {
+    if (!clients || activeListView !== "active") return [];
+    const excludedStages: ClientStage[] = ["venda_concretizada", "venda_cancelada", "credito_reprovado"];
+    return clients.filter(c => !excludedStages.includes(c.stage));
+  }, [clients, activeListView]);
 
   const filtered = useMemo(() => {
     if (!clients) return [];
@@ -68,6 +92,47 @@ export default function Clients() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Dashboard drill-down list
+  if (activeListView === "active") {
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => setActiveListView(null)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Kanban
+          </Button>
+          <h1 className="text-xl font-bold">Leads Ativos</h1>
+          <Badge variant="secondary">{activeLeads.length}</Badge>
+        </div>
+        {activeLeads.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-12">Nenhum lead ativo encontrado.</p>
+        ) : (
+          <div className="space-y-2">
+            {activeLeads.map(c => {
+              const stage = CLIENT_STAGES.find(s => s.value === c.stage);
+              const temp = TEMPERATURE_OPTIONS.find(t => t.value === c.temperature);
+              return (
+                <Card key={c.id} className="hover:shadow-sm transition-shadow">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2.5 w-2.5 rounded-full ${temp?.color || "bg-muted"}`} />
+                      <div>
+                        <p className="font-semibold text-sm">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatPhone(c.phone || c.whatsapp)} · {stage?.label}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-xs">{temp?.label}</Badge>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
