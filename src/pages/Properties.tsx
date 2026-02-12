@@ -43,11 +43,19 @@ export default function Properties() {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
+  const stageOrder = useMemo(() => {
+    const map: Record<string, number> = {};
+    PROPERTY_STAGES.forEach((s, i) => { map[s.value] = i; });
+    return map;
+  }, []);
+
   // Filtered items for the dashboard drill-down list views
   const listItems = useMemo(() => {
     if (!properties || !activeListView) return [];
     if (activeListView === "active") {
-      return properties.filter(p => p.stage !== "finalizado");
+      return [...properties]
+        .filter(p => p.stage !== "finalizado")
+        .sort((a, b) => (stageOrder[a.stage] ?? 99) - (stageOrder[b.stage] ?? 99));
     }
     if (activeListView === "sales_this_month") {
       return properties.filter(p => {
@@ -57,7 +65,7 @@ export default function Properties() {
       });
     }
     return [];
-  }, [properties, activeListView]);
+  }, [properties, activeListView, stageOrder]);
 
   // Normal kanban filter
   const filtered = useMemo(() => {
@@ -117,32 +125,36 @@ export default function Properties() {
         {listItems.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">Nenhum imóvel encontrado.</p>
         ) : (
-          <div className="space-y-2">
-            {listItems.map(p => {
-              const stage = PROPERTY_STAGES.find(s => s.value === p.stage);
-              return (
-                <Card key={p.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-2.5 w-2.5 rounded-full ${stage?.color || "bg-muted"}`} />
-                      <div>
-                        <p className="font-semibold text-sm">{p.code}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {p.city ? `${p.city}/${p.state}` : p.state} · {stage?.label}
-                        </p>
-                      </div>
+          <div className="space-y-4">
+            {PROPERTY_STAGES
+              .filter(s => listItems.some(p => p.stage === s.value))
+              .map(stage => {
+                const stageItems = listItems.filter(p => p.stage === stage.value);
+                return (
+                  <div key={stage.value}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`h-2.5 w-2.5 rounded-full ${stage.color}`} />
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{stage.label}</h3>
+                      <Badge variant="secondary" className="text-xs h-5">{stageItems.length}</Badge>
                     </div>
-                    <div className="text-right">
-                      {activeListView === "sales_this_month" ? (
-                        <p className="text-sm font-semibold">{formatCurrency(p.final_sale_price)}</p>
-                      ) : (
-                        <p className="text-sm font-semibold">{formatCurrency(p.listed_price || p.purchase_price)}</p>
-                      )}
+                    <div className="space-y-1.5 ml-5">
+                      {stageItems.map(p => (
+                        <Card key={p.id} className="hover:shadow-sm transition-shadow">
+                          <CardContent className="p-3 flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-sm">{p.code}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {p.city ? `${p.city}/${p.state}` : p.state}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold">{formatCurrency(p.listed_price || p.purchase_price)}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+                );
+              })}
           </div>
         )}
       </div>
