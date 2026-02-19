@@ -3,12 +3,17 @@ import { ClipboardCopy, FileText, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePropertyChecklist } from "@/hooks/usePropertyChecklist";
 import { usePropertyUpdates } from "@/hooks/usePropertyUpdates";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
+import { getTemplatesForStage } from "@/lib/checklist-templates";
 import { differenceInDays, format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import type { Property } from "@/hooks/useProperties";
+import type { TablesInsert } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
+
+type PropertyStage = Database["public"]["Enums"]["property_stage"];
 
 interface Props {
   property: Property;
@@ -19,6 +24,8 @@ export default function PropertyReportGenerator({ property }: Props) {
   const { data: updates, isLoading: loadingUpdates } = usePropertyUpdates(property.id);
   const [report, setReport] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch linked clients with approved credit
   const { data: approvedClients, isLoading: loadingClients } = useQuery({
@@ -29,7 +36,6 @@ export default function PropertyReportGenerator({ property }: Props) {
         .select("*, clients(full_name, phone, whatsapp, stage)")
         .eq("property_id", property.id);
       if (error) throw error;
-      // Filter clients with approved credit stage
       return (data ?? []).filter(
         (link: any) => link.clients?.stage === "credito_aprovado" || link.clients?.stage === "credito_aprovado_pipe"
       );
@@ -44,7 +50,50 @@ export default function PropertyReportGenerator({ property }: Props) {
     ? differenceInDays(new Date(), new Date(property.auction_date + "T12:00:00"))
     : null;
 
-  const generateReport = () => {
+  // Ensure checklists exist for current and all previous stages
+  const ensureAllChecklists = async () => {
+    const stageOrder = PROPERTY_STAGES.map(s => s.value);
+    const currentIdx = stageOrder.indexOf(property.stage);
+
+    for (let i = 0; i <= currentIdx; i++) {
+      const stage = stageOrder[i] as PropertyStage;
+      const { data: existing } = await supabase
+        .from("property_checklist_items")
+        .select("id")
+        .eq("property_id", property.id)
+        .eq("stage", stage)
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        const templates = getTemplatesForStage(stage);
+        if (templates.length > 0) {
+          const rows: TablesInsert<"property_checklist_items">[] = templates.map(t => ({
+            property_id: property.id,
+            stage: t.stage,
+            group_name: t.group,
+            task_name: t.task,
+            sort_order: t.sort,
+          }));
+          await supabase.from("property_checklist_items").insert(rows);
+        }
+      }
+    }
+
+    // Refresh checklist data
+    await queryClient.invalidateQueries({ queryKey: ["property-checklist", property.id] });
+    // Re-fetch to get fresh data
+    const { data } = await supabase
+      .from("property_checklist_items")
+      .select("*")
+      .eq("property_id", property.id)
+      .order("sort_order", { ascending: true });
+    return data ?? [];
+  };
+
+  const generateReport = async () => {
+    setGenerating(true);
+    try {
+      const allItems = await ensureAllChecklists();
     const lines: string[] = [];
 
     lines.push(`📋 *RELATÓRIO — ${property.code}*`);
@@ -65,10 +114,10 @@ export default function PropertyReportGenerator({ property }: Props) {
     lines.push("");
 
     // Checklist grouped by stage then group
-    if (checklistItems && checklistItems.length > 0) {
+    if (allItems && allItems.length > 0) {
       // Group by stage
-      const byStage = new Map<string, typeof checklistItems>();
-      checklistItems.forEach(item => {
+      const byStage = new Map<string, typeof allItems>();
+      allItems.forEach(item => {
         const list = byStage.get(item.stage) || [];
         list.push(item);
         byStage.set(item.stage, list);
@@ -129,6 +178,9 @@ export default function PropertyReportGenerator({ property }: Props) {
     }
 
     setReport(lines.join("\n"));
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleCopy = async () => {
@@ -145,13 +197,13 @@ export default function PropertyReportGenerator({ property }: Props) {
         </p>
       </div>
 
-      <Button onClick={generateReport} disabled={isLoading} className="w-full">
-        {isLoading ? (
+      <Button onClick={generateReport} disabled={isLoading || generating} className="w-full">
+        {isLoading || generating ? (
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
         ) : (
           <FileText className="h-4 w-4 mr-2" />
         )}
-        Gerar Relatório
+        {generating ? "Gerando..." : "Gerar Relatório"}
       </Button>
 
       {report && (
