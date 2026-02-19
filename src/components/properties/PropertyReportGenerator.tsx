@@ -1,0 +1,182 @@
+import { useState } from "react";
+import { ClipboardCopy, FileText, Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { usePropertyChecklist } from "@/hooks/usePropertyChecklist";
+import { usePropertyUpdates } from "@/hooks/usePropertyUpdates";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { PROPERTY_STAGES } from "@/lib/property-constants";
+import { differenceInDays, format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
+import type { Property } from "@/hooks/useProperties";
+
+interface Props {
+  property: Property;
+}
+
+export default function PropertyReportGenerator({ property }: Props) {
+  const { data: checklistItems, isLoading: loadingChecklist } = usePropertyChecklist(property.id);
+  const { data: updates, isLoading: loadingUpdates } = usePropertyUpdates(property.id);
+  const [report, setReport] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  // Fetch linked clients with approved credit
+  const { data: approvedClients, isLoading: loadingClients } = useQuery({
+    queryKey: ["approved-clients-for-property", property.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_property_links")
+        .select("*, clients(full_name, phone, whatsapp, stage)")
+        .eq("property_id", property.id);
+      if (error) throw error;
+      // Filter clients with approved credit stage
+      return (data ?? []).filter(
+        (link: any) => link.clients?.stage === "credito_aprovado" || link.clients?.stage === "credito_aprovado_pipe"
+      );
+    },
+  });
+
+  const isLoading = loadingChecklist || loadingUpdates || loadingClients;
+
+  const stageLabel = PROPERTY_STAGES.find(s => s.value === property.stage)?.label ?? property.stage;
+
+  const daysSinceAuction = property.auction_date
+    ? differenceInDays(new Date(), new Date(property.auction_date + "T12:00:00"))
+    : null;
+
+  const generateReport = () => {
+    const lines: string[] = [];
+
+    lines.push(`📋 *RELATÓRIO — ${property.code}*`);
+    lines.push("");
+    lines.push(`📍 Etapa atual: *${stageLabel}*`);
+    if (daysSinceAuction !== null) {
+      lines.push(`📅 Dias desde arrematação: *${daysSinceAuction} dias*`);
+    }
+
+    // Last update
+    if (updates && updates.length > 0) {
+      const last = updates[0];
+      lines.push(`🕐 Última atualização: ${format(new Date(last.update_date), "dd/MM/yyyy")} — ${last.content.substring(0, 100)}${last.content.length > 100 ? "..." : ""}`);
+    } else {
+      lines.push(`🕐 Última atualização: _Nenhuma registrada_`);
+    }
+
+    lines.push("");
+
+    // Checklist grouped by stage then group
+    if (checklistItems && checklistItems.length > 0) {
+      // Group by stage
+      const byStage = new Map<string, typeof checklistItems>();
+      checklistItems.forEach(item => {
+        const list = byStage.get(item.stage) || [];
+        list.push(item);
+        byStage.set(item.stage, list);
+      });
+
+      // Order stages
+      const stageOrder = PROPERTY_STAGES.map(s => s.value);
+
+      for (const stageVal of stageOrder) {
+        const stageItems = byStage.get(stageVal);
+        if (!stageItems || stageItems.length === 0) continue;
+
+        const stageName = PROPERTY_STAGES.find(s => s.value === stageVal)?.label ?? stageVal;
+        const done = stageItems.filter(i => i.completed).length;
+        const total = stageItems.length;
+
+        // Determine stage emoji
+        let stageEmoji = "🔴";
+        if (done === total) stageEmoji = "🟢";
+        else if (done > 0) stageEmoji = "🟡";
+
+        lines.push(`${stageEmoji} *${stageName}* (${done}/${total})`);
+
+        // Group by group_name
+        const byGroup = new Map<string, typeof stageItems>();
+        stageItems.forEach(item => {
+          const list = byGroup.get(item.group_name) || [];
+          list.push(item);
+          byGroup.set(item.group_name, list);
+        });
+
+        for (const [groupName, groupItems] of byGroup.entries()) {
+          lines.push(`  _${groupName}_`);
+          groupItems.forEach(item => {
+            const emoji = item.completed ? "✅" : "⬜";
+            const datePart = item.completed && item.completed_at
+              ? ` (${format(new Date(item.completed_at), "dd/MM")})`
+              : "";
+            lines.push(`    ${emoji} ${item.task_name}${datePart}`);
+          });
+        }
+        lines.push("");
+      }
+    } else {
+      lines.push("_Nenhum checklist registrado._");
+      lines.push("");
+    }
+
+    // Approved clients
+    if (approvedClients && approvedClients.length > 0) {
+      lines.push("👤 *Clientes com crédito aprovado:*");
+      approvedClients.forEach((link: any) => {
+        const client = link.clients;
+        if (!client) return;
+        const phone = client.whatsapp || client.phone || "sem telefone";
+        lines.push(`  • ${client.full_name} — ${phone}`);
+      });
+    }
+
+    setReport(lines.join("\n"));
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(report);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Gere um relatório resumido do status do imóvel para copiar e compartilhar.
+        </p>
+      </div>
+
+      <Button onClick={generateReport} disabled={isLoading} className="w-full">
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        ) : (
+          <FileText className="h-4 w-4 mr-2" />
+        )}
+        Gerar Relatório
+      </Button>
+
+      {report && (
+        <div className="space-y-2">
+          <Textarea
+            value={report}
+            readOnly
+            rows={18}
+            className="text-xs font-mono whitespace-pre-wrap"
+          />
+          <Button variant="outline" className="w-full" onClick={handleCopy}>
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 mr-2 text-primary" />
+                Copiado!
+              </>
+            ) : (
+              <>
+                <ClipboardCopy className="h-4 w-4 mr-2" />
+                Copiar Relatório
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
