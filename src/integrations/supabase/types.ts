@@ -107,6 +107,45 @@ export type Database = {
         }
         Relationships: []
       }
+      city_info: {
+        Row: {
+          best_neighborhoods: string | null
+          city: string
+          considerations: string | null
+          created_at: string
+          dangerous_regions: string | null
+          id: string
+          state: string
+          updated_at: string
+          where_sold: string | null
+          worst_neighborhoods: string | null
+        }
+        Insert: {
+          best_neighborhoods?: string | null
+          city: string
+          considerations?: string | null
+          created_at?: string
+          dangerous_regions?: string | null
+          id?: string
+          state: string
+          updated_at?: string
+          where_sold?: string | null
+          worst_neighborhoods?: string | null
+        }
+        Update: {
+          best_neighborhoods?: string | null
+          city?: string
+          considerations?: string | null
+          created_at?: string
+          dangerous_regions?: string | null
+          id?: string
+          state?: string
+          updated_at?: string
+          where_sold?: string | null
+          worst_neighborhoods?: string | null
+        }
+        Relationships: []
+      }
       client_documents: {
         Row: {
           client_id: string
