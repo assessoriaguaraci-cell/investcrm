@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Building2, Users, Link2, TrendingUp, AlertTriangle, Plus, Clock, CalendarDays, ArrowRight } from "lucide-react";
+import { Building2, Users, Link2, TrendingUp, AlertTriangle, Plus, Clock, CalendarDays, ArrowRight, DollarSign, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,15 @@ import { useProperties } from "@/hooks/useProperties";
 import { useClients } from "@/hooks/useClients";
 import { useActivities } from "@/hooks/useActivities";
 import { useClientPropertyLinks } from "@/hooks/useClientPropertyLinks";
-import { PROPERTY_STAGES, formatCurrency, totalInvestment } from "@/lib/property-constants";
+import {
+  PROPERTY_STAGES,
+  formatCurrency,
+  totalInvestment,
+  grossRevenue,
+  netRevenue,
+  grossProfit,
+  netProfit,
+} from "@/lib/property-constants";
 import { TEMPERATURE_OPTIONS } from "@/lib/client-constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, isAfter, isBefore, startOfMonth, endOfMonth, parseISO, differenceInDays } from "date-fns";
@@ -24,6 +32,13 @@ const PIE_COLORS = [
   "hsl(340, 75%, 55%)",
   "hsl(160, 60%, 45%)",
 ];
+
+/** Stages considered "active" for expected financials (itbi_contrato through pos_venda) */
+const ACTIVE_FINANCIAL_STAGES = ["itbi_contrato", "registro", "desocupacao", "reforma", "venda", "pos_venda"];
+
+function guaraciFactor(p: any): number {
+  return ((p.guaraci_share_pct ?? 100) || 0) / 100;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -56,11 +71,11 @@ export default function Dashboard() {
     return { activeProperties: activeProperties.length, activeClients: activeClients.length, salesRevenue, salesCount: salesThisMonth.length, pendingActivities: pendingActivities.length, overdueActivities: overdueActivities.length };
   }, [properties, clients, activities]);
 
-  // Properties by stage chart
+  // Properties by stage chart - with quantities shown
   const stageChartData = useMemo(() => {
     const counts: Record<string, number> = {};
     properties.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; });
-    return PROPERTY_STAGES.filter(s => counts[s.value]).map(s => ({ name: s.label, value: counts[s.value] || 0 }));
+    return PROPERTY_STAGES.map(s => ({ name: s.label, value: counts[s.value] || 0 }));
   }, [properties]);
 
   // Leads by temperature
@@ -70,7 +85,7 @@ export default function Dashboard() {
     return TEMPERATURE_OPTIONS.map(t => ({ name: t.label, value: counts[t.value] || 0 })).filter(d => d.value > 0);
   }, [clients]);
 
-  // Recent activities (last 10)
+  // Recent activities (last 6)
   const recentActivities = useMemo(() => {
     return activities
       .filter(a => a.status === "pendente")
@@ -82,11 +97,38 @@ export default function Dashboard() {
       .slice(0, 6);
   }, [activities]);
 
-  // Portfolio value
-  const portfolioValue = useMemo(() => {
-    return properties
-      .filter(p => p.stage !== "finalizado")
-      .reduce((sum, p) => sum + (p.listed_price || p.purchase_price || 0), 0);
+  // Portfolio values split by phase
+  const portfolioStats = useMemo(() => {
+    const activePhases = properties.filter(p => ACTIVE_FINANCIAL_STAGES.includes(p.stage));
+    const irPhase = properties.filter(p => p.stage === "ir");
+    const finalizados = properties.filter(p => p.stage === "finalizado");
+
+    return {
+      activeAcquisition: activePhases.reduce((s, p) => s + (p.purchase_price || 0), 0),
+      irAcquisition: irPhase.reduce((s, p) => s + (p.purchase_price || 0), 0),
+      finalizadoAcquisition: finalizados.reduce((s, p) => s + (p.purchase_price || 0), 0),
+    };
+  }, [properties]);
+
+  // Financial stats with Guaraci share
+  const financialStats = useMemo(() => {
+    const finalizados = properties.filter(p => p.stage === "finalizado");
+    const activePhases = properties.filter(p => ACTIVE_FINANCIAL_STAGES.includes(p.stage));
+
+    const realizedGrossRev = finalizados.reduce((s, p) => s + grossRevenue(p) * guaraciFactor(p), 0);
+    const realizedNetRev = finalizados.reduce((s, p) => s + netRevenue(p) * guaraciFactor(p), 0);
+    const realizedGrossProfit = finalizados.reduce((s, p) => s + grossProfit(p) * guaraciFactor(p), 0);
+    const realizedNetProfit = finalizados.reduce((s, p) => s + netProfit(p) * guaraciFactor(p), 0);
+
+    const expectedGrossRev = activePhases.reduce((s, p) => s + grossRevenue(p) * guaraciFactor(p), 0);
+    const expectedNetRev = activePhases.reduce((s, p) => s + netRevenue(p) * guaraciFactor(p), 0);
+    const expectedGrossProfit = activePhases.reduce((s, p) => s + grossProfit(p) * guaraciFactor(p), 0);
+    const expectedNetProfit = activePhases.reduce((s, p) => s + netProfit(p) * guaraciFactor(p), 0);
+
+    return {
+      realizedGrossRev, realizedNetRev, realizedGrossProfit, realizedNetProfit,
+      expectedGrossRev, expectedNetRev, expectedGrossProfit, expectedNetProfit,
+    };
   }, [properties]);
 
   const isLoading = loadingProps || loadingClients || loadingActivities;
@@ -131,21 +173,83 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Portfolio value bar */}
-      {portfolioValue > 0 && (
+      {/* Portfolio value split */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Valor de Aquisição do Portfólio</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-3 rounded-lg bg-primary/5 border">
+            <p className="text-xs text-muted-foreground">ITBI/Contrato até Pós-Venda</p>
+            <p className="text-lg font-bold">{formatCurrency(portfolioStats.activeAcquisition)}</p>
+          </div>
+          <div className="p-3 rounded-lg bg-primary/5 border">
+            <p className="text-xs text-muted-foreground">IR</p>
+            <p className="text-lg font-bold">{formatCurrency(portfolioStats.irAcquisition)}</p>
+          </div>
+          <div className="p-3 rounded-lg bg-primary/5 border">
+            <p className="text-xs text-muted-foreground">Finalizados</p>
+            <p className="text-lg font-bold">{formatCurrency(portfolioStats.finalizadoAcquisition)}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Financial Stats - Guaraci Share */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Valor Total do Portfólio</p>
-              <p className="text-xl font-bold">{formatCurrency(portfolioValue)}</p>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-success" />
+              Resultados Finalizados (Cota Guaraci)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-success/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fat. Bruto</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.realizedGrossRev)}</p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Vínculos Ativos</p>
-              <p className="text-xl font-bold">{links.filter(l => l.status !== "recusou" && l.status !== "fechado").length}</p>
+            <div className="p-3 rounded-lg bg-success/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fat. Líquido</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.realizedNetRev)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-success/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lucro Bruto</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.realizedGrossProfit)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-success/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lucro Líquido</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.realizedNetProfit)}</p>
             </div>
           </CardContent>
         </Card>
-      )}
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-info" />
+              Esperado em Andamento (Cota Guaraci)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-info/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fat. Bruto Esp.</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.expectedGrossRev)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-info/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Fat. Líquido Esp.</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.expectedNetRev)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-info/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lucro Bruto Esp.</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.expectedGrossProfit)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-info/5 border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Lucro Líquido Esp.</p>
+              <p className="text-sm font-bold">{formatCurrency(financialStats.expectedNetProfit)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,13 +263,13 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {stageChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={stageChartData} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 4 }}>
+            {stageChartData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={stageChartData} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
                   <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
                   <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="hsl(200, 98%, 39%)" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="value" fill="hsl(200, 98%, 39%)" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 11, fontWeight: 600 }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -215,7 +319,6 @@ export default function Dashboard() {
 
       {/* Activities + Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Upcoming Activities */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
@@ -260,47 +363,30 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-11"
-              onClick={() => navigate("/properties")}
-            >
+            <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/properties")}>
               <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10">
                 <Plus className="h-3.5 w-3.5 text-primary" />
               </div>
               Novo Imóvel
             </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-11"
-              onClick={() => navigate("/clients")}
-            >
+            <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/clients")}>
               <div className="flex items-center justify-center h-7 w-7 rounded-md bg-info/10">
                 <Plus className="h-3.5 w-3.5 text-info" />
               </div>
               Novo Cliente
             </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-11"
-              onClick={() => navigate("/matches")}
-            >
+            <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/matches")}>
               <div className="flex items-center justify-center h-7 w-7 rounded-md bg-success/10">
                 <Link2 className="h-3.5 w-3.5 text-success" />
               </div>
               Vincular Cliente ↔ Imóvel
             </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 h-11"
-              onClick={() => navigate("/tasks")}
-            >
+            <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/tasks")}>
               <div className="flex items-center justify-center h-7 w-7 rounded-md bg-warning/10">
                 <Clock className="h-3.5 w-3.5 text-warning" />
               </div>
