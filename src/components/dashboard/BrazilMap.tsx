@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin, Building2, ExternalLink } from "lucide-react";
 import { BRAZIL_STATES, SVG_VIEWBOX } from "./BrazilMapData";
-import { PROPERTY_STAGES } from "@/lib/property-constants";
+import { PROPERTY_STAGES, formatCurrency } from "@/lib/property-constants";
 import CityInfoDialog from "./CityInfoDialog";
 import { useCityInfo } from "@/hooks/useCityInfo";
+import { useNavigate } from "react-router-dom";
 import type { Property } from "@/hooks/useProperties";
 
 // Map stage value to its HSL CSS variable
@@ -33,6 +34,7 @@ interface Props {
 
 export default function BrazilMap({ properties }: Props) {
   const { data: cityInfos = [] } = useCityInfo();
+  const navigate = useNavigate();
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<{ state: string; city: string } | null>(null);
 
@@ -49,7 +51,7 @@ export default function BrazilMap({ properties }: Props) {
     return map;
   }, [properties]);
 
-  // Cities for selected state
+  // Cities for selected state, grouped by stage
   const citiesInState = useMemo(() => {
     if (!selectedState) return [];
     const stateProps = propsByState[selectedState] || [];
@@ -64,10 +66,18 @@ export default function BrazilMap({ properties }: Props) {
       .sort((a, b) => b.props.length - a.props.length);
   }, [selectedState, propsByState]);
 
+  // Stage summary for state
+  const stateStageSummary = useMemo(() => {
+    if (!selectedState) return [];
+    const stateProps = propsByState[selectedState] || [];
+    const counts: Record<string, number> = {};
+    stateProps.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; });
+    return PROPERTY_STAGES.filter(s => counts[s.value]).map(s => ({ ...s, count: counts[s.value] }));
+  }, [selectedState, propsByState]);
+
   const selectedStateName = BRAZIL_STATES.find(s => s.uf === selectedState)?.name || selectedState;
 
   if (selectedState) {
-    // State drill-down view — show cities
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -81,32 +91,78 @@ export default function BrazilMap({ properties }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Stage summary bar */}
+          {stateStageSummary.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4 pb-3 border-b">
+              {stateStageSummary.map(s => (
+                <div key={s.value} className="flex items-center gap-1.5 text-xs">
+                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stageColor(s.value) }} />
+                  <span className="text-muted-foreground">{s.label}</span>
+                  <span className="font-bold">{s.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {citiesInState.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Nenhum imóvel neste estado.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {citiesInState.map(({ city, props }) => (
-                <div
-                  key={city}
-                  className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedCity({ state: selectedState, city })}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold text-sm">{city}</p>
-                    <Badge variant="secondary" className="text-xs">{props.length}</Badge>
+            <div className="space-y-4">
+              {citiesInState.map(({ city, props }) => {
+                // Group props by stage within city
+                const byStage: Record<string, Property[]> = {};
+                props.forEach(p => {
+                  if (!byStage[p.stage]) byStage[p.stage] = [];
+                  byStage[p.stage].push(p);
+                });
+
+                return (
+                  <div key={city} className="rounded-lg border bg-card">
+                    <div
+                      className="flex items-center justify-between p-3 border-b cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => setSelectedCity({ state: selectedState, city })}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold text-sm">{city}</span>
+                        <Badge variant="secondary" className="text-xs">{props.length} imóveis</Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground">
+                        Intel <ExternalLink className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                    {/* Mini-kanban: properties grouped by stage */}
+                    <div className="p-3">
+                      <div className="flex gap-3 overflow-x-auto pb-1">
+                        {PROPERTY_STAGES.filter(s => byStage[s.value]).map(stage => (
+                          <div key={stage.value} className="min-w-[180px] shrink-0">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stageColor(stage.value) }} />
+                              <span className="text-[11px] font-semibold text-muted-foreground">{stage.label}</span>
+                              <span className="text-[10px] text-muted-foreground ml-auto">{byStage[stage.value].length}</span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {byStage[stage.value].map(p => (
+                                <div
+                                  key={p.id}
+                                  className="p-2 rounded-md border bg-background hover:bg-accent/30 transition-colors cursor-pointer text-xs"
+                                  onClick={(e) => { e.stopPropagation(); navigate("/properties", { state: { highlightProperty: p.id } }); }}
+                                >
+                                  <p className="font-bold text-foreground">{p.code}</p>
+                                  {p.neighborhood && <p className="text-muted-foreground truncate">{p.neighborhood}</p>}
+                                  {(p.purchase_price || 0) > 0 && (
+                                    <p className="text-muted-foreground mt-0.5">{formatCurrency(p.purchase_price || 0)}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {props.map(p => (
-                      <div
-                        key={p.id}
-                        className="h-3 w-3 rounded-full border border-background shadow-sm"
-                        style={{ backgroundColor: stageColor(p.stage) }}
-                        title={`${p.code} — ${PROPERTY_STAGES.find(s => s.value === p.stage)?.label || p.stage}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
