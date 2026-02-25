@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Building2, Users, Link2, TrendingUp, AlertTriangle, Plus, Clock, CalendarDays, ArrowRight, DollarSign, BarChart3 } from "lucide-react";
+import { Building2, Users, Link2, TrendingUp, AlertTriangle, Plus, Clock, CalendarDays, ArrowRight, DollarSign, BarChart3, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import { TEMPERATURE_OPTIONS } from "@/lib/client-constants";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, isAfter, isBefore, startOfMonth, endOfMonth, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import BrazilMap from "@/components/dashboard/BrazilMap";
 
 const PIE_COLORS = [
   "hsl(200, 98%, 39%)",
@@ -259,6 +260,9 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Brazil Map */}
+      <BrazilMap properties={properties} />
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
