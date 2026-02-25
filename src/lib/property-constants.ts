@@ -56,7 +56,60 @@ export function totalInvestment(p: {
   eviction_cost?: number | null;
   renovation_cost?: number | null;
   other_costs?: number | null;
+  contract_cost?: number | null;
+  iptu_debts?: number | null;
+  condo_debts?: number | null;
+  maintenance_cost?: number | null;
 }): number {
   return (p.purchase_price || 0) + (p.documentation_cost || 0) + (p.itbi_cost || 0) +
-    (p.registration_cost || 0) + (p.eviction_cost || 0) + (p.renovation_cost || 0) + (p.other_costs || 0);
+    (p.registration_cost || 0) + (p.eviction_cost || 0) + (p.renovation_cost || 0) +
+    (p.other_costs || 0) + (p.contract_cost || 0) + (p.iptu_debts || 0) +
+    (p.condo_debts || 0) + (p.maintenance_cost || 0);
+}
+
+export function totalMonthlyExpenses(p: {
+  condo_monthly?: number | null;
+  caretaker_monthly?: number | null;
+  iptu_monthly?: number | null;
+  utilities_monthly?: number | null;
+}): number {
+  return (p.condo_monthly || 0) + (p.caretaker_monthly || 0) + (p.iptu_monthly || 0) + (p.utilities_monthly || 0);
+}
+
+export function totalRevenue(p: {
+  sale_value_roi?: number | null;
+  financing_value?: number | null;
+  down_payment_value?: number | null;
+  subsidy_value?: number | null;
+  cashback_value?: number | null;
+}): number {
+  return (p.sale_value_roi || 0) + (p.financing_value || 0) + (p.down_payment_value || 0) +
+    (p.subsidy_value || 0) + (p.cashback_value || 0);
+}
+
+export function totalDeductions(p: {
+  income_tax_value?: number | null;
+  sale_documentation_cost?: number | null;
+}): number {
+  return (p.income_tax_value || 0) + (p.sale_documentation_cost || 0);
+}
+
+/** Faturamento Bruto = soma de todas as entradas de venda */
+export function grossRevenue(p: any): number {
+  return totalRevenue(p);
+}
+
+/** Faturamento Líquido = Faturamento Bruto - IR - Doc de Venda */
+export function netRevenue(p: any): number {
+  return grossRevenue(p) - totalDeductions(p);
+}
+
+/** Lucro Bruto = Faturamento Bruto - Investimento Total */
+export function grossProfit(p: any): number {
+  return grossRevenue(p) - totalInvestment(p);
+}
+
+/** Lucro Líquido = Faturamento Líquido - Investimento Total */
+export function netProfit(p: any): number {
+  return netRevenue(p) - totalInvestment(p);
 }
