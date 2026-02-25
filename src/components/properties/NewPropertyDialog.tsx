@@ -39,6 +39,7 @@ const schema = z.object({
   responsible_user_id: z.string().optional(),
   auction_date: z.string().optional(),
   drive_url: z.string().optional(),
+  appraisal_expiry: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -229,7 +230,7 @@ export default function NewPropertyDialog() {
               )} />
               <FormField control={form.control} name="listed_price" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valor Anúncio (R$)</FormLabel>
+                  <FormLabel>Valor do Laudo (R$)</FormLabel>
                   <FormControl><Input type="number" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>

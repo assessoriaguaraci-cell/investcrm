@@ -48,6 +48,7 @@ const schema = z.object({
   notes: z.string().optional().nullable(),
   responsible_user_id: z.string().optional().nullable(),
   auction_date: z.string().optional().nullable(),
+  appraisal_expiry: z.string().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -92,6 +93,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
       notes: property.notes,
       responsible_user_id: property.responsible_user_id,
       auction_date: property.auction_date,
+      appraisal_expiry: (property as any).appraisal_expiry ?? null,
     },
   });
 
@@ -110,6 +112,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
   };
 
   const auctionDateValue = form.watch("auction_date");
+  const appraisalExpiryValue = form.watch("appraisal_expiry");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -305,12 +308,42 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
                   )} />
                   <FormField control={form.control} name="listed_price" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Valor Anúncio (R$)</FormLabel>
+                      <FormLabel>Valor do Laudo (R$)</FormLabel>
                       <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                 </div>
+
+                {/* Appraisal expiry date */}
+                <FormField control={form.control} name="appraisal_expiry" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Vencimento do Laudo</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                          >
+                            {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value + "T12:00:00") : undefined}
+                          onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 
                 <div className="grid grid-cols-2 gap-3">
                   <FormField control={form.control} name="area_total" render={({ field }) => (

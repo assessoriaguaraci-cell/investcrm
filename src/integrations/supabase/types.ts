@@ -378,6 +378,7 @@ export type Database = {
       properties: {
         Row: {
           address: string | null
+          appraisal_expiry: string | null
           area_total: number | null
           area_useful: number | null
           auction_date: string | null
@@ -438,6 +439,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          appraisal_expiry?: string | null
           area_total?: number | null
           area_useful?: number | null
           auction_date?: string | null
@@ -498,6 +500,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          appraisal_expiry?: string | null
           area_total?: number | null
           area_useful?: number | null
           auction_date?: string | null
