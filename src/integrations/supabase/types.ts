@@ -382,22 +382,35 @@ export type Database = {
           area_useful: number | null
           auction_date: string | null
           buyer_client_id: string | null
+          caretaker_monthly: number | null
+          cashback_value: number | null
           city: string | null
           code: string
+          condo_debts: number | null
+          condo_monthly: number | null
           condo_value: number | null
+          contract_cost: number | null
           created_at: string
           documentation_cost: number | null
+          down_payment_value: number | null
           drive_url: string | null
           eviction_cost: number | null
           final_sale_price: number | null
+          financing_value: number | null
+          guaraci_share_pct: number | null
           has_condo: boolean
           id: string
+          income_tax_value: number | null
+          iptu_debts: number | null
+          iptu_monthly: number | null
           itbi_cost: number | null
           listed_price: number | null
           listing_date: string | null
+          maintenance_cost: number | null
           maps_url: string | null
           neighborhood: string | null
           notes: string | null
+          num_shareholders: number | null
           occupation_status: Database["public"]["Enums"]["occupation_status"]
           other_costs: number | null
           photo_url: string | null
@@ -411,12 +424,16 @@ export type Database = {
           renovation_start: string | null
           responsible_user_id: string | null
           sale_date: string | null
+          sale_documentation_cost: number | null
           sale_payment_method:
             | Database["public"]["Enums"]["payment_method"]
             | null
+          sale_value_roi: number | null
           stage: Database["public"]["Enums"]["property_stage"]
           state: string
+          subsidy_value: number | null
           updated_at: string
+          utilities_monthly: number | null
           zip_code: string | null
         }
         Insert: {
@@ -425,22 +442,35 @@ export type Database = {
           area_useful?: number | null
           auction_date?: string | null
           buyer_client_id?: string | null
+          caretaker_monthly?: number | null
+          cashback_value?: number | null
           city?: string | null
           code: string
+          condo_debts?: number | null
+          condo_monthly?: number | null
           condo_value?: number | null
+          contract_cost?: number | null
           created_at?: string
           documentation_cost?: number | null
+          down_payment_value?: number | null
           drive_url?: string | null
           eviction_cost?: number | null
           final_sale_price?: number | null
+          financing_value?: number | null
+          guaraci_share_pct?: number | null
           has_condo?: boolean
           id?: string
+          income_tax_value?: number | null
+          iptu_debts?: number | null
+          iptu_monthly?: number | null
           itbi_cost?: number | null
           listed_price?: number | null
           listing_date?: string | null
+          maintenance_cost?: number | null
           maps_url?: string | null
           neighborhood?: string | null
           notes?: string | null
+          num_shareholders?: number | null
           occupation_status?: Database["public"]["Enums"]["occupation_status"]
           other_costs?: number | null
           photo_url?: string | null
@@ -454,12 +484,16 @@ export type Database = {
           renovation_start?: string | null
           responsible_user_id?: string | null
           sale_date?: string | null
+          sale_documentation_cost?: number | null
           sale_payment_method?:
             | Database["public"]["Enums"]["payment_method"]
             | null
+          sale_value_roi?: number | null
           stage?: Database["public"]["Enums"]["property_stage"]
           state?: string
+          subsidy_value?: number | null
           updated_at?: string
+          utilities_monthly?: number | null
           zip_code?: string | null
         }
         Update: {
@@ -468,22 +502,35 @@ export type Database = {
           area_useful?: number | null
           auction_date?: string | null
           buyer_client_id?: string | null
+          caretaker_monthly?: number | null
+          cashback_value?: number | null
           city?: string | null
           code?: string
+          condo_debts?: number | null
+          condo_monthly?: number | null
           condo_value?: number | null
+          contract_cost?: number | null
           created_at?: string
           documentation_cost?: number | null
+          down_payment_value?: number | null
           drive_url?: string | null
           eviction_cost?: number | null
           final_sale_price?: number | null
+          financing_value?: number | null
+          guaraci_share_pct?: number | null
           has_condo?: boolean
           id?: string
+          income_tax_value?: number | null
+          iptu_debts?: number | null
+          iptu_monthly?: number | null
           itbi_cost?: number | null
           listed_price?: number | null
           listing_date?: string | null
+          maintenance_cost?: number | null
           maps_url?: string | null
           neighborhood?: string | null
           notes?: string | null
+          num_shareholders?: number | null
           occupation_status?: Database["public"]["Enums"]["occupation_status"]
           other_costs?: number | null
           photo_url?: string | null
@@ -497,12 +544,16 @@ export type Database = {
           renovation_start?: string | null
           responsible_user_id?: string | null
           sale_date?: string | null
+          sale_documentation_cost?: number | null
           sale_payment_method?:
             | Database["public"]["Enums"]["payment_method"]
             | null
+          sale_value_roi?: number | null
           stage?: Database["public"]["Enums"]["property_stage"]
           state?: string
+          subsidy_value?: number | null
           updated_at?: string
+          utilities_monthly?: number | null
           zip_code?: string | null
         }
         Relationships: []

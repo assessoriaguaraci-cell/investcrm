@@ -25,6 +25,7 @@ import PropertyPhotoUpload from "./PropertyPhotoUpload";
 import PropertyStageTimeline from "./PropertyStageTimeline";
 import PropertyUpdates from "./PropertyUpdates";
 import PropertyReportGenerator from "./PropertyReportGenerator";
+import PropertyFinancials from "./PropertyFinancials";
 import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
 import { toast } from "sonner";
 
@@ -120,12 +121,17 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
         <Tabs defaultValue="dados" className="w-full">
           <TabsList className="w-full flex-wrap h-auto gap-1">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+            <TabsTrigger value="financeiro" className="flex-1">Financeiro</TabsTrigger>
             <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
             <TabsTrigger value="updates" className="flex-1">Atualizações</TabsTrigger>
             <TabsTrigger value="clientes" className="flex-1">Clientes</TabsTrigger>
             <TabsTrigger value="historico" className="flex-1">Cronômetro</TabsTrigger>
             <TabsTrigger value="relatorio" className="flex-1">Relatório</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="financeiro" className="mt-4">
+            <PropertyFinancials property={property} />
+          </TabsContent>
 
           <TabsContent value="relatorio" className="mt-4">
             <PropertyReportGenerator property={property} />
