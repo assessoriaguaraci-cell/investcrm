@@ -851,6 +851,8 @@ export type Database = {
         | "pos_venda"
         | "ir"
         | "finalizado"
+        | "itbi_contrato"
+        | "registro"
       property_type:
         | "casa"
         | "casa_condominio"
@@ -1054,6 +1056,8 @@ export const Constants = {
         "pos_venda",
         "ir",
         "finalizado",
+        "itbi_contrato",
+        "registro",
       ],
       property_type: [
         "casa",
