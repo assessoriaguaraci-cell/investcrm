@@ -150,11 +150,13 @@ export default function PropertyFinancials({ property }: Props) {
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-2 space-y-2 px-1">
-          <NumField label="Valor de Venda / ROI" value={saleValueRoi} onChange={setSaleValueRoi} />
-          <NumField label="Valor de Financiamento" value={financingValue} onChange={setFinancingValue} />
+          <NumField label="Valor de Venda (anúncio — não entra no cálculo)" value={saleValueRoi} onChange={setSaleValueRoi} />
+          <NumField label="Valor de Financiamento (recebido da Caixa)" value={financingValue} onChange={setFinancingValue} />
           <NumField label="Valor de Entrada" value={downPayment} onChange={setDownPayment} />
           <NumField label="Valor de Subsídio" value={subsidyValue} onChange={setSubsidyValue} />
-          <NumField label="Valor de Cashback" value={cashbackValue} onChange={setCashbackValue} />
+          <Separator className="my-2" />
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Deduções</p>
+          <NumField label="Cashback" value={cashbackValue} onChange={setCashbackValue} />
           <NumField label="Valor de IR (Imposto de Renda)" value={incomeTax} onChange={setIncomeTax} />
           <NumField label="Documentação de Venda" value={saleDocCost} onChange={setSaleDocCost} />
         </CollapsibleContent>

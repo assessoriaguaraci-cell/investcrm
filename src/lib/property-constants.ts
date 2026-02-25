@@ -77,30 +77,30 @@ export function totalMonthlyExpenses(p: {
   return (p.condo_monthly || 0) + (p.caretaker_monthly || 0) + (p.iptu_monthly || 0) + (p.utilities_monthly || 0);
 }
 
+/** Entradas efetivas = Financiamento + Subsídio + Entrada */
 export function totalRevenue(p: {
-  sale_value_roi?: number | null;
   financing_value?: number | null;
   down_payment_value?: number | null;
   subsidy_value?: number | null;
-  cashback_value?: number | null;
 }): number {
-  return (p.sale_value_roi || 0) + (p.financing_value || 0) + (p.down_payment_value || 0) +
-    (p.subsidy_value || 0) + (p.cashback_value || 0);
+  return (p.financing_value || 0) + (p.down_payment_value || 0) + (p.subsidy_value || 0);
 }
 
+/** Deduções = Cashback + IR + Doc de Venda */
 export function totalDeductions(p: {
+  cashback_value?: number | null;
   income_tax_value?: number | null;
   sale_documentation_cost?: number | null;
 }): number {
-  return (p.income_tax_value || 0) + (p.sale_documentation_cost || 0);
+  return (p.cashback_value || 0) + (p.income_tax_value || 0) + (p.sale_documentation_cost || 0);
 }
 
-/** Faturamento Bruto = soma de todas as entradas de venda */
+/** Faturamento Bruto = Financiamento + Subsídio + Entrada */
 export function grossRevenue(p: any): number {
   return totalRevenue(p);
 }
 
-/** Faturamento Líquido = Faturamento Bruto - IR - Doc de Venda */
+/** Faturamento Líquido = Faturamento Bruto - Deduções */
 export function netRevenue(p: any): number {
   return grossRevenue(p) - totalDeductions(p);
 }
