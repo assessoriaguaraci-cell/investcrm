@@ -7,7 +7,8 @@ type PriorityLevel = Database["public"]["Enums"]["priority_level"];
 
 export const PROPERTY_STAGES: { value: PropertyStage; label: string; color: string }[] = [
   { value: "pre_arrematacao", label: "Pré-Arrematação", color: "bg-[hsl(var(--stage-pre-auction))]" },
-  { value: "documentacao", label: "Documentação", color: "bg-[hsl(var(--stage-documentation))]" },
+  { value: "itbi_contrato", label: "ITBI/Contrato", color: "bg-[hsl(var(--stage-itbi-contract))]" },
+  { value: "registro", label: "Registro", color: "bg-[hsl(var(--stage-registration))]" },
   { value: "desocupacao", label: "Desocupação", color: "bg-[hsl(var(--stage-eviction))]" },
   { value: "reforma", label: "Reforma", color: "bg-[hsl(var(--stage-renovation))]" },
   { value: "venda", label: "Venda", color: "bg-[hsl(var(--stage-sale))]" },

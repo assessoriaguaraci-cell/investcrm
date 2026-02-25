@@ -31,17 +31,28 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
   { stage: "pre_arrematacao", group: "Diligência", task: "Fotos dos arredores do imóvel", sort: 14 },
   { stage: "pre_arrematacao", group: "Diligência", task: "Análise da região", sort: 15 },
 
-  // ── DOCUMENTAÇÃO ──────────────────────────────────────────────
+  // ── ITBI/CONTRATO ──────────────────────────────────────────────
   // Grupo 1: Organização Inicial
-  { stage: "documentacao", group: "Organização Inicial", task: "Pasta criada no Drive", sort: 1 },
-  { stage: "documentacao", group: "Organização Inicial", task: "Matrícula, edital, laudo e contratos salvos", sort: 2 },
-  { stage: "documentacao", group: "Organização Inicial", task: "Gastos lançados nas planilhas e Splitwise", sort: 3 },
+  { stage: "itbi_contrato", group: "Organização Inicial", task: "Pasta criada no Drive", sort: 1 },
+  { stage: "itbi_contrato", group: "Organização Inicial", task: "Matrícula, edital, laudo e contratos salvos", sort: 2 },
+  { stage: "itbi_contrato", group: "Organização Inicial", task: "Gastos lançados nas planilhas e Splitwise", sort: 3 },
   // Grupo 2: Controle Documental
-  { stage: "documentacao", group: "Controle Documental", task: "ITBI pago", sort: 4 },
-  { stage: "documentacao", group: "Controle Documental", task: "IPTU pago", sort: 5 },
-  { stage: "documentacao", group: "Controle Documental", task: "Matrícula em nome do novo proprietário", sort: 6 },
-  { stage: "documentacao", group: "Controle Documental", task: "Registro concluído", sort: 7 },
-  { stage: "documentacao", group: "Controle Documental", task: "Listar pendências", sort: 8 },
+  { stage: "itbi_contrato", group: "Controle Documental", task: "ITBI pago", sort: 4 },
+  { stage: "itbi_contrato", group: "Controle Documental", task: "IPTU pago", sort: 5 },
+  { stage: "itbi_contrato", group: "Controle Documental", task: "Matrícula em nome do novo proprietário", sort: 6 },
+  { stage: "itbi_contrato", group: "Controle Documental", task: "Registro concluído", sort: 7 },
+  { stage: "itbi_contrato", group: "Controle Documental", task: "Listar pendências", sort: 8 },
+
+  // ── REGISTRO ──────────────────────────────────────────────────
+  // (mesmo checklist do ITBI/Contrato por ora)
+  { stage: "registro", group: "Organização Inicial", task: "Pasta criada no Drive", sort: 1 },
+  { stage: "registro", group: "Organização Inicial", task: "Matrícula, edital, laudo e contratos salvos", sort: 2 },
+  { stage: "registro", group: "Organização Inicial", task: "Gastos lançados nas planilhas e Splitwise", sort: 3 },
+  { stage: "registro", group: "Controle Documental", task: "ITBI pago", sort: 4 },
+  { stage: "registro", group: "Controle Documental", task: "IPTU pago", sort: 5 },
+  { stage: "registro", group: "Controle Documental", task: "Matrícula em nome do novo proprietário", sort: 6 },
+  { stage: "registro", group: "Controle Documental", task: "Registro concluído", sort: 7 },
+  { stage: "registro", group: "Controle Documental", task: "Listar pendências", sort: 8 },
 
   // ── DESOCUPAÇÃO ───────────────────────────────────────────────
   // Grupo 1: Diagnóstico
@@ -112,7 +123,7 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
 /** Returns the next stage in the pipeline, or null if at the end. */
 export function getNextStage(current: PropertyStage): PropertyStage | null {
   const order: PropertyStage[] = [
-    "pre_arrematacao", "documentacao", "desocupacao", "reforma",
+    "pre_arrematacao", "itbi_contrato", "registro", "desocupacao", "reforma",
     "venda", "pos_venda", "ir", "finalizado",
   ];
   const idx = order.indexOf(current);

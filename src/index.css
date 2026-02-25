@@ -53,7 +53,8 @@
 
     /* Funnel stage colors - properties */
     --stage-pre-auction: 262 80% 56%;
-    --stage-documentation: 220 70% 50%;
+    --stage-itbi-contract: 220 70% 50%;
+    --stage-registration: 210 60% 45%;
     --stage-eviction: 25 95% 53%;
     --stage-renovation: 38 92% 50%;
     --stage-sale: 142 72% 42%;
