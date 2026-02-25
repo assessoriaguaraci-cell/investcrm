@@ -30,6 +30,11 @@ export default function PropertyCard({ property, index }: Props) {
   const auctionDate = property.auction_date;
   const lifeDays = auctionDate ? differenceInDays(new Date(), new Date(auctionDate)) : null;
 
+  // Appraisal expiry badge
+  const appraisalExpiry = (property as any).appraisal_expiry as string | null;
+  const daysUntilExpiry = appraisalExpiry ? differenceInDays(new Date(appraisalExpiry + "T12:00:00"), new Date()) : null;
+  const showExpiryBadge = daysUntilExpiry !== null && daysUntilExpiry <= 30;
+
   return (
     <>
       <Draggable draggableId={property.id} index={index}>
@@ -50,7 +55,12 @@ export default function PropertyCard({ property, index }: Props) {
             <div className="p-3">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-mono font-semibold text-primary">{property.code}</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {showExpiryBadge && (
+                    <Badge className="text-[10px] px-1.5 py-0 bg-destructive text-destructive-foreground">
+                      Laudo {daysUntilExpiry! <= 0 ? "vencido" : `-${daysUntilExpiry}d`}
+                    </Badge>
+                  )}
                   <Badge className={`text-[10px] px-1.5 py-0 ${priorityColors[property.priority] ?? ""}`}>
                     {prioLabel}
                   </Badge>
@@ -68,7 +78,7 @@ export default function PropertyCard({ property, index }: Props) {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-medium">{formatCurrency(investment)}</span>
                 {property.listed_price ? (
-                  <span className="text-muted-foreground">Anúncio: {formatCurrency(property.listed_price)}</span>
+                  <span className="text-muted-foreground">Laudo: {formatCurrency(property.listed_price)}</span>
                 ) : null}
               </div>
 
