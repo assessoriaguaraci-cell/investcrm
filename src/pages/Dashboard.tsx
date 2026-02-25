@@ -97,16 +97,22 @@ export default function Dashboard() {
       .slice(0, 6);
   }, [activities]);
 
-  // Portfolio values split by phase
+  // Portfolio values split by phase — with Guaraci share
   const portfolioStats = useMemo(() => {
     const activePhases = properties.filter(p => ACTIVE_FINANCIAL_STAGES.includes(p.stage));
     const irPhase = properties.filter(p => p.stage === "ir");
     const finalizados = properties.filter(p => p.stage === "finalizado");
 
+    const calcGroup = (group: typeof activePhases) => {
+      const total = group.reduce((s, p) => s + (p.purchase_price || 0), 0);
+      const guaraci = group.reduce((s, p) => s + (p.purchase_price || 0) * guaraciFactor(p), 0);
+      return { total, guaraci };
+    };
+
     return {
-      activeAcquisition: activePhases.reduce((s, p) => s + (p.purchase_price || 0), 0),
-      irAcquisition: irPhase.reduce((s, p) => s + (p.purchase_price || 0), 0),
-      finalizadoAcquisition: finalizados.reduce((s, p) => s + (p.purchase_price || 0), 0),
+      active: calcGroup(activePhases),
+      ir: calcGroup(irPhase),
+      finalizado: calcGroup(finalizados),
     };
   }, [properties]);
 
@@ -181,15 +187,18 @@ export default function Dashboard() {
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-3 rounded-lg bg-primary/5 border">
             <p className="text-xs text-muted-foreground">ITBI/Contrato até Pós-Venda</p>
-            <p className="text-lg font-bold">{formatCurrency(portfolioStats.activeAcquisition)}</p>
+            <p className="text-lg font-bold">{formatCurrency(portfolioStats.active.guaraci)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Total: {formatCurrency(portfolioStats.active.total)}</p>
           </div>
           <div className="p-3 rounded-lg bg-primary/5 border">
             <p className="text-xs text-muted-foreground">IR</p>
-            <p className="text-lg font-bold">{formatCurrency(portfolioStats.irAcquisition)}</p>
+            <p className="text-lg font-bold">{formatCurrency(portfolioStats.ir.guaraci)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Total: {formatCurrency(portfolioStats.ir.total)}</p>
           </div>
           <div className="p-3 rounded-lg bg-primary/5 border">
             <p className="text-xs text-muted-foreground">Finalizados</p>
-            <p className="text-lg font-bold">{formatCurrency(portfolioStats.finalizadoAcquisition)}</p>
+            <p className="text-lg font-bold">{formatCurrency(portfolioStats.finalizado.guaraci)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Total: {formatCurrency(portfolioStats.finalizado.total)}</p>
           </div>
         </CardContent>
       </Card>
