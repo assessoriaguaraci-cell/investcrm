@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin } from "lucide-react";
-import { BRAZIL_STATES } from "./BrazilMapData";
+import { BRAZIL_STATES, SVG_VIEWBOX } from "./BrazilMapData";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
 import CityInfoDialog from "./CityInfoDialog";
 import { useCityInfo } from "@/hooks/useCityInfo";
@@ -152,7 +152,7 @@ export default function BrazilMap({ properties }: Props) {
         <div className="flex flex-col md:flex-row gap-4">
           {/* SVG Map */}
           <div className="flex-1 flex justify-center">
-            <svg viewBox="20 60 420 480" className="w-full max-w-md h-auto">
+            <svg viewBox={SVG_VIEWBOX} className="w-full max-w-md h-auto">
               {BRAZIL_STATES.map(st => {
                 const stateProps = propsByState[st.uf] || [];
                 const hasProperties = stateProps.length > 0;
@@ -170,17 +170,17 @@ export default function BrazilMap({ properties }: Props) {
                       y={st.cy}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      className="text-[8px] font-bold fill-foreground pointer-events-none select-none"
+                      className="text-[6px] font-bold fill-foreground pointer-events-none select-none"
                     >
                       {st.uf}
                     </text>
                     {hasProperties && (
                       <text
                         x={st.cx}
-                        y={st.cy + 10}
+                        y={st.cy + 8}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        className="text-[7px] font-semibold fill-primary pointer-events-none select-none"
+                        className="text-[5px] font-semibold fill-primary pointer-events-none select-none"
                       >
                         {stateProps.length}
                       </text>
@@ -189,12 +189,12 @@ export default function BrazilMap({ properties }: Props) {
                     {hasProperties && stateProps.slice(0, 5).map((p, i) => (
                       <circle
                         key={p.id}
-                        cx={st.cx - 12 + i * 6}
-                        cy={st.cy + 18}
-                        r={2.5}
+                        cx={st.cx - 8 + i * 4}
+                        cy={st.cy + 14}
+                        r={1.8}
                         fill={stageColor(p.stage)}
                         stroke="hsl(var(--background))"
-                        strokeWidth={0.5}
+                        strokeWidth={0.3}
                       />
                     ))}
                   </g>
