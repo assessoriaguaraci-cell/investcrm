@@ -119,161 +119,160 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Cliente</DialogTitle>
-          <DialogDescription>{client.full_name}</DialogDescription>
+          <div className="space-y-1 content-start text-left">
+            <Label className="text-sm font-medium text-muted-foreground">Nome Lead</Label>
+            <Input
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              className="text-xl font-bold bg-blue-50/50 border-blue-100 focus-visible:ring-blue-200 px-3 h-12"
+            />
+          </div>
         </DialogHeader>
 
-        <Tabs defaultValue="dados" className="w-full mt-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
-            <TabsTrigger value="imoveis" className="flex-1">Imóveis</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="imoveis" className="mt-4">
-            <LinkedProperties clientId={client.id} />
-          </TabsContent>
-
-          <TabsContent value="dados" className="mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label>Nome completo *</Label>
-            <Input value={fullName} onChange={e => setFullName(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>CPF</Label>
-            <Input value={cpf} onChange={e => setCpf(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>Telefone</Label>
-            <Input value={phone} onChange={e => setPhone(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>WhatsApp</Label>
-            <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>Estado Civil</Label>
-            <Select value={maritalStatus} onValueChange={setMaritalStatus}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {MARITAL_STATUSES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label>Estado</Label>
-            <Select value={state} onValueChange={setState}>
-              <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
-              <SelectContent>
-                {BRAZILIAN_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label>Cidade</Label>
-            <Input value={city} onChange={e => setCity(e.target.value)} />
+        <div className="mt-4">
+          <div className="bg-muted px-4 py-2 rounded-md mb-6">
+            <span className="text-sm font-semibold text-slate-700">Dados Cliente</span>
           </div>
 
-          <div className="space-y-1">
-            <Label>Pipeline</Label>
-            <Select value={pipeline} onValueChange={v => {
-              const p = v as ClientPipeline;
-              setPipeline(p);
-              const first = CLIENT_STAGES.find(s => s.pipeline === p);
-              if (first) setStage(first.value);
-            }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CLIENT_PIPELINES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label>Etapa</Label>
-            <Select value={stage} onValueChange={v => setStage(v as ClientStage)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {stagesForPipeline.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label>Temperatura</Label>
-            <Select value={temperature} onValueChange={v => setTemperature(v as Database["public"]["Enums"]["lead_temperature"])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TEMPERATURE_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label>Renda (R$)</Label>
-            <Input type="number" value={income} onChange={e => setIncome(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label>Regime de Trabalho</Label>
-            <Select value={workRegime} onValueChange={setWorkRegime}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {WORK_REGIMES.map(w => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex items-center gap-2">
-              <Switch checked={hasFgts} onCheckedChange={setHasFgts} />
-              <Label className="text-sm">Tem FGTS</Label>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-1">
+              <Label>CPF</Label>
+              <Input value={cpf} onChange={e => setCpf(e.target.value)} />
             </div>
-            {hasFgts && (
+
+            <div className="col-span-full border rounded-md p-3 bg-muted/20">
+              <LinkedProperties clientId={client.id} />
+            </div>
+            <div className="space-y-1">
+              <Label>Telefone</Label>
+              <Input value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>WhatsApp</Label>
+              <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Estado Civil</Label>
+              <Select value={maritalStatus} onValueChange={setMaritalStatus}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {MARITAL_STATUSES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Estado</Label>
+              <Select value={state} onValueChange={setState}>
+                <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                <SelectContent>
+                  {BRAZILIAN_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Cidade</Label>
+              <Input value={city} onChange={e => setCity(e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Pipeline</Label>
+              <Select value={pipeline} onValueChange={v => {
+                const p = v as ClientPipeline;
+                setPipeline(p);
+                const first = CLIENT_STAGES.find(s => s.pipeline === p);
+                if (first) setStage(first.value);
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CLIENT_PIPELINES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Etapa</Label>
+              <Select value={stage} onValueChange={v => setStage(v as ClientStage)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {stagesForPipeline.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Temperatura</Label>
+              <Select value={temperature} onValueChange={v => setTemperature(v as Database["public"]["Enums"]["lead_temperature"])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TEMPERATURE_OPTIONS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Renda (R$)</Label>
+              <Input type="number" value={income} onChange={e => setIncome(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Regime de Trabalho</Label>
+              <Select value={workRegime} onValueChange={setWorkRegime}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {WORK_REGIMES.map(w => <SelectItem key={w.value} value={w.label} className="flex justify-between">{w.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center gap-2">
-                <Switch checked={fgtsAbove300} onCheckedChange={setFgtsAbove300} />
-                <Label className="text-sm">FGTS &gt; R$300</Label>
+                <Switch checked={hasFgts} onCheckedChange={setHasFgts} />
+                <Label className="text-sm">Tem FGTS</Label>
+              </div>
+              {hasFgts && (
+                <div className="flex items-center gap-2">
+                  <Switch checked={fgtsAbove300} onCheckedChange={setFgtsAbove300} />
+                  <Label className="text-sm">FGTS &gt; R$300</Label>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Switch checked={canComposeIncome} onCheckedChange={setCanComposeIncome} />
+                <Label className="text-sm">Compõe renda</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={hasFinancialPending} onCheckedChange={setHasFinancialPending} />
+                <Label className="text-sm">Pendência financeira</Label>
+              </div>
+            </div>
+
+            {hasFinancialPending && (
+              <div className="col-span-full space-y-1">
+                <Label>Descrição da pendência</Label>
+                <Input value={financialPendingDesc} onChange={e => setFinancialPendingDesc(e.target.value)} />
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <Switch checked={canComposeIncome} onCheckedChange={setCanComposeIncome} />
-              <Label className="text-sm">Compõe renda</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={hasFinancialPending} onCheckedChange={setHasFinancialPending} />
-              <Label className="text-sm">Pendência financeira</Label>
+
+            {isLostStage && (
+              <div className="col-span-full space-y-1">
+                <Label>Motivo da perda *</Label>
+                <Input value={lostReason} onChange={e => setLostReason(e.target.value)} placeholder="Informe o motivo" />
+              </div>
+            )}
+
+            <div className="col-span-full space-y-1">
+              <Label>Observações</Label>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
             </div>
           </div>
 
-          {hasFinancialPending && (
-            <div className="col-span-full space-y-1">
-              <Label>Descrição da pendência</Label>
-              <Input value={financialPendingDesc} onChange={e => setFinancialPendingDesc(e.target.value)} />
-            </div>
-          )}
-
-          {isLostStage && (
-            <div className="col-span-full space-y-1">
-              <Label>Motivo da perda *</Label>
-              <Input value={lostReason} onChange={e => setLostReason(e.target.value)} placeholder="Informe o motivo" />
-            </div>
-          )}
-
-          <div className="col-span-full space-y-1">
-            <Label>Observações</Label>
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
+          <div className="flex justify-end gap-2 mt-6 border-t pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={updateClient.isPending}>
+              {updateClient.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </div>
         </div>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={updateClient.isPending}>
-            {updateClient.isPending ? "Salvando..." : "Salvar"}
-          </Button>
-        </div>
-          </TabsContent>
-        </Tabs>
       </DialogContent>
     </Dialog>
   );
