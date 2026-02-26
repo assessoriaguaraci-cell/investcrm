@@ -75,7 +75,11 @@ export default function SavedFiltersButton({ currentFilters, onLoadFilter }: Pro
     },
   });
 
-  const hasActiveFilters = Object.entries(currentFilters).some(([k, v]) => v && k !== "search");
+  const hasActiveFilters = Object.entries(currentFilters).some(([k, v]) => {
+    if (k === "search") return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return !!v;
+  });
 
   return (
     <div className="flex items-center gap-1.5">

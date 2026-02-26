@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Building2, Loader2, ArrowLeft, X, ChevronRight } from "lucide-react";
+import { Building2, Loader2, ArrowLeft, ChevronRight, LayoutGrid, TableIcon } from "lucide-react";
 import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
 import { totalInvestment, formatCurrency } from "@/lib/property-constants";
 import KanbanColumn from "@/components/properties/KanbanColumn";
+import PropertyTable from "@/components/properties/PropertyTable";
 import EditPropertyDialog from "@/components/properties/EditPropertyDialog";
 import NewPropertyDialog from "@/components/properties/NewPropertyDialog";
 import PropertyFilters, { EMPTY_FILTERS, type PropertyFilterValues } from "@/components/properties/PropertyFilters";
@@ -12,20 +13,22 @@ import SavedFiltersButton from "@/components/properties/SavedFiltersButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useLocation, useNavigate } from "react-router-dom";
 import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 import type { Property } from "@/hooks/useProperties";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
-
 type DashboardFilter = "active" | "sales_this_month" | null;
+type ViewMode = "kanban" | "table";
 
 export default function Properties() {
   const { data: properties, isLoading } = useProperties();
   const updateProperty = useUpdateProperty();
   const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -33,11 +36,8 @@ export default function Properties() {
     ? (location.state as any)?.filter ?? null
     : null;
 
-  // Clear nav state so refreshing doesn't re-apply
   useEffect(() => {
-    if (dashboardFilter) {
-      window.history.replaceState({}, "");
-    }
+    if (dashboardFilter) window.history.replaceState({}, "");
   }, []);
 
   const [activeListView, setActiveListView] = useState<DashboardFilter>(dashboardFilter);
@@ -52,7 +52,6 @@ export default function Properties() {
     return map;
   }, []);
 
-  // Filtered items for the dashboard drill-down list views
   const listItems = useMemo(() => {
     if (!properties || !activeListView) return [];
     if (activeListView === "active") {
@@ -70,18 +69,23 @@ export default function Properties() {
     return [];
   }, [properties, activeListView, stageOrder]);
 
-  // Normal kanban filter
+  const matchesMultiSelect = (value: string, selected: string[]) => {
+    if (selected.length === 0) return true; // "all"
+    if (selected.length === 1 && selected[0] === "__none__") return false;
+    return selected.includes(value);
+  };
+
   const filtered = useMemo(() => {
     if (!properties) return [];
     return properties.filter(p => {
       if (filters.search && !p.code.toLowerCase().includes(filters.search.toLowerCase())) return false;
-      if (filters.stage && p.stage !== filters.stage) return false;
-      if (filters.property_type && p.property_type !== filters.property_type) return false;
-      if (filters.state && p.state !== filters.state) return false;
+      if (!matchesMultiSelect(p.stage, filters.stage)) return false;
+      if (!matchesMultiSelect(p.property_type, filters.property_type)) return false;
+      if (!matchesMultiSelect(p.state, filters.state)) return false;
       if (filters.city && p.city !== filters.city) return false;
-      if (filters.priority && p.priority !== filters.priority) return false;
-      if (filters.occupation_status && p.occupation_status !== filters.occupation_status) return false;
-      if (filters.responsible_user_id && p.responsible_user_id !== filters.responsible_user_id) return false;
+      if (!matchesMultiSelect(p.priority, filters.priority)) return false;
+      if (!matchesMultiSelect(p.occupation_status, filters.occupation_status)) return false;
+      if (!matchesMultiSelect(p.responsible_user_id ?? "", filters.responsible_user_id)) return false;
       const inv = totalInvestment(p);
       if (filters.price_min && inv < Number(filters.price_min)) return false;
       if (filters.price_max && inv > Number(filters.price_max)) return false;
@@ -182,9 +186,23 @@ export default function Properties() {
             <Building2 className="h-5 w-5 text-primary" />
             Funil de Imóveis
           </h1>
-          <p className="text-xs text-muted-foreground">Arraste os cards entre as etapas</p>
+          <p className="text-xs text-muted-foreground">
+            {viewMode === "kanban" ? "Arraste os cards entre as etapas" : "Clique em uma linha para editar"}
+          </p>
         </div>
-        <NewPropertyDialog />
+        <div className="flex items-center gap-2">
+          <ToggleGroup type="single" value={viewMode} onValueChange={v => v && setViewMode(v as ViewMode)}>
+            <ToggleGroupItem value="kanban" aria-label="Kanban" className="gap-1.5 px-3">
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs">Kanban</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" aria-label="Tabela" className="gap-1.5 px-3">
+              <TableIcon className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs">Tabela</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <NewPropertyDialog />
+        </div>
       </div>
 
       <PropertyFilters filters={filters} onFiltersChange={setFilters} />
@@ -192,21 +210,27 @@ export default function Properties() {
         <SavedFiltersButton currentFilters={filters} onLoadFilter={setFilters} />
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto mt-4">
-          <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
-            {PROPERTY_STAGES.map(stage => (
-              <KanbanColumn
-                key={stage.value}
-                stageValue={stage.value}
-                stageLabel={stage.label}
-                stageColor={stage.color}
-                properties={grouped[stage.value] || []}
-              />
-            ))}
+      {viewMode === "kanban" ? (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex-1 overflow-x-auto mt-4">
+            <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
+              {PROPERTY_STAGES.map(stage => (
+                <KanbanColumn
+                  key={stage.value}
+                  stageValue={stage.value}
+                  stageLabel={stage.label}
+                  stageColor={stage.color}
+                  properties={grouped[stage.value] || []}
+                />
+              ))}
+            </div>
           </div>
+        </DragDropContext>
+      ) : (
+        <div className="flex-1 overflow-auto mt-4">
+          <PropertyTable properties={filtered} />
         </div>
-      </DragDropContext>
+      )}
     </div>
   );
 }
