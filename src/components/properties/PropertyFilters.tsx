@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { PROPERTY_STAGES, PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import MultiSelectFilter from "./MultiSelectFilter";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format, parseISO } from "date-fns";
 
 export interface PropertyFilterValues {
   search: string;
@@ -18,6 +21,8 @@ export interface PropertyFilterValues {
   price_min: string;
   price_max: string;
   responsible_user_id: string[];
+  auction_date_start: string;
+  auction_date_end: string;
 }
 
 export const EMPTY_FILTERS: PropertyFilterValues = {
@@ -31,6 +36,8 @@ export const EMPTY_FILTERS: PropertyFilterValues = {
   price_min: "",
   price_max: "",
   responsible_user_id: [],
+  auction_date_start: "",
+  auction_date_end: "",
 };
 
 interface Props {
@@ -179,6 +186,22 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
               selected={filters.responsible_user_id}
               onSelectionChange={v => update("responsible_user_id", v)}
               placeholder="Todos"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Data de arrematação</label>
+            <DateRangePicker
+              date={{
+                from: filters.auction_date_start ? parseISO(filters.auction_date_start) : undefined,
+                to: filters.auction_date_end ? parseISO(filters.auction_date_end) : undefined,
+              }}
+              onDateChange={(range) => {
+                const next = { ...filters };
+                next.auction_date_start = range?.from ? format(range.from, "yyyy-MM-dd") : "";
+                next.auction_date_end = range?.to ? format(range.to, "yyyy-MM-dd") : "";
+                onFiltersChange(next);
+              }}
             />
           </div>
         </div>

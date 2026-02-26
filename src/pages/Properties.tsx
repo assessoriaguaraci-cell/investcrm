@@ -89,6 +89,8 @@ export default function Properties() {
       const inv = totalInvestment(p);
       if (filters.price_min && inv < Number(filters.price_min)) return false;
       if (filters.price_max && inv > Number(filters.price_max)) return false;
+      if (filters.auction_date_start && (!p.auction_date || p.auction_date < filters.auction_date_start)) return false;
+      if (filters.auction_date_end && (!p.auction_date || p.auction_date > filters.auction_date_end)) return false;
       return true;
     });
   }, [properties, filters]);

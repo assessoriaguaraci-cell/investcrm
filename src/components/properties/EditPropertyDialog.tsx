@@ -128,7 +128,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
             <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
             <TabsTrigger value="updates" className="flex-1">Atualizações</TabsTrigger>
             <TabsTrigger value="clientes" className="flex-1">Clientes</TabsTrigger>
-            <TabsTrigger value="historico" className="flex-1">Cronômetro</TabsTrigger>
+            <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>
             <TabsTrigger value="relatorio" className="flex-1">Relatório</TabsTrigger>
           </TabsList>
 
