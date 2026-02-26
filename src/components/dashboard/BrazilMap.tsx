@@ -1,14 +1,22 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, ZoomIn, ZoomOut } from "lucide-react";
-import { BRAZIL_STATES, SVG_VIEWBOX } from "./BrazilMapData";
+import { MapPin } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { PROPERTY_STAGES, formatCurrency } from "@/lib/property-constants";
-import CityInfoDialog from "./CityInfoDialog";
-import { useCityInfo } from "@/hooks/useCityInfo";
+import { getCityCoords } from "./brazil-city-coords";
 import { useNavigate } from "react-router-dom";
 import type { Property } from "@/hooks/useProperties";
+
+// Fix default marker icon issue with bundlers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
 
 const STAGE_HSL_MAP: Record<string, string> = {
   pre_arrematacao: "var(--stage-pre-auction)",
@@ -27,54 +35,107 @@ function stageColor(stage: string): string {
   return hsl ? `hsl(${hsl})` : "hsl(220, 10%, 60%)";
 }
 
+// Stage color for markers (solid colors for SVG)
+const STAGE_MARKER_COLORS: Record<string, string> = {
+  pre_arrematacao: "#6366f1",
+  itbi_contrato: "#f59e0b",
+  registro: "#8b5cf6",
+  desocupacao: "#ef4444",
+  reforma: "#f97316",
+  venda: "#22c55e",
+  pos_venda: "#06b6d4",
+  ir: "#ec4899",
+  finalizado: "#6b7280",
+};
+
+function createStageIcon(stage: string, count: number): L.DivIcon {
+  const color = STAGE_MARKER_COLORS[stage] || "#6b7280";
+  return L.divIcon({
+    className: "custom-marker",
+    html: `<div style="
+      background: ${color};
+      color: white;
+      border-radius: 50%;
+      width: ${count > 1 ? 32 : 26}px;
+      height: ${count > 1 ? 32 : 26}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: ${count > 1 ? 12 : 10}px;
+      font-weight: 700;
+      border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    ">${count > 1 ? count : ""}</div>`,
+    iconSize: [count > 1 ? 32 : 26, count > 1 ? 32 : 26],
+    iconAnchor: [count > 1 ? 16 : 13, count > 1 ? 16 : 13],
+  });
+}
+
+function createClusterIcon(count: number): L.DivIcon {
+  const size = count > 20 ? 44 : count > 5 ? 38 : 32;
+  return L.divIcon({
+    className: "custom-marker",
+    html: `<div style="
+      background: hsl(221, 83%, 53%);
+      color: white;
+      border-radius: 50%;
+      width: ${size}px;
+      height: ${size}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${count}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+// Component to fly to bounds when selectedState changes
+function FlyToBounds({ bounds }: { bounds: L.LatLngBoundsExpression | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (bounds) {
+      map.flyToBounds(bounds, { padding: [30, 30], maxZoom: 10, duration: 0.8 });
+    }
+  }, [bounds, map]);
+  return null;
+}
+
+function ResetView() {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([-14.5, -51], 4, { duration: 0.8 });
+  }, [map]);
+  return null;
+}
+
 interface Props {
   properties: Property[];
 }
 
+interface PropertyMarker {
+  id: string;
+  lat: number;
+  lng: number;
+  property: Property;
+}
+
+interface CityGroup {
+  city: string;
+  state: string;
+  lat: number;
+  lng: number;
+  properties: Property[];
+}
+
 export default function BrazilMap({ properties }: Props) {
-  const { data: cityInfos = [] } = useCityInfo();
   const navigate = useNavigate();
   const [selectedState, setSelectedState] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<{ state: string; city: string } | null>(null);
-
-  // Zoom state
-  const [viewBox, setViewBox] = useState({ x: 0, y: 0, w: 600, h: 600 });
-  const [zoomLevel, setZoomLevel] = useState(1);
-
-  const handleZoomIn = useCallback(() => {
-    setViewBox(prev => {
-      const nw = prev.w * 0.6;
-      const nh = prev.h * 0.6;
-      return { x: prev.x + (prev.w - nw) / 2, y: prev.y + (prev.h - nh) / 2, w: nw, h: nh };
-    });
-    setZoomLevel(z => z / 0.6);
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setViewBox(prev => {
-      const nw = Math.min(prev.w / 0.6, 600);
-      const nh = Math.min(prev.h / 0.6, 600);
-      const nx = Math.max(0, prev.x - (nw - prev.w) / 2);
-      const ny = Math.max(0, prev.y - (nh - prev.h) / 2);
-      return { x: nx, y: ny, w: nw, h: nh };
-    });
-    setZoomLevel(z => Math.max(1, z * 0.6));
-  }, []);
-
-  const handleZoomToState = useCallback((uf: string) => {
-    const st = BRAZIL_STATES.find(s => s.uf === uf);
-    if (!st) return;
-    const size = 120;
-    setViewBox({ x: st.cx - size / 2, y: st.cy - size / 2, w: size, h: size });
-    setZoomLevel(5);
-    setSelectedState(uf);
-  }, []);
-
-  const handleResetZoom = useCallback(() => {
-    setViewBox({ x: 0, y: 0, w: 600, h: 600 });
-    setZoomLevel(1);
-    setSelectedState(null);
-  }, []);
+  const mapRef = useRef<L.Map | null>(null);
 
   // Group properties by state
   const propsByState = useMemo(() => {
@@ -89,7 +150,38 @@ export default function BrazilMap({ properties }: Props) {
     return map;
   }, [properties]);
 
-  // Stage summary for selected state (state-level kanban, no city split)
+  // Create city-grouped markers with coordinates
+  const cityGroups = useMemo((): CityGroup[] => {
+    const groups: Record<string, CityGroup> = {};
+    properties.forEach(p => {
+      if (!p.state) return;
+      const st = p.state.toUpperCase().trim();
+      const city = p.city?.trim() || "Sem cidade";
+      const key = `${city}|${st}`;
+      if (!groups[key]) {
+        const coords = getCityCoords(p.city, p.state);
+        if (!coords) return;
+        groups[key] = { city, state: st, lat: coords[0], lng: coords[1], properties: [] };
+      }
+      groups[key].properties.push(p);
+    });
+    return Object.values(groups);
+  }, [properties]);
+
+  // Bounds for selected state
+  const stateBounds = useMemo((): L.LatLngBoundsExpression | null => {
+    if (!selectedState) return null;
+    const stateGroups = cityGroups.filter(g => g.state === selectedState);
+    if (stateGroups.length === 0) return null;
+    const lats = stateGroups.map(g => g.lat);
+    const lngs = stateGroups.map(g => g.lng);
+    return [
+      [Math.min(...lats) - 0.5, Math.min(...lngs) - 0.5],
+      [Math.max(...lats) + 0.5, Math.max(...lngs) + 0.5],
+    ];
+  }, [selectedState, cityGroups]);
+
+  // State kanban for sidebar
   const stateKanban = useMemo(() => {
     if (!selectedState) return [];
     const stateProps = propsByState[selectedState] || [];
@@ -104,107 +196,131 @@ export default function BrazilMap({ properties }: Props) {
     }));
   }, [selectedState, propsByState]);
 
-  const selectedStateName = BRAZIL_STATES.find(s => s.uf === selectedState)?.name || selectedState;
-
-  // Dynamic font size based on zoom
-  const baseFontUf = Math.max(4, 10 / Math.sqrt(zoomLevel));
-  const baseFontCount = Math.max(3, 8 / Math.sqrt(zoomLevel));
+  const selectedStateName = useMemo(() => {
+    if (!selectedState) return "";
+    const stateNames: Record<string, string> = {
+      AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará",
+      DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso",
+      MS: "Mato Grosso do Sul", MG: "Minas Gerais", PA: "Pará", PB: "Paraíba", PR: "Paraná",
+      PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte",
+      RS: "Rio Grande do Sul", RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina",
+      SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
+    };
+    return stateNames[selectedState] || selectedState;
+  }, [selectedState]);
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          {selectedState ? (
+          <MapPin className="h-4 w-4 text-primary" />
+          Mapa de Imóveis
+          <Badge variant="secondary">{properties.filter(p => p.state).length} com localização</Badge>
+          {selectedState && (
             <>
-              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={handleResetZoom}>
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <MapPin className="h-4 w-4 text-primary" />
-              {selectedStateName} ({selectedState})
-              <Badge variant="secondary">{(propsByState[selectedState] || []).length} imóveis</Badge>
-            </>
-          ) : (
-            <>
-              <MapPin className="h-4 w-4 text-primary" />
-              Mapa de Imóveis
-              <Badge variant="secondary">{properties.filter(p => p.state).length} com localização</Badge>
+              <span className="text-muted-foreground">›</span>
+              <Badge
+                variant="outline"
+                className="cursor-pointer"
+                onClick={() => setSelectedState(null)}
+              >
+                {selectedStateName} ({selectedState}) ✕
+              </Badge>
             </>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* SVG Map with zoom controls */}
-          <div className="flex-1 relative">
-            <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomIn}>
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleZoomOut} disabled={zoomLevel <= 1}>
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-            </div>
-            <svg
-              viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
-              className="w-full max-w-md h-auto mx-auto transition-all duration-300"
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Interactive Map */}
+          <div className="flex-1 rounded-lg overflow-hidden border" style={{ minHeight: 420 }}>
+            <MapContainer
+              center={[-14.5, -51]}
+              zoom={4}
+              style={{ height: "420px", width: "100%" }}
+              ref={mapRef}
+              scrollWheelZoom
+              zoomControl
             >
-              {BRAZIL_STATES.map(st => {
-                const stateProps = propsByState[st.uf] || [];
-                const hasProperties = stateProps.length > 0;
-                const isSelected = selectedState === st.uf;
-                return (
-                  <g key={st.uf} className="cursor-pointer" onClick={() => handleZoomToState(st.uf)}>
-                    <path
-                      d={st.path}
-                      fill={isSelected ? "hsl(var(--primary) / 0.35)" : hasProperties ? "hsl(var(--primary) / 0.2)" : "hsl(var(--muted) / 0.3)"}
-                      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--border))"}
-                      strokeWidth={isSelected ? 1.5 : 0.8}
-                      className="transition-colors hover:fill-[hsl(var(--primary)/0.4)]"
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              {selectedState ? (
+                <FlyToBounds bounds={stateBounds} />
+              ) : (
+                mapRef.current && <ResetView />
+              )}
+
+              {/* City markers */}
+              {cityGroups
+                .filter(g => !selectedState || g.state === selectedState)
+                .map(g => {
+                  // When zoomed into state, show individual stage markers offset slightly
+                  if (selectedState && g.properties.length > 0) {
+                    // Group by stage within city
+                    const byStage: Record<string, Property[]> = {};
+                    g.properties.forEach(p => {
+                      if (!byStage[p.stage]) byStage[p.stage] = [];
+                      byStage[p.stage].push(p);
+                    });
+                    const stages = Object.entries(byStage);
+
+                    return stages.map(([stage, props], i) => {
+                      const offset = stages.length > 1 ? (i - (stages.length - 1) / 2) * 0.02 : 0;
+                      return (
+                        <Marker
+                          key={`${g.city}-${stage}`}
+                          position={[g.lat + offset, g.lng + offset]}
+                          icon={createStageIcon(stage, props.length)}
+                        >
+                          <Popup maxWidth={280}>
+                            <div className="text-sm">
+                              <p className="font-bold text-base mb-1">{g.city}</p>
+                              <p className="text-xs text-gray-500 mb-2">
+                                {PROPERTY_STAGES.find(s => s.value === stage)?.label}
+                              </p>
+                              <div className="space-y-1 max-h-48 overflow-y-auto">
+                                {props.map(p => (
+                                  <div
+                                    key={p.id}
+                                    className="p-1.5 rounded border cursor-pointer hover:bg-gray-50"
+                                    onClick={() => navigate("/properties", { state: { highlightProperty: p.id } })}
+                                  >
+                                    <p className="font-semibold">{p.code}</p>
+                                    {p.neighborhood && <p className="text-xs text-gray-500">{p.neighborhood}</p>}
+                                    {(p.purchase_price || 0) > 0 && (
+                                      <p className="text-xs text-gray-600">{formatCurrency(p.purchase_price)}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    });
+                  }
+
+                  // Overview: cluster by city
+                  return (
+                    <Marker
+                      key={`${g.city}-${g.state}`}
+                      position={[g.lat, g.lng]}
+                      icon={createClusterIcon(g.properties.length)}
+                      eventHandlers={{
+                        click: () => setSelectedState(g.state),
+                      }}
                     />
-                    <text
-                      x={st.cx}
-                      y={st.cy}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      style={{ fontSize: `${baseFontUf}px` }}
-                      className="font-bold fill-foreground pointer-events-none select-none"
-                    >
-                      {st.uf}
-                    </text>
-                    {hasProperties && (
-                      <text
-                        x={st.cx}
-                        y={st.cy + baseFontUf * 1.2}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        style={{ fontSize: `${baseFontCount}px` }}
-                        className="font-semibold fill-primary pointer-events-none select-none"
-                      >
-                        {stateProps.length}
-                      </text>
-                    )}
-                    {/* Stage-colored dots */}
-                    {hasProperties && stateProps.slice(0, 5).map((p, i) => (
-                      <circle
-                        key={p.id}
-                        cx={st.cx - 8 + i * 4}
-                        cy={st.cy + baseFontUf * 2.2}
-                        r={Math.max(1.5, 2.5 / Math.sqrt(zoomLevel))}
-                        fill={stageColor(p.stage)}
-                        stroke="hsl(var(--background))"
-                        strokeWidth={0.3}
-                      />
-                    ))}
-                  </g>
-                );
-              })}
-            </svg>
+                  );
+                })}
+            </MapContainer>
           </div>
 
           {/* Right panel: states list OR state kanban */}
-          <div className="md:w-72 max-h-[500px] overflow-y-auto">
+          <div className="lg:w-72 max-h-[420px] overflow-y-auto">
             {selectedState ? (
-              /* State-level kanban: properties grouped by stage */
               <div className="space-y-3">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
                   Kanban — {selectedStateName}
@@ -224,15 +340,15 @@ export default function BrazilMap({ properties }: Props) {
                           <div
                             key={p.id}
                             className="p-2 rounded-md border bg-background hover:bg-accent/30 transition-colors cursor-pointer text-xs"
-                            onClick={(e) => { e.stopPropagation(); navigate("/properties", { state: { highlightProperty: p.id } }); }}
+                            onClick={() => navigate("/properties", { state: { highlightProperty: p.id } })}
                           >
                             <p className="font-bold text-foreground">{p.code}</p>
                             <p className="text-muted-foreground truncate">
-                              {[p.city, p.state].filter(Boolean).join(" - ") || "Sem localização"}
+                              {[p.city, p.state].filter(Boolean).join(" - ")}
                             </p>
                             {p.neighborhood && <p className="text-muted-foreground truncate">{p.neighborhood}</p>}
                             {(p.purchase_price || 0) > 0 && (
-                              <p className="text-muted-foreground mt-0.5">{formatCurrency(p.purchase_price || 0)}</p>
+                              <p className="text-muted-foreground mt-0.5">{formatCurrency(p.purchase_price)}</p>
                             )}
                           </div>
                         ))}
@@ -242,7 +358,6 @@ export default function BrazilMap({ properties }: Props) {
                 )}
               </div>
             ) : (
-              /* States list */
               <div className="space-y-1">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Estados com imóveis</p>
                 {Object.entries(propsByState)
@@ -251,9 +366,9 @@ export default function BrazilMap({ properties }: Props) {
                     <div
                       key={uf}
                       className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors cursor-pointer text-sm"
-                      onClick={() => handleZoomToState(uf)}
+                      onClick={() => setSelectedState(uf)}
                     >
-                      <span className="font-medium">{BRAZIL_STATES.find(s => s.uf === uf)?.name || uf}</span>
+                      <span className="font-medium">{uf}</span>
                       <div className="flex items-center gap-1.5">
                         <div className="flex -space-x-1">
                           {props.slice(0, 4).map(p => (
@@ -289,17 +404,6 @@ export default function BrazilMap({ properties }: Props) {
           </div>
         </div>
       </CardContent>
-
-      {selectedCity && (
-        <CityInfoDialog
-          open={!!selectedCity}
-          onOpenChange={(open) => { if (!open) setSelectedCity(null); }}
-          state={selectedCity.state}
-          city={selectedCity.city}
-          cityInfo={cityInfos.find(ci => ci.state === selectedCity.state && ci.city.toLowerCase() === selectedCity.city.toLowerCase()) || null}
-          properties={properties}
-        />
-      )}
     </Card>
   );
 }
