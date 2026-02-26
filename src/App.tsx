@@ -12,6 +12,7 @@ import Properties from "@/pages/Properties";
 import Clients from "@/pages/Clients";
 import Matches from "@/pages/Matches";
 import Tasks from "@/pages/Tasks";
+import Calendar from "@/pages/Calendar";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/clients" element={<Clients />} />
               <Route path="/matches" element={<Matches />} />
               <Route path="/tasks" element={<Tasks />} />
+              <Route path="/calendar" element={<Calendar />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

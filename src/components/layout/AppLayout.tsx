@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Users, Link2, CheckSquare, Settings, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Users, Link2, CheckSquare, Settings, Menu, X, LogOut, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -28,11 +28,15 @@ const navItems = [{
   label: "Tarefas",
   icon: CheckSquare
 }, {
+  path: "/calendar",
+  label: "Calendário",
+  icon: CalendarRange
+}, {
   path: "/settings",
   label: "Configurações",
   icon: Settings
 }];
-const bottomNavItems = navItems.slice(0, 5);
+const bottomNavItems = navItems.slice(0, 6);
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
