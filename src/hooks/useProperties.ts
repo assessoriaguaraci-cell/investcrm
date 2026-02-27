@@ -96,7 +96,23 @@ export function useUpdateProperty() {
 
       return data;
     },
-    onSuccess: () => {
+    onMutate: async ({ id, ...updates }) => {
+      await qc.cancelQueries({ queryKey: ["properties"] });
+      const previousProperties = qc.getQueryData<Property[]>(["properties"]);
+
+      qc.setQueryData<Property[]>(["properties"], (old) => {
+        if (!old) return [];
+        return old.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      });
+
+      return { previousProperties };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousProperties) {
+        qc.setQueryData(["properties"], context.previousProperties);
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
       qc.invalidateQueries({ queryKey: ["activities"] });
     },

@@ -1,26 +1,32 @@
 import { useMemo, useState, useEffect } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Users, Loader2, ArrowLeft } from "lucide-react";
+import { Users, Loader2, ArrowLeft, LayoutGrid, TableIcon } from "lucide-react";
 import { useClients, useUpdateClient } from "@/hooks/useClients";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, formatPhone } from "@/lib/client-constants";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 import ClientKanbanColumn from "@/components/clients/ClientKanbanColumn";
+import ClientTable from "@/components/clients/ClientTable";
 import NewClientDialog from "@/components/clients/NewClientDialog";
 import ClientFilters, { EMPTY_CLIENT_FILTERS, type ClientFilterValues } from "@/components/clients/ClientFilters";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useLocation } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
+type ViewMode = "kanban" | "table";
 
 export default function Clients() {
-  const { data: clients, isLoading } = useClients();
+  const { data: clients, isLoading: isClientsLoading } = useClients();
+  const { stages: dynamicStages, isLoading: isStagesLoading } = useKanbanStages("client");
   const updateClient = useUpdateClient();
   const [filters, setFilters] = useState<ClientFilterValues>(EMPTY_CLIENT_FILTERS);
   const [activePipeline, setActivePipeline] = useState<ClientPipeline>("inicial");
+  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const location = useLocation();
 
   const dashboardFilter = (location.state as any)?.from === "dashboard"
@@ -36,8 +42,11 @@ export default function Clients() {
   const [activeListView, setActiveListView] = useState<string | null>(dashboardFilter);
 
   const stagesForPipeline = useMemo(
-    () => CLIENT_STAGES.filter(s => s.pipeline === activePipeline),
-    [activePipeline]
+    () => {
+      const stages = dynamicStages.length > 0 ? dynamicStages : CLIENT_STAGES;
+      return stages.filter(s => s.pipeline === activePipeline);
+    },
+    [activePipeline, dynamicStages]
   );
 
   // Dashboard drill-down: active leads
@@ -84,9 +93,11 @@ export default function Clients() {
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const { draggableId, destination } = result;
-    const newStage = destination.droppableId as ClientStage;
-    updateClient.mutate({ id: draggableId, stage: newStage });
+    const newStage = destination.droppableId;
+    updateClient.mutate({ id: draggableId, stage: newStage as any });
   };
+
+  const isLoading = isClientsLoading || isStagesLoading;
 
   if (isLoading) {
     return (
@@ -112,7 +123,7 @@ export default function Clients() {
         ) : (
           <div className="space-y-2">
             {activeLeads.map(c => {
-              const stage = CLIENT_STAGES.find(s => s.value === c.stage);
+              const stage = (dynamicStages.length > 0 ? dynamicStages : CLIENT_STAGES).find(s => s.value === c.stage);
               const temp = TEMPERATURE_OPTIONS.find(t => t.value === c.temperature);
               return (
                 <Card key={c.id} className="hover:shadow-sm transition-shadow">
@@ -158,27 +169,48 @@ export default function Clients() {
               ))}
             </SelectContent>
           </Select>
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} className="bg-background border rounded-md p-1 h-9">
+            <ToggleGroupItem value="kanban" className="px-3 h-7 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Kanban
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" className="px-3 h-7 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+              <TableIcon className="h-4 w-4 mr-2" />
+              Tabela
+            </ToggleGroupItem>
+          </ToggleGroup>
           <NewClientDialog />
         </div>
       </div>
 
-      <ClientFilters filters={filters} onFiltersChange={setFilters} />
+      <ClientFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        activePipeline={activePipeline}
+      />
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 overflow-x-auto mt-4">
-          <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
-            {stagesForPipeline.map(stage => (
-              <ClientKanbanColumn
-                key={stage.value}
-                stageValue={stage.value}
-                stageLabel={stage.label}
-                stageColor={stage.color}
-                clients={grouped[stage.value] || []}
-              />
-            ))}
+      {viewMode === "kanban" ? (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex-1 overflow-x-auto mt-4">
+            <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
+              {stagesForPipeline.map(stage => (
+                <ClientKanbanColumn
+                  key={stage.value}
+                  stageId={(stage as any).id}
+                  stageValue={stage.value}
+                  stageLabel={stage.label}
+                  stageColor={stage.color}
+                  clients={grouped[stage.value] || []}
+                />
+              ))}
+            </div>
           </div>
+        </DragDropContext>
+      ) : (
+        <div className="flex-1 overflow-hidden mt-4">
+          <ClientTable clients={filtered} />
         </div>
-      </DragDropContext>
+      )}
     </div>
   );
 }

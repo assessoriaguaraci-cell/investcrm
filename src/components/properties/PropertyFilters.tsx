@@ -9,6 +9,9 @@ import MultiSelectFilter from "./MultiSelectFilter";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format, parseISO } from "date-fns";
+import AddColumnDialog from "../kanban/AddColumnDialog";
+import DeleteColumnDialog from "../kanban/DeleteColumnDialog";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 
 export interface PropertyFilterValues {
   search: string;
@@ -48,6 +51,7 @@ interface Props {
 export default function PropertyFilters({ filters, onFiltersChange }: Props) {
   const [expanded, setExpanded] = useState(false);
   const { data: members } = useApprovedMembers();
+  const { stages: dynamicStages } = useKanbanStages("property");
 
   const update = <K extends keyof PropertyFilterValues>(key: K, value: PropertyFilterValues[K]) => {
     const next = { ...filters, [key]: value };
@@ -92,6 +96,8 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
             </Badge>
           )}
         </Button>
+        <AddColumnDialog funnelType="property" />
+        <DeleteColumnDialog funnelType="property" />
         {activeCount > 0 && (
           <Button variant="ghost" size="sm" onClick={clear} className="gap-1 text-muted-foreground">
             <X className="h-3.5 w-3.5" /> Limpar
@@ -105,7 +111,7 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Etapa</label>
             <MultiSelectFilter
               label="Etapa"
-              options={PROPERTY_STAGES.map(s => ({ value: s.value, label: s.label }))}
+              options={(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES).map(s => ({ value: s.value, label: s.label }))}
               selected={filters.stage}
               onSelectionChange={v => update("stage", v)}
               placeholder="Todas"

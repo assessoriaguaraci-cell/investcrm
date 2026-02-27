@@ -2,8 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { Building2, Loader2, ArrowLeft, ChevronRight, LayoutGrid, TableIcon } from "lucide-react";
 import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
-import { PROPERTY_STAGES } from "@/lib/property-constants";
-import { totalInvestment, formatCurrency } from "@/lib/property-constants";
+import { PROPERTY_STAGES, totalInvestment, formatCurrency } from "@/lib/property-constants";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 import KanbanColumn from "@/components/properties/KanbanColumn";
 import PropertyTable from "@/components/properties/PropertyTable";
 import EditPropertyDialog from "@/components/properties/EditPropertyDialog";
@@ -24,7 +24,8 @@ type DashboardFilter = "active" | "sales_this_month" | null;
 type ViewMode = "kanban" | "table";
 
 export default function Properties() {
-  const { data: properties, isLoading } = useProperties();
+  const { data: properties, isLoading: isPropertiesLoading } = useProperties();
+  const { stages: dynamicStages, isLoading: isStagesLoading } = useKanbanStages("property");
   const updateProperty = useUpdateProperty();
   const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -48,9 +49,10 @@ export default function Properties() {
 
   const stageOrder = useMemo(() => {
     const map: Record<string, number> = {};
-    PROPERTY_STAGES.forEach((s, i) => { map[s.value] = i; });
+    const stages = dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES;
+    stages.forEach((s, i) => { map[s.value] = i; });
     return map;
-  }, []);
+  }, [dynamicStages]);
 
   const listItems = useMemo(() => {
     if (!properties || !activeListView) return [];
@@ -97,19 +99,22 @@ export default function Properties() {
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    PROPERTY_STAGES.forEach(s => (map[s.value] = []));
+    const stages = dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES;
+    stages.forEach(s => (map[s.value] = []));
     filtered.forEach(p => {
       if (map[p.stage]) map[p.stage]!.push(p);
     });
     return map;
-  }, [filtered]);
+  }, [filtered, dynamicStages]);
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const { draggableId, destination } = result;
-    const newStage = destination.droppableId as PropertyStage;
-    updateProperty.mutate({ id: draggableId, stage: newStage });
+    const newStage = destination.droppableId;
+    updateProperty.mutate({ id: draggableId, stage: newStage as any });
   };
+
+  const isLoading = isPropertiesLoading || isStagesLoading;
 
   if (isLoading) {
     return (
@@ -135,7 +140,7 @@ export default function Properties() {
           <p className="text-sm text-muted-foreground text-center py-12">Nenhum imóvel encontrado.</p>
         ) : (
           <div className="space-y-4">
-            {PROPERTY_STAGES
+            {(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES)
               .filter(s => listItems.some(p => p.stage === s.value))
               .map(stage => {
                 const stageItems = listItems.filter(p => p.stage === stage.value);
@@ -216,9 +221,10 @@ export default function Properties() {
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex-1 overflow-x-auto mt-4">
             <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
-              {PROPERTY_STAGES.map(stage => (
+              {(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES).map(stage => (
                 <KanbanColumn
                   key={stage.value}
+                  stageId={(stage as any).id}
                   stageValue={stage.value}
                   stageLabel={stage.label}
                   stageColor={stage.color}

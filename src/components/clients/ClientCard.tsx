@@ -36,7 +36,7 @@ export default function ClientCard({ client, index }: Props) {
             {...provided.draggableProps}
             {...provided.dragHandleProps}
             onClick={() => setEditOpen(true)}
-            className={`rounded-lg border bg-card p-3 mb-2 shadow-sm transition-shadow cursor-pointer group ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
+            className={`rounded-lg border bg-white p-3 mb-2 shadow-sm transition-shadow cursor-pointer group ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"
               }`}
           >
             <div className="flex flex-col gap-3">

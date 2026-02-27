@@ -1,20 +1,23 @@
 import { Droppable } from "@hello-pangea/dnd";
 import ClientCard from "./ClientCard";
+import ColumnColorPicker from "../kanban/ColumnColorPicker";
+import EditableColumnName from "../kanban/EditableColumnName";
 import type { Client } from "@/hooks/useClients";
 
 interface Props {
+  stageId?: string;
   stageValue: string;
   stageLabel: string;
   stageColor: string;
   clients: Client[];
 }
 
-export default function ClientKanbanColumn({ stageValue, stageLabel, stageColor, clients }: Props) {
+export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, stageColor, clients }: Props) {
   // Extracting the CSS variable name from the stageColor string (e.g., "bg-[hsl(var(--stage-new-lead))]")
   const colorVar = stageColor.match(/var\(([^)]+)\)/)?.[1];
-  const bgColor = colorVar ? `hsla(var(${colorVar}), 0.1)` : undefined;
-  const borderColor = colorVar ? `hsla(var(${colorVar}), 0.2)` : undefined;
-  const headerBgColor = colorVar ? `hsla(var(${colorVar}), 0.15)` : undefined;
+  const bgColor = colorVar ? `hsl(var(${colorVar}) / 0.1)` : undefined;
+  const borderColor = colorVar ? `hsl(var(${colorVar}) / 0.2)` : undefined;
+  const headerBgColor = colorVar ? `hsl(var(${colorVar}) / 0.15)` : undefined;
 
   return (
     <div className="flex flex-col min-w-[260px] max-w-[300px] w-[280px] shrink-0">
@@ -25,8 +28,18 @@ export default function ClientKanbanColumn({ stageValue, stageLabel, stageColor,
           borderBottomColor: colorVar ? `hsl(var(${colorVar}))` : 'transparent'
         }}
       >
-        <div className={`w-3 h-3 rounded-full ${stageColor} shadow-sm`} />
-        <h3 className="text-sm font-bold truncate text-foreground">{stageLabel}</h3>
+        <ColumnColorPicker
+          stageId={stageId}
+          stageValue={stageValue}
+          stageLabel={stageLabel}
+          currentColor={stageColor}
+          funnelType="client"
+        />
+        <EditableColumnName
+          stageId={stageId}
+          initialLabel={stageLabel}
+          funnelType="client"
+        />
         <span className="ml-auto text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
           {clients.length}
         </span>

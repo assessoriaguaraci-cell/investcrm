@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { TEMPERATURE_OPTIONS, WORK_REGIMES, MARITAL_STATUSES } from "@/lib/client-constants";
 import { BRAZILIAN_STATES } from "@/lib/property-constants";
+import AddColumnDialog from "../kanban/AddColumnDialog";
+import DeleteColumnDialog from "../kanban/DeleteColumnDialog";
 
 export interface ClientFilterValues {
   search: string;
@@ -34,9 +36,10 @@ export const EMPTY_CLIENT_FILTERS: ClientFilterValues = {
 interface Props {
   filters: ClientFilterValues;
   onFiltersChange: (filters: ClientFilterValues) => void;
+  activePipeline?: string;
 }
 
-export default function ClientFilters({ filters, onFiltersChange }: Props) {
+export default function ClientFilters({ filters, onFiltersChange, activePipeline }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const update = (key: keyof ClientFilterValues, value: string) => {
@@ -72,6 +75,8 @@ export default function ClientFilters({ filters, onFiltersChange }: Props) {
             </Badge>
           )}
         </Button>
+        <AddColumnDialog funnelType="client" pipeline={activePipeline} />
+        <DeleteColumnDialog funnelType="client" pipeline={activePipeline} />
         {activeCount > 0 && (
           <Button variant="ghost" size="sm" onClick={clear} className="gap-1 text-muted-foreground">
             <X className="h-3.5 w-3.5" /> Limpar

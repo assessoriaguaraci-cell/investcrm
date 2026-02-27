@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { usePropertyUpdates, useCreatePropertyUpdate, useDeletePropertyUpdate } from "@/hooks/usePropertyUpdates";
 import { useAuth } from "@/hooks/useAuth";
 import { PROPERTY_STAGES } from "@/lib/property-constants";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 import type { Database } from "@/integrations/supabase/types";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
@@ -23,6 +24,7 @@ interface Props {
 
 export default function PropertyUpdates({ propertyId, currentStage, auctionDate }: Props) {
   const { data: updates, isLoading } = usePropertyUpdates(propertyId);
+  const { stages: dynamicStages } = useKanbanStages("property");
   const createUpdate = useCreatePropertyUpdate();
   const deleteUpdate = useDeletePropertyUpdate();
   const { user } = useAuth();
@@ -88,7 +90,7 @@ export default function PropertyUpdates({ propertyId, currentStage, auctionDate 
 
       <div className="space-y-2">
         {updates?.map(u => {
-          const stageInfo = PROPERTY_STAGES.find(s => s.value === u.stage);
+          const stageInfo = (dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES).find(s => s.value === u.stage);
           return (
             <div key={u.id} className="border rounded-md p-3 bg-card">
               <div className="flex items-center justify-between mb-1.5">
