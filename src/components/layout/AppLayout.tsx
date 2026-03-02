@@ -26,11 +26,14 @@ const navItems = [{
 }, {
   path: "/tasks",
   label: "Tarefas",
-  icon: CheckSquare
 }, {
   path: "/calendar",
   label: "Calendário",
   icon: CalendarRange
+}, {
+  path: "/partners",
+  label: "Parceiros",
+  icon: Users
 }, {
   path: "/settings",
   label: "Configurações",

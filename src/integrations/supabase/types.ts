@@ -107,6 +107,56 @@ export type Database = {
         }
         Relationships: []
       }
+      city_contacts: {
+        Row: {
+          city_info_id: string
+          contact_type: string
+          created_at: string
+          email: string | null
+          has_served: boolean
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          pix_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          city_info_id: string
+          contact_type: string
+          created_at?: string
+          email?: string | null
+          has_served?: boolean
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          pix_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city_info_id?: string
+          contact_type?: string
+          created_at?: string
+          email?: string | null
+          has_served?: boolean
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          pix_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_contacts_city_info_id_fkey"
+            columns: ["city_info_id"]
+            isOneToOne: false
+            referencedRelation: "city_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       city_info: {
         Row: {
           best_neighborhoods: string | null
@@ -466,8 +516,8 @@ export type Database = {
           sale_date: string | null
           sale_documentation_cost: number | null
           sale_payment_method:
-            | Database["public"]["Enums"]["payment_method"]
-            | null
+          | Database["public"]["Enums"]["payment_method"]
+          | null
           sale_value_roi: number | null
           stage: Database["public"]["Enums"]["property_stage"]
           state: string
@@ -527,8 +577,8 @@ export type Database = {
           sale_date?: string | null
           sale_documentation_cost?: number | null
           sale_payment_method?:
-            | Database["public"]["Enums"]["payment_method"]
-            | null
+          | Database["public"]["Enums"]["payment_method"]
+          | null
           sale_value_roi?: number | null
           stage?: Database["public"]["Enums"]["property_stage"]
           state?: string
@@ -588,8 +638,8 @@ export type Database = {
           sale_date?: string | null
           sale_documentation_cost?: number | null
           sale_payment_method?:
-            | Database["public"]["Enums"]["payment_method"]
-            | null
+          | Database["public"]["Enums"]["payment_method"]
+          | null
           sale_value_roi?: number | null
           stage?: Database["public"]["Enums"]["property_stage"]
           state?: string
@@ -835,77 +885,77 @@ export type Database = {
       activity_status: "pendente" | "feito" | "atrasado"
       app_role: "admin" | "gestor" | "comercial" | "operacoes" | "leitura"
       client_pipeline:
-        | "inicial"
-        | "aprovacao_credito"
-        | "financiamento"
-        | "credito_reprovado"
+      | "inicial"
+      | "aprovacao_credito"
+      | "financiamento"
+      | "credito_reprovado"
       client_stage:
-        | "chegada_lead"
-        | "em_triagem"
-        | "interessados"
-        | "aguardando_atendimento"
-        | "em_atendimento"
-        | "lead_qualificado"
-        | "orientacao_financiamento"
-        | "aguardando_documentacao"
-        | "documentacao_incompleta"
-        | "aguardando_analise_credito"
-        | "credito_aprovado"
-        | "cliente_com_pendencia"
-        | "credito_reprovado"
-        | "aguardando_prioridade"
-        | "agendamento_visitas"
-        | "aguardando_ccv"
-        | "aguardando_reserva"
-        | "aguardando_contrato_caixa"
-        | "em_registro"
-        | "venda_concretizada"
-        | "venda_cancelada"
-        | "credito_reprovado_pipe"
-        | "documentacao_atualizada"
-        | "reaprovacao_credito"
-        | "credito_aprovado_pipe"
+      | "chegada_lead"
+      | "em_triagem"
+      | "interessados"
+      | "aguardando_atendimento"
+      | "em_atendimento"
+      | "lead_qualificado"
+      | "orientacao_financiamento"
+      | "aguardando_documentacao"
+      | "documentacao_incompleta"
+      | "aguardando_analise_credito"
+      | "credito_aprovado"
+      | "cliente_com_pendencia"
+      | "credito_reprovado"
+      | "aguardando_prioridade"
+      | "agendamento_visitas"
+      | "aguardando_ccv"
+      | "aguardando_reserva"
+      | "aguardando_contrato_caixa"
+      | "em_registro"
+      | "venda_concretizada"
+      | "venda_cancelada"
+      | "credito_reprovado_pipe"
+      | "documentacao_atualizada"
+      | "reaprovacao_credito"
+      | "credito_aprovado_pipe"
       lead_temperature: "frio" | "morno" | "quente"
       link_status:
-        | "interessado"
-        | "contatado"
-        | "visita"
-        | "proposta_enviada"
-        | "contraproposta"
-        | "recusou"
-        | "fechado"
+      | "interessado"
+      | "contatado"
+      | "visita"
+      | "proposta_enviada"
+      | "contraproposta"
+      | "recusou"
+      | "fechado"
       occupation_status:
-        | "venda_para_ocupante"
-        | "desocupado"
-        | "imissao_na_posse"
-        | "ocupado"
+      | "venda_para_ocupante"
+      | "desocupado"
+      | "imissao_na_posse"
+      | "ocupado"
       payment_method: "a_vista" | "financiado" | "misto"
       priority_level: "baixa" | "media" | "alta"
       property_stage:
-        | "pre_arrematacao"
-        | "documentacao"
-        | "desocupacao"
-        | "reforma"
-        | "venda"
-        | "pos_venda"
-        | "ir"
-        | "finalizado"
-        | "itbi_contrato"
-        | "registro"
+      | "pre_arrematacao"
+      | "documentacao"
+      | "desocupacao"
+      | "reforma"
+      | "venda"
+      | "pos_venda"
+      | "ir"
+      | "finalizado"
+      | "itbi_contrato"
+      | "registro"
       property_type:
-        | "casa"
-        | "casa_condominio"
-        | "apartamento"
-        | "apartamento_condominio"
-        | "terreno"
-        | "comercial"
+      | "casa"
+      | "casa_condominio"
+      | "apartamento"
+      | "apartamento_condominio"
+      | "terreno"
+      | "comercial"
       work_regime:
-        | "clt"
-        | "autonomo"
-        | "funcionario_publico"
-        | "aposentado"
-        | "bolsa_familia"
-        | "outro"
+      | "clt"
+      | "autonomo"
+      | "funcionario_publico"
+      | "aposentado"
+      | "bolsa_familia"
+      | "outro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -919,116 +969,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {

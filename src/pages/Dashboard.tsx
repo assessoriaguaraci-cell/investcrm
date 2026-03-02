@@ -22,6 +22,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { format, isAfter, isBefore, startOfMonth, endOfMonth, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import BrazilMap from "@/components/dashboard/BrazilMap";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { useState } from "react";
 
 const PIE_COLORS = [
   "hsl(200, 98%, 39%)",
@@ -49,19 +52,24 @@ export default function Dashboard() {
   const { data: links = [] } = useClientPropertyLinks();
 
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: startOfMonth(now),
+    to: endOfMonth(now),
+  });
 
   const stats = useMemo(() => {
     const activeProperties = properties.filter(p => p.stage !== "finalizado");
     const activeClients = clients.filter(c => c.stage !== "venda_concretizada" && c.stage !== "venda_cancelada" && c.stage !== "credito_reprovado");
 
-    const salesThisMonth = properties.filter(p => {
-      if (!p.sale_date) return false;
+    const salesInRange = properties.filter(p => {
+      if (!p.sale_date || !date?.from) return false;
       const d = parseISO(p.sale_date);
-      return isAfter(d, monthStart) && isBefore(d, monthEnd);
+      if (date.to) {
+        return isAfter(d, date.from) && isBefore(d, date.to);
+      }
+      return isAfter(d, date.from);
     });
-    const salesRevenue = salesThisMonth.reduce((sum, p) => sum + (p.final_sale_price || 0), 0);
+    const salesRevenue = salesInRange.reduce((sum, p) => sum + (p.final_sale_price || 0), 0);
 
     const pendingActivities = activities.filter(a => a.status === "pendente");
     const overdueActivities = activities.filter(a => {
@@ -69,8 +77,8 @@ export default function Dashboard() {
       return isBefore(parseISO(a.due_date), now);
     });
 
-    return { activeProperties: activeProperties.length, activeClients: activeClients.length, salesRevenue, salesCount: salesThisMonth.length, pendingActivities: pendingActivities.length, overdueActivities: overdueActivities.length };
-  }, [properties, clients, activities]);
+    return { activeProperties: activeProperties.length, activeClients: activeClients.length, salesRevenue, salesCount: salesInRange.length, pendingActivities: pendingActivities.length, overdueActivities: overdueActivities.length };
+  }, [properties, clients, activities, date]);
 
   // Properties by stage chart - with quantities shown
   const stageChartData = useMemo(() => {
@@ -119,13 +127,19 @@ export default function Dashboard() {
 
   // Financial stats with Guaraci share
   const financialStats = useMemo(() => {
-    const finalizados = properties.filter(p => p.stage === "finalizado");
+    const soldInRange = properties.filter(p => {
+      if (p.stage !== "finalizado" || !p.sale_date || !date?.from) return false;
+      const d = parseISO(p.sale_date);
+      if (date.to) return isAfter(d, date.from) && isBefore(d, date.to);
+      return isAfter(d, date.from);
+    });
+    const finalizados = properties.filter(p => p.stage === "finalizado"); // For portfolio summary we still might want all
     const activePhases = properties.filter(p => ACTIVE_FINANCIAL_STAGES.includes(p.stage));
 
-    const realizedGrossRev = finalizados.reduce((s, p) => s + grossRevenue(p) * guaraciFactor(p), 0);
-    const realizedNetRev = finalizados.reduce((s, p) => s + netRevenue(p) * guaraciFactor(p), 0);
-    const realizedGrossProfit = finalizados.reduce((s, p) => s + grossProfit(p) * guaraciFactor(p), 0);
-    const realizedNetProfit = finalizados.reduce((s, p) => s + netProfit(p) * guaraciFactor(p), 0);
+    const realizedGrossRev = soldInRange.reduce((s, p) => s + grossRevenue(p) * guaraciFactor(p), 0);
+    const realizedNetRev = soldInRange.reduce((s, p) => s + netRevenue(p) * guaraciFactor(p), 0);
+    const realizedGrossProfit = soldInRange.reduce((s, p) => s + grossProfit(p) * guaraciFactor(p), 0);
+    const realizedNetProfit = soldInRange.reduce((s, p) => s + netProfit(p) * guaraciFactor(p), 0);
 
     const expectedGrossRev = activePhases.reduce((s, p) => s + grossRevenue(p) * guaraciFactor(p), 0);
     const expectedNetRev = activePhases.reduce((s, p) => s + netRevenue(p) * guaraciFactor(p), 0);
@@ -136,25 +150,52 @@ export default function Dashboard() {
       realizedGrossRev, realizedNetRev, realizedGrossProfit, realizedNetProfit,
       expectedGrossRev, expectedNetRev, expectedGrossProfit, expectedNetProfit,
     };
-  }, [properties]);
+  }, [properties, date]);
 
   const isLoading = loadingProps || loadingClients || loadingActivities;
 
   const kpis = [
     { label: "Imóveis Ativos", value: stats.activeProperties.toString(), icon: Building2, color: "text-primary", bgColor: "bg-primary/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "active" } }) },
     { label: "Leads Ativos", value: stats.activeClients.toString(), icon: Users, color: "text-info", bgColor: "bg-info/10", onClick: () => navigate("/clients", { state: { from: "dashboard", filter: "active" } }) },
-    { label: "Vendas do Mês", value: stats.salesCount > 0 ? formatCurrency(stats.salesRevenue) : "0", subtitle: stats.salesCount > 0 ? `${stats.salesCount} venda${stats.salesCount > 1 ? "s" : ""}` : undefined, icon: TrendingUp, color: "text-success", bgColor: "bg-success/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "sales_this_month" } }) },
+    { label: "Vendas no Período", value: stats.salesCount > 0 ? formatCurrency(stats.salesRevenue) : "0", subtitle: stats.salesCount > 0 ? `${stats.salesCount} venda${stats.salesCount > 1 ? "s" : ""}` : undefined, icon: TrendingUp, color: "text-success", bgColor: "bg-success/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "sales_this_month" } }) },
     { label: "Pendências", value: stats.pendingActivities.toString(), subtitle: stats.overdueActivities > 0 ? `${stats.overdueActivities} atrasada${stats.overdueActivities > 1 ? "s" : ""}` : undefined, icon: AlertTriangle, color: stats.overdueActivities > 0 ? "text-destructive" : "text-warning", bgColor: stats.overdueActivities > 0 ? "bg-destructive/10" : "bg-warning/10", onClick: () => navigate("/tasks", { state: { from: "dashboard", filter: "pending" } }) },
   ];
 
+  const handleQuickPeriod = (period: 'month' | 'quarter' | 'year' | 'all') => {
+    const end = new Date();
+    let start = new Date();
+    if (period === 'month') start = startOfMonth(now);
+    else if (period === 'quarter') start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    else if (period === 'year') start = new Date(now.getFullYear(), 0, 1);
+    else if (period === 'all') {
+      setDate(undefined);
+      return;
+    }
+    setDate({ from: start, to: end });
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Visão geral do CRM — {format(now, "dd 'de' MMMM, yyyy", { locale: ptBR })}
           </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('month')}>Mês</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('quarter')}>Trimestre</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('year')}>Ano</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('all')}>Tudo</Button>
+          </div>
+          <DateRangePicker
+            date={date}
+            onDateChange={setDate}
+            className="w-[260px]"
+          />
         </div>
       </div>
 
@@ -210,7 +251,7 @@ export default function Dashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-success" />
-              Resultados Finalizados (Cota Guaraci)
+              Realizado no Período (Cota Guaraci)
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">

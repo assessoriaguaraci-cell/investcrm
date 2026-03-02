@@ -13,6 +13,7 @@ import Clients from "@/pages/Clients";
 import Matches from "@/pages/Matches";
 import Tasks from "@/pages/Tasks";
 import Calendar from "@/pages/Calendar";
+import Partners from "@/pages/Partners";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -40,14 +41,15 @@ const App = () => (
               <Route path="/matches" element={<Matches />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/calendar" element={<Calendar />} />
+              <Route path="/partners" element={<Partners />} />
               <Route path="/settings" element={<SettingsPage />} />
-            </Route>
+            </Route >
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+          </Routes >
+        </BrowserRouter >
+      </TooltipProvider >
+    </QueryClientProvider >
+  </ThemeProvider >
 );
 
 export default App;

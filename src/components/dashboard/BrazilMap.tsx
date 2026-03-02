@@ -9,6 +9,8 @@ import { PROPERTY_STAGES, formatCurrency } from "@/lib/property-constants";
 import { getCityCoords } from "./brazil-city-coords";
 import { useNavigate } from "react-router-dom";
 import type { Property } from "@/hooks/useProperties";
+import CityDetailsView from "./CityDetailsDialog";
+import { Button } from "@/components/ui/button";
 
 // Fix default marker icon issue with bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,38 +20,27 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const STAGE_HSL_MAP: Record<string, string> = {
-  pre_arrematacao: "var(--stage-pre-auction)",
-  itbi_contrato: "var(--stage-itbi-contract)",
-  registro: "var(--stage-registration)",
-  desocupacao: "var(--stage-eviction)",
-  reforma: "var(--stage-renovation)",
-  venda: "var(--stage-sale)",
-  pos_venda: "var(--stage-post-sale)",
-  ir: "var(--stage-tax)",
-  finalizado: "var(--stage-finished)",
-};
-
-function stageColor(stage: string): string {
-  const hsl = STAGE_HSL_MAP[stage];
-  return hsl ? `hsl(${hsl})` : "hsl(220, 10%, 60%)";
+function stageHslVar(stage: string): string {
+  const map: Record<string, string> = {
+    pre_arrematacao: "var(--stage-pre-auction)",
+    itbi_contrato: "var(--stage-itbi-contract)",
+    registro: "var(--stage-registration)",
+    desocupacao: "var(--stage-eviction)",
+    reforma: "var(--stage-renovation)",
+    venda: "var(--stage-sale)",
+    pos_venda: "var(--stage-post-sale)",
+    ir: "var(--stage-tax)",
+    finalizado: "var(--stage-finished)",
+  };
+  return map[stage] || "var(--muted)";
 }
 
-// Stage color for markers (solid colors for SVG)
-const STAGE_MARKER_COLORS: Record<string, string> = {
-  pre_arrematacao: "#6366f1",
-  itbi_contrato: "#f59e0b",
-  registro: "#8b5cf6",
-  desocupacao: "#ef4444",
-  reforma: "#f97316",
-  venda: "#22c55e",
-  pos_venda: "#06b6d4",
-  ir: "#ec4899",
-  finalizado: "#6b7280",
-};
+function stageColor(stage: string): string {
+  return `hsl(${stageHslVar(stage)})`;
+}
 
 function createStageIcon(stage: string, count: number): L.DivIcon {
-  const color = STAGE_MARKER_COLORS[stage] || "#6b7280";
+  const color = stageColor(stage);
   return L.divIcon({
     className: "custom-marker",
     html: `<div style="
@@ -135,6 +126,7 @@ interface CityGroup {
 export default function BrazilMap({ properties }: Props) {
   const navigate = useNavigate();
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<{ city: string; state: string; props: Property[] } | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
   // Group properties by state
@@ -230,7 +222,7 @@ export default function BrazilMap({ properties }: Props) {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Interactive Map */}
           <div className="flex-1 rounded-lg overflow-hidden border" style={{ minHeight: 420 }}>
@@ -253,31 +245,48 @@ export default function BrazilMap({ properties }: Props) {
                 mapRef.current && <ResetView />
               )}
 
-              {/* City markers */}
+              {/* City markers — always stage-colored */}
               {cityGroups
                 .filter(g => !selectedState || g.state === selectedState)
-                .map(g => {
-                  // When zoomed into state, show individual stage markers offset slightly
-                  if (selectedState && g.properties.length > 0) {
-                    // Group by stage within city
-                    const byStage: Record<string, Property[]> = {};
-                    g.properties.forEach(p => {
-                      if (!byStage[p.stage]) byStage[p.stage] = [];
-                      byStage[p.stage].push(p);
-                    });
-                    const stages = Object.entries(byStage);
+                .flatMap(g => {
+                  // Group properties by stage
+                  const byStage: Record<string, Property[]> = {};
+                  g.properties.forEach(p => {
+                    if (!byStage[p.stage]) byStage[p.stage] = [];
+                    byStage[p.stage].push(p);
+                  });
+                  const stages = Object.entries(byStage);
 
-                    return stages.map(([stage, props], i) => {
-                      const offset = stages.length > 1 ? (i - (stages.length - 1) / 2) * 0.02 : 0;
-                      return (
-                        <Marker
-                          key={`${g.city}-${stage}`}
-                          position={[g.lat + offset, g.lng + offset]}
-                          icon={createStageIcon(stage, props.length)}
-                        >
+                  // When zoomed in: offset markers slightly so they don't overlap
+                  // When zoomed out: put all at same spot (small city = small offset)
+                  const isZoomedIn = !!selectedState;
+                  const offsetScale = isZoomedIn ? 0.025 : 0.008;
+
+                  return stages.map(([stage, props], i) => {
+                    const offset = stages.length > 1
+                      ? (i - (stages.length - 1) / 2) * offsetScale
+                      : 0;
+
+                    return (
+                      <Marker
+                        key={`${g.city}-${g.state}-${stage}`}
+                        position={[g.lat + offset, g.lng + offset]}
+                        icon={createStageIcon(stage, isZoomedIn ? props.length : 0)}
+                        eventHandlers={{
+                          click: () => {
+                            if (!selectedState) setSelectedState(g.state);
+                          },
+                        }}
+                      >
+                        {isZoomedIn && (
                           <Popup maxWidth={280}>
                             <div className="text-sm">
-                              <p className="font-bold text-base mb-1">{g.city}</p>
+                              <div className="flex items-center justify-between gap-4 mb-2">
+                                <p className="font-bold text-base leading-none">{g.city}</p>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-[10px] font-bold uppercase" onClick={() => setSelectedCity({ city: g.city, state: g.state, props: g.properties })}>
+                                  Ver Detalhes ›
+                                </Button>
+                              </div>
                               <p className="text-xs text-gray-500 mb-2">
                                 {PROPERTY_STAGES.find(s => s.value === stage)?.label}
                               </p>
@@ -298,22 +307,10 @@ export default function BrazilMap({ properties }: Props) {
                               </div>
                             </div>
                           </Popup>
-                        </Marker>
-                      );
-                    });
-                  }
-
-                  // Overview: cluster by city
-                  return (
-                    <Marker
-                      key={`${g.city}-${g.state}`}
-                      position={[g.lat, g.lng]}
-                      icon={createClusterIcon(g.properties.length)}
-                      eventHandlers={{
-                        click: () => setSelectedState(g.state),
-                      }}
-                    />
-                  );
+                        )}
+                      </Marker>
+                    );
+                  });
                 })}
             </MapContainer>
           </div>
@@ -394,15 +391,24 @@ export default function BrazilMap({ properties }: Props) {
         {/* Legend */}
         <div className="mt-4 pt-3 border-t">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Legenda de Etapas</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             {PROPERTY_STAGES.map(s => (
-              <div key={s.value} className="flex items-center gap-1 text-xs text-muted-foreground">
-                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stageColor(s.value) }} />
+              <div key={s.value} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: stageColor(s.value) }} />
                 {s.label}
               </div>
             ))}
           </div>
         </div>
+
+        {selectedCity && (
+          <CityDetailsView
+            city={selectedCity.city}
+            state={selectedCity.state}
+            properties={selectedCity.props}
+            onClose={() => setSelectedCity(null)}
+          />
+        )}
       </CardContent>
     </Card>
   );
