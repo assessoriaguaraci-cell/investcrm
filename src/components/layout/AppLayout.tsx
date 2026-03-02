@@ -26,6 +26,7 @@ const navItems = [{
 }, {
   path: "/tasks",
   label: "Tarefas",
+  icon: CheckSquare
 }, {
   path: "/calendar",
   label: "Calendário",
