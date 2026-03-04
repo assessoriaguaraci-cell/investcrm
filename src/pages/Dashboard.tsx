@@ -71,9 +71,9 @@ export default function Dashboard() {
     });
     const salesRevenue = salesInRange.reduce((sum, p) => sum + (p.final_sale_price || 0), 0);
 
-    const pendingActivities = activities.filter(a => a.status === "pendente");
+    const pendingActivities = activities.filter(a => a.status === "pendente" || a.status === "em_andamento");
     const overdueActivities = activities.filter(a => {
-      if (a.status !== "pendente" || !a.due_date) return false;
+      if ((a.status !== "pendente" && a.status !== "em_andamento") || !a.due_date) return false;
       return isBefore(parseISO(a.due_date), now);
     });
 
@@ -97,7 +97,7 @@ export default function Dashboard() {
   // Recent activities (last 6)
   const recentActivities = useMemo(() => {
     return activities
-      .filter(a => a.status === "pendente")
+      .filter(a => a.status === "pendente" || a.status === "em_andamento")
       .sort((a, b) => {
         if (!a.due_date) return 1;
         if (!b.due_date) return -1;

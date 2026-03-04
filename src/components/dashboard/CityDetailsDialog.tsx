@@ -6,7 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, MapPin, DollarSign, TrendingUp, Info, ArrowLeft, MessageCircle, X } from "lucide-react";
+import {
+    Plus, Trash2, Save, MapPin, DollarSign, TrendingUp, Info, ArrowLeft, MessageCircle, X,
+    Search as SearchIcon, Globe, Map as MapIcon, Shield, TrendingDown, Star, Landmark, Users2, FileText
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -48,16 +51,23 @@ export default function CityDetailsView({ city, state, properties, onClose }: Pr
 
     // Load form when cityInfo changes
     useEffect(() => {
+        const soldAddresses = properties
+            .filter(p => p.stage === "finalizado" && p.address)
+            .map(p => p.address)
+            .join(", ") || "";
+
         if (cityInfo) {
             setInfoForm({
                 best_neighborhoods: cityInfo.best_neighborhoods || "",
                 worst_neighborhoods: cityInfo.worst_neighborhoods || "",
                 considerations: cityInfo.considerations || "",
                 dangerous_regions: cityInfo.dangerous_regions || "",
-                where_sold: cityInfo.where_sold || "",
+                where_sold: cityInfo.where_sold || soldAddresses,
             });
+        } else {
+            setInfoForm(prev => ({ ...prev, where_sold: soldAddresses }));
         }
-    }, [cityInfo]);
+    }, [cityInfo, properties]);
 
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [newContact, setNewContact] = useState({
@@ -179,46 +189,65 @@ export default function CityDetailsView({ city, state, properties, onClose }: Pr
                             {/* Visão Geral */}
                             <TabsContent value="visao" className="mt-0 space-y-8 animate-in fade-in slide-in-from-left-2 duration-300">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-bold flex items-center gap-2 uppercase tracking-tight text-muted-foreground">
-                                            <Info className="h-4 w-4" />
-                                            Considerações e Particularidades
-                                        </label>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-bold flex items-center gap-2 uppercase tracking-tight text-primary">
+                                                <FileText className="h-4 w-4" />
+                                                Particularidades e Guia Local
+                                            </label>
+                                            <Badge variant="outline" className="text-[9px] bg-primary/5 text-primary border-primary/20">
+                                                DADOS ENRIQUECIDOS
+                                            </Badge>
+                                        </div>
                                         <Textarea
                                             placeholder="Ex: Prazos de prefeitura, leiloeiros frequentes, particularidades da documentação..."
-                                            className="min-h-[220px] shadow-sm resize-none"
+                                            className="min-h-[220px] shadow-sm resize-none bg-muted/20 border-primary/10 focus-visible:ring-primary/30 text-sm leading-relaxed"
                                             value={infoForm.considerations}
                                             onChange={e => setInfoForm({ ...infoForm, considerations: e.target.value })}
                                         />
+                                        <p className="text-[10px] text-muted-foreground flex gap-1 items-center">
+                                            <Globe className="h-3 w-3" /> Informações sincronizadas com a base de dados central.
+                                        </p>
                                     </div>
                                     <div className="space-y-6">
                                         <div className="space-y-3">
-                                            <label className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Onde já vendemos</label>
-                                            <Textarea
-                                                placeholder="Ex: Região central, proximidades do shopping..."
-                                                className="min-h-[110px] shadow-sm resize-none"
-                                                value={infoForm.where_sold}
-                                                onChange={e => setInfoForm({ ...infoForm, where_sold: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="p-5 rounded-xl bg-muted/30 border-2 border-dashed border-muted-foreground/20 space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Resumo Operacional</h4>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="font-medium">Em andamento:</span>
-                                                    <span className="font-bold text-lg text-warning">{formatCurrency(investedTotal)}</span>
+                                            <label className="text-sm font-bold uppercase tracking-tight text-muted-foreground flex items-center gap-2">
+                                                <Star className="h-4 w-4 text-warning fill-warning" />
+                                                Histórico de Sucesso (Onde Vendemos)
+                                            </label>
+                                            <div className="relative group">
+                                                <Textarea
+                                                    placeholder="Ex: Região central, proximidades do shopping..."
+                                                    className="min-h-[110px] shadow-sm resize-none bg-success/5 border-success/10 focus-visible:ring-success/30 text-sm italic"
+                                                    value={infoForm.where_sold}
+                                                    onChange={e => setInfoForm({ ...infoForm, where_sold: e.target.value })}
+                                                />
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Badge className="bg-success/80 text-[8px]">AUTO-GERADO</Badge>
                                                 </div>
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="font-medium">Retorno Líquido:</span>
-                                                    <span className="font-bold text-lg text-success">{formatCurrency(realizedProfit)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-background to-primary/5 border border-primary/20 shadow-lg space-y-4 relative overflow-hidden">
+                                            <div className="absolute -right-4 -top-4 opacity-5 pointer-events-none">
+                                                <TrendingUp className="h-24 w-24" />
+                                            </div>
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary/60">Performance na Cidade</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Investido</span>
+                                                    <p className="font-black text-xl text-primary">{formatCurrency(investedTotal)}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Lucro Líquido</span>
+                                                    <p className="font-black text-xl text-success">{formatCurrency(realizedProfit)}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex justify-end pt-4 border-t">
-                                    <Button onClick={handleSaveInfo} className="gap-2 px-8 h-12 text-base font-bold">
-                                        <Save className="h-5 w-5" /> Salvar Alterações
+                                    <Button onClick={handleSaveInfo} className="gap-2 px-10 h-12 text-base font-bold shadow-xl hover:scale-105 transition-transform">
+                                        <Save className="h-5 w-5" /> Salvar Tudo
                                     </Button>
                                 </div>
                             </TabsContent>
@@ -226,60 +255,77 @@ export default function CityDetailsView({ city, state, properties, onClose }: Pr
                             {/* Bairros e Regiões */}
                             <TabsContent value="bairros" className="mt-0 space-y-8 animate-in fade-in slide-in-from-left-2 duration-300">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-bold text-success flex items-center gap-2 uppercase tracking-tight">
-                                            <div className="h-2 w-2 rounded-full bg-success" />
-                                            Melhores Bairros
-                                        </label>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-bold text-success flex items-center gap-2 uppercase tracking-tight">
+                                                <Star className="h-4 w-4 fill-success/20" />
+                                                Melhores Bairros
+                                            </label>
+                                            <Badge variant="outline" className="text-[9px] text-success border-success/20 bg-success/5">ALTA LIQUIDEZ</Badge>
+                                        </div>
                                         <Textarea
                                             placeholder="Liste os bairros com maior liquidez e valorização..."
-                                            className="min-h-[180px] shadow-sm resize-none border-success/20 focus-visible:ring-success"
+                                            className="min-h-[180px] shadow-sm resize-none border-success/20 focus-visible:ring-success bg-success/5 text-sm"
                                             value={infoForm.best_neighborhoods}
                                             onChange={e => setInfoForm({ ...infoForm, best_neighborhoods: e.target.value })}
                                         />
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-bold text-destructive flex items-center gap-2 uppercase tracking-tight">
-                                            <div className="h-2 w-2 rounded-full bg-destructive" />
-                                            Piores Bairros
-                                        </label>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-bold text-rose-500 flex items-center gap-2 uppercase tracking-tight">
+                                                <TrendingDown className="h-4 w-4" />
+                                                Piores Bairros
+                                            </label>
+                                            <Badge variant="outline" className="text-[9px] text-rose-500 border-rose-500/20 bg-rose-500/5">EVITAR COMPRA</Badge>
+                                        </div>
                                         <Textarea
                                             placeholder="Liste os bairros a evitar ou com baixa liquidez..."
-                                            className="min-h-[180px] shadow-sm resize-none border-destructive/20 focus-visible:ring-destructive"
+                                            className="min-h-[180px] shadow-sm resize-none border-rose-500/20 focus-visible:ring-rose-500 bg-rose-500/5 text-sm"
                                             value={infoForm.worst_neighborhoods}
                                             onChange={e => setInfoForm({ ...infoForm, worst_neighborhoods: e.target.value })}
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-3">
-                                    <label className="text-sm font-bold text-warning flex items-center gap-2 uppercase tracking-tight">
-                                        <div className="h-2 w-2 rounded-full bg-warning" />
-                                        Regiões Perigosas
-                                    </label>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-bold text-warning flex items-center gap-2 uppercase tracking-tight">
+                                            <Shield className="h-4 w-4" />
+                                            Regiões Perigosas e Riscos
+                                        </label>
+                                        <Badge variant="outline" className="text-[9px] text-warning border-warning/20 bg-warning/5">ATENÇÃO REDOBRADA</Badge>
+                                    </div>
                                     <Textarea
                                         placeholder="Especifique áreas com problemas de segurança ou difícil acesso..."
-                                        className="min-h-[120px] shadow-sm resize-none border-warning/20 focus-visible:ring-warning"
+                                        className="min-h-[120px] shadow-sm resize-none border-warning/20 focus-visible:ring-warning bg-warning/5 text-sm"
                                         value={infoForm.dangerous_regions}
                                         onChange={e => setInfoForm({ ...infoForm, dangerous_regions: e.target.value })}
                                     />
                                 </div>
                                 <div className="flex justify-end pt-4 border-t">
-                                    <Button onClick={handleSaveInfo} className="gap-2 px-8 h-12 text-base font-bold">
-                                        <Save className="h-5 w-5" /> Salvar Alterações
+                                    <Button onClick={handleSaveInfo} className="gap-2 px-10 h-12 text-base font-bold shadow-xl">
+                                        <Save className="h-5 w-5" /> Salvar Localidades
                                     </Button>
                                 </div>
                             </TabsContent>
 
                             {/* Parceiros e Serviços - Unificados */}
                             <TabsContent value="contatos" className="mt-0 space-y-6 animate-in fade-in slide-in-from-left-2 duration-300">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                     <div>
-                                        <h3 className="font-black text-xl text-primary">Parceiros e Serviços</h3>
-                                        <p className="text-sm text-muted-foreground">Todos os contatos e recursos locais</p>
+                                        <h3 className="font-black text-2xl text-primary flex items-center gap-2">
+                                            <Users2 className="h-6 w-6" />
+                                            Rede de Parceiros Local
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
+                                            <Badge className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-none text-[10px] font-bold">CONECTADO AO DIRETÓRIO GERAL</Badge>
+                                            Estes contatos também aparecem na aba principal de Parceiros.
+                                        </p>
                                     </div>
-                                    <Button size="sm" onClick={() => setIsAddOpen(true)} className="gap-2 font-bold shadow-md">
-                                        <Plus className="h-4 w-4" /> Novo Contato
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button size="sm" onClick={() => setIsAddOpen(true)} className="gap-2 font-bold shadow-lg hover:shadow-primary/20 active:scale-95 transition-all bg-primary">
+                                            <Plus className="h-4 w-4" /> Novo Parceiro/Prefeitura
+                                        </Button>
+                                    </div>
                                 </div>
                                 <div className="rounded-xl border shadow-sm overflow-hidden">
                                     <Table>
@@ -302,7 +348,7 @@ export default function CityDetailsView({ city, state, properties, onClose }: Pr
                                                             value={contact.contact_type}
                                                             onValueChange={(val) => updateContact.mutate({ id: contact.id, contact_type: val })}
                                                         >
-                                                            <SelectTrigger className="h-9 text-xs border-transparent group-hover:border-input focus:border-input bg-transparent font-semibold uppercase tracking-tight text-primary">
+                                                            <SelectTrigger className={`h-9 text-xs border-transparent group-hover:border-input focus:border-input bg-transparent font-semibold uppercase tracking-tight ${contact.contact_type === 'PREFEITURA' ? 'text-primary bg-primary/10 px-2 rounded-md border-primary/20' : 'text-primary'}`}>
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent className="max-h-64">

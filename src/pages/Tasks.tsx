@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { CheckSquare, ListFilter, Search, CalendarDays } from "lucide-react";
+import { CheckSquare, ListFilter, Search, CalendarDays, Kanban as KanbanIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,10 @@ import { useActivities, useUpdateActivity, useDeleteActivity, type Activity } fr
 import NewTaskDialog from "@/components/tasks/NewTaskDialog";
 import EditTaskDialog from "@/components/tasks/EditTaskDialog";
 import TaskCard from "@/components/tasks/TaskCard";
+import TaskKanbanColumn from "@/components/tasks/TaskKanbanColumn";
+import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-import { isPast, isToday } from "date-fns";
+import { isPast, isToday, format } from "date-fns";
 import { useLocation } from "react-router-dom";
 import GoogleCalendarView from "@/components/tasks/GoogleCalendarView";
 
@@ -29,7 +31,6 @@ export default function Tasks() {
   const updateActivity = useUpdateActivity();
   const deleteActivity = useDeleteActivity();
   const location = useLocation();
-
   const dashboardFilter = (location.state as any)?.from === "dashboard"
     ? (location.state as any)?.filter ?? null
     : null;
@@ -38,10 +39,10 @@ export default function Tasks() {
     if (dashboardFilter) {
       window.history.replaceState({}, "");
     }
-  }, []);
+  }, [dashboardFilter]);
 
   // Default to "pending" tab when coming from dashboard
-  const defaultTab = dashboardFilter === "pending" ? "pending" : "pending";
+  // const defaultTab = dashboardFilter === "pending" ? "pending" : "pending";
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -62,15 +63,19 @@ export default function Tasks() {
     });
   }, [activities, search, typeFilter]);
 
-  const pending = filtered.filter((a) => a.status !== "feito");
-  const overdue = pending.filter(
-    (a) => a.due_date && isPast(new Date(a.due_date)) && !isToday(new Date(a.due_date))
-  );
-  const today = pending.filter((a) => a.due_date && isToday(new Date(a.due_date)));
-  const upcoming = pending.filter(
-    (a) => !overdue.includes(a) && !today.includes(a)
-  );
-  const done = filtered.filter((a) => a.status === "feito");
+  const columns = useMemo(() => {
+    const overdue = filtered.filter(
+      (a) => a.status !== "feito" && a.due_date && isPast(new Date(a.due_date)) && !isToday(new Date(a.due_date))
+    );
+    const remaining = filtered.filter(a => !overdue.find(o => o.id === a.id));
+
+    return {
+      overdue: overdue,
+      todo: remaining.filter(a => a.status === "pendente" || a.status === "atrasado"),
+      inProgress: remaining.filter(a => a.status === "em_andamento"),
+      done: filtered.filter(a => a.status === "feito")
+    };
+  }, [filtered]);
 
   const handleToggle = (activity: Activity) => {
     const newStatus = activity.status === "feito" ? "pendente" : "feito";
@@ -93,31 +98,82 @@ export default function Tasks() {
     });
   };
 
-  const renderList = (items: Activity[], emptyText: string) =>
-    items.length === 0 ? (
-      <p className="text-sm text-muted-foreground text-center py-8">{emptyText}</p>
-    ) : (
-      <div className="space-y-2">
-        {items.map((a) => (
-          <TaskCard key={a.id} activity={a} onToggle={handleToggle} onEdit={setEditActivity} onDelete={handleDelete} />
-        ))}
-      </div>
-    );
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const { draggableId, destination } = result;
+    const destColumnId = destination.droppableId;
+
+    let updates: any = { id: draggableId };
+    const today = new Date().toISOString().split('T')[0];
+
+    if (destColumnId === "done") {
+      updates.status = "feito";
+      updates.completed_at = new Date().toISOString();
+    } else if (destColumnId === "inProgress") {
+      updates.status = "em_andamento";
+      updates.completed_at = null;
+      // If moving OUT of overdue to in-progress, we might want to reset the date to today
+      const task = activities?.find(a => a.id === draggableId);
+      if (task && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
+        updates.due_date = today;
+      }
+    } else if (destColumnId === "todo") {
+      updates.status = "pendente";
+      updates.completed_at = null;
+      const task = activities?.find(a => a.id === draggableId);
+      if (task && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
+        updates.due_date = today;
+      }
+    } else if (destColumnId === "overdue") {
+      // You generally can't move INTO overdue manually without changing the date, 
+      // but if they do, we keep it as pending but it will stay overdue if date is past.
+      updates.status = "pendente";
+      updates.completed_at = null;
+    }
+
+    updateActivity.mutate(updates);
+  };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto h-screen flex flex-col">
+      <div className="flex items-center justify-between mb-6 shrink-0">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Gestão de Atividades</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Organize suas tarefas e acompanhe sua agenda</p>
+          <p className="text-sm text-slate-500 font-medium mt-1">Organize suas tarefas no Kanban</p>
         </div>
       </div>
 
-      <Tabs defaultValue="list" className="space-y-6">
-        <TabsList className="bg-slate-100/80 p-1 border border-slate-200">
-          <TabsTrigger value="list" className="gap-2 px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <CheckSquare className="h-4 w-4" />
-            Tarefas
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
+        <div className="flex flex-1 gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Buscar tarefa..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-white border-slate-200 focus-visible:ring-primary/20"
+            />
+          </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[180px] bg-white border-slate-200">
+              <ListFilter className="h-4 w-4 mr-2 text-slate-500" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TYPE_OPTIONS.map((t) => (
+                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <NewTaskDialog />
+      </div>
+
+      <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="bg-slate-100/80 p-1 border border-slate-200 mb-6 self-start">
+          <TabsTrigger value="kanban" className="gap-2 px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <KanbanIcon className="h-4 w-4" />
+            Kanban
           </TabsTrigger>
           <TabsTrigger value="calendar_view" className="gap-2 px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
             <CalendarDays className="h-4 w-4" />
@@ -125,107 +181,65 @@ export default function Tasks() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-1 gap-2">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Buscar tarefa, cliente ou imóvel..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-white border-slate-200 focus-visible:ring-primary/20"
+        <TabsContent value="kanban" className="flex-1 mt-0 overflow-hidden">
+          {isLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+          ) : (
+            <DragDropContext onDragEnd={onDragEnd}>
+              <div className="flex gap-4 h-full overflow-x-auto pb-4">
+                <TaskKanbanColumn
+                  columnId="overdue"
+                  title="Atrasadas"
+                  tasks={columns.overdue}
+                  colorClass="bg-destructive"
+                  onToggle={handleToggle}
+                  onEdit={setEditActivity}
+                  onDelete={handleDelete}
+                />
+                <TaskKanbanColumn
+                  columnId="todo"
+                  title="A Fazer"
+                  tasks={columns.todo}
+                  colorClass="bg-slate-400"
+                  onToggle={handleToggle}
+                  onEdit={setEditActivity}
+                  onDelete={handleDelete}
+                />
+                <TaskKanbanColumn
+                  columnId="inProgress"
+                  title="Em Andamento"
+                  tasks={columns.inProgress}
+                  colorClass="bg-blue-500"
+                  onToggle={handleToggle}
+                  onEdit={setEditActivity}
+                  onDelete={handleDelete}
+                />
+                <TaskKanbanColumn
+                  columnId="done"
+                  title="Concluídas"
+                  tasks={columns.done}
+                  colorClass="bg-primary"
+                  onToggle={handleToggle}
+                  onEdit={setEditActivity}
+                  onDelete={handleDelete}
                 />
               </div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px] bg-white border-slate-200">
-                  <ListFilter className="h-4 w-4 mr-2 text-slate-500" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TYPE_OPTIONS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <NewTaskDialog />
-          </div>
-
-          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-5 bg-primary rounded-full" />
-              <h2 className="text-base font-bold text-slate-800 tracking-tight">Suas Atividades</h2>
-              <Badge variant="secondary" className="ml-1 bg-slate-200/50 text-slate-600 border-none">
-                {pending.length} pendente{pending.length !== 1 ? "s" : ""}
-              </Badge>
-            </div>
-
-            {isLoading ? (
-              <div className="flex justify-center py-16">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              </div>
-            ) : (
-              <Tabs defaultValue={defaultTab} className="bg-transparent">
-                <TabsList className="bg-transparent p-0 gap-4 mb-4 border-b border-slate-200 w-full justify-start rounded-none h-auto">
-                  <TabsTrigger 
-                    value="pending" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-2 font-semibold text-slate-500 data-[state=active]:text-primary shadow-none"
-                  >
-                    Pendentes ({pending.length})
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="done"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-2 font-semibold text-slate-500 data-[state=active]:text-primary shadow-none"
-                  >
-                    Concluídas ({done.length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="pending" className="mt-0">
-                  {overdue.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-[10px] font-bold text-destructive uppercase tracking-widest mb-3 flex items-center gap-2">
-                        Atrasadas
-                        <div className="h-px flex-1 bg-destructive/10" />
-                      </h3>
-                      {renderList(overdue, "")}
-                    </div>
-                  )}
-                  {today.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 flex items-center gap-2">
-                        Hoje
-                        <div className="h-px flex-1 bg-primary/10" />
-                      </h3>
-                      {renderList(today, "")}
-                    </div>
-                  )}
-                  <div>
-                    {(overdue.length > 0 || today.length > 0) && upcoming.length > 0 && (
-                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        Próximas
-                        <div className="h-px flex-1 bg-slate-200" />
-                      </h3>
-                    )}
-                    {renderList(upcoming, "Nenhuma tarefa pendente")}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="done" className="mt-0">
-                  {renderList(done, "Nenhuma tarefa concluída")}
-                </TabsContent>
-              </Tabs>
-            )}
-          </div>
+            </DragDropContext>
+          )}
         </TabsContent>
 
-        <TabsContent value="calendar_view" className="mt-0">
+        <TabsContent value="calendar_view" className="flex-1 mt-0 overflow-auto">
           <GoogleCalendarView />
         </TabsContent>
       </Tabs>
 
-      <EditTaskDialog activity={editActivity} open={!!editActivity} onOpenChange={(o) => !o && setEditActivity(null)} />
+      <EditTaskDialog
+        activity={editActivity}
+        open={!!editActivity}
+        onOpenChange={(o) => !o && setEditActivity(null)}
+      />
     </div>
   );
 }

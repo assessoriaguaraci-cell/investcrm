@@ -34,7 +34,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   const [clientId, setClientId] = useState("");
   const [propertyId, setPropertyId] = useState("");
   const [notes, setNotes] = useState("");
-  const [status, setStatus] = useState<"pendente" | "feito" | "atrasado">("pendente");
+  const [status, setStatus] = useState<"pendente" | "feito" | "atrasado" | "em_andamento">("pendente");
   const [responsibleUserId, setResponsibleUserId] = useState("");
 
   const updateActivity = useUpdateActivity();
@@ -108,6 +108,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
                   <SelectItem value="feito">Feito</SelectItem>
                   <SelectItem value="atrasado">Atrasado</SelectItem>
                 </SelectContent>

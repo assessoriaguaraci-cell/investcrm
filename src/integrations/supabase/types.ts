@@ -882,7 +882,7 @@ export type Database = {
       }
     }
     Enums: {
-      activity_status: "pendente" | "feito" | "atrasado"
+      activity_status: "pendente" | "feito" | "atrasado" | "em_andamento"
       app_role: "admin" | "gestor" | "comercial" | "operacoes" | "leitura"
       client_pipeline:
       | "inicial"
@@ -1083,7 +1083,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      activity_status: ["pendente", "feito", "atrasado"],
+      activity_status: ["pendente", "feito", "atrasado", "em_andamento"],
       app_role: ["admin", "gestor", "comercial", "operacoes", "leitura"],
       client_pipeline: [
         "inicial",
