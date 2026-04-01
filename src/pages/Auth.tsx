@@ -87,7 +87,11 @@ export default function Auth() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2">
-            <img src={logoInvest} alt="Logo" className="h-14 w-14 object-contain" />
+            <img 
+              src="/lovable-uploads/83f17020-424b-4962-9231-0f0e7bf02806.png" 
+              alt="CRM INVEST" 
+              className="h-16 w-16 object-contain" 
+            />
           </div>
           <CardTitle className="text-xl">
             {view === "login" && "Entrar"}
