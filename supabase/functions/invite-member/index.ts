@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { email, full_name, role } = body;
+    const { email, full_name, role, phone, occupation } = body;
 
     if (!email || typeof email !== "string" || !full_name || typeof full_name !== "string") {
       return new Response(JSON.stringify({ error: "Email e nome são obrigatórios" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       email,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: { full_name },
+      user_metadata: { full_name, phone, occupation },
     });
 
     if (createError) {
@@ -81,7 +81,12 @@ Deno.serve(async (req) => {
     }
 
     // Update profile to approved
-    await supabaseAdmin.from("profiles").update({ status: "approved", full_name }).eq("user_id", newUser.user!.id);
+    await supabaseAdmin.from("profiles").update({
+      status: "approved",
+      full_name,
+      phone: phone || null,
+      occupation: occupation || null
+    }).eq("user_id", newUser.user!.id);
 
     // Assign role if provided
     if (role) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +10,16 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateClient } from "@/hooks/useClients";
+import { supabase } from "@/integrations/supabase/client";
 import { useClientPropertyLinks, useCreateLink } from "@/hooks/useClientPropertyLinks";
 import { useProperties } from "@/hooks/useProperties";
+import { useAuth } from "@/hooks/useAuth";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, WORK_REGIMES, MARITAL_STATUSES } from "@/lib/client-constants";
 import { BRAZILIAN_STATES, formatCurrency } from "@/lib/property-constants";
 import type { Database } from "@/integrations/supabase/types";
-import { Search, X, Building2 } from "lucide-react";
+import { Search, X, Building2, ExternalLink } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -45,9 +48,40 @@ export default function NewClientDialog() {
   const [financialPendingDesc, setFinancialPendingDesc] = useState("");
   const [canComposeIncome, setCanComposeIncome] = useState(false);
   const [notes, setNotes] = useState("");
+  const [driveUrl, setDriveUrl] = useState("");
   const [selectedPropIds, setSelectedPropIds] = useState<string[]>([]);
   const [propSearch, setPropSearch] = useState("");
   const [showPropSearch, setShowPropSearch] = useState(false);
+  const [responsibleUserId, setResponsibleUserId] = useState<string>("");
+
+  const { user } = useAuth();
+  const { data: members = [] } = useApprovedMembers();
+  const [allCities, setAllCities] = useState<{ city: string, state: string }[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      // Fetch unique cities from city_info and clients
+      Promise.all([
+        supabase.from("city_info").select("city, state"),
+        supabase.from("clients").select("city, state").not("city", "is", null)
+      ]).then(([infoRes, clientRes]) => {
+        const combined = [...(infoRes.data || []), ...(clientRes.data || [])];
+        const unique = combined.reduce((acc: any[], curr) => {
+          if (!acc.find(item => item.city === curr.city && item.state === curr.state)) {
+            acc.push(curr);
+          }
+          return acc;
+        }, []);
+        setAllCities(unique);
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open && user && !responsibleUserId) {
+      setResponsibleUserId(user.id);
+    }
+  }, [open, user, responsibleUserId]);
 
   const { data: allProperties = [] } = useProperties();
   const createLink = useCreateLink();
@@ -74,9 +108,11 @@ export default function NewClientDialog() {
     setFinancialPendingDesc("");
     setCanComposeIncome(false);
     setNotes("");
+    setDriveUrl("");
     setSelectedPropIds([]);
     setPropSearch("");
     setShowPropSearch(false);
+    setResponsibleUserId("");
   };
 
   const handleSubmit = async () => {
@@ -105,7 +141,9 @@ export default function NewClientDialog() {
         financial_pending_description: financialPendingDesc || null,
         can_compose_income: canComposeIncome,
         notes: notes || null,
-      });
+        drive_url: driveUrl || null,
+        responsible_user_id: responsibleUserId || null,
+      } as any);
 
       // Link properties
       if (selectedPropIds.length > 0) {
@@ -140,7 +178,7 @@ export default function NewClientDialog() {
               value={fullName}
               onChange={e => setFullName(e.target.value)}
               placeholder="Nome do cliente"
-              className="text-xl font-bold bg-blue-50/50 border-blue-100 focus-visible:ring-blue-200 px-3 h-12"
+              className="text-xl font-bold bg-muted/30 border-primary/20 focus-visible:ring-primary/20 px-3 h-12"
               autoFocus
             />
           </div>
@@ -186,9 +224,19 @@ export default function NewClientDialog() {
                         .map(p => (
                           <button
                             key={p.id}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
                               setSelectedPropIds([...selectedPropIds, p.id]);
                               setPropSearch("");
+                              
+                              // Lead Routing: Auto-assign responsible agent based on property
+                              if (p.responsible_user_id && p.responsible_user_id !== responsibleUserId) {
+                                setResponsibleUserId(p.responsible_user_id);
+                                toast({ 
+                                  title: "Roleta Inteligente", 
+                                  description: "Responsável atualizado para o corretor dono deste imóvel." 
+                                });
+                              }
                             }}
                             className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted/50 flex items-center justify-between"
                           >
@@ -236,6 +284,41 @@ export default function NewClientDialog() {
               <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" />
             </div>
             <div className="space-y-1">
+              <Label>Link do Drive</Label>
+              <div className="flex gap-2">
+                <Input type="url" value={driveUrl} onChange={e => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." />
+                {driveUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => window.open(driveUrl, '_blank')}
+                    title="Acessar Drive"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Responsável</Label>
+              <Select value={responsibleUserId} onValueChange={setResponsibleUserId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
+                <SelectContent>
+                  {members.map(m => (
+                    <SelectItem
+                      key={m.user_id}
+                      value={m.user_id}
+                      disabled={!m.is_registered}
+                    >
+                      {m.full_name} {!m.is_registered && "(Aguardando Registro)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Estado Civil</Label>
               <Select value={maritalStatus} onValueChange={setMaritalStatus}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -257,7 +340,21 @@ export default function NewClientDialog() {
             </div>
             <div className="space-y-1">
               <Label>Cidade</Label>
-              <Input value={city} onChange={e => setCity(e.target.value)} placeholder="Cidade" />
+              <Select value={city} onValueChange={setCity} disabled={!state}>
+                <SelectTrigger>
+                  <SelectValue placeholder={!state ? "Selecione um estado" : "Selecione a cidade"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCities
+                    .filter(c => c.state === state)
+                    .sort((a, b) => a.city.localeCompare(b.city))
+                    .map(c => <SelectItem key={c.city} value={c.city}>{c.city}</SelectItem>)
+                  }
+                  {state && !allCities.some(c => c.state === state) && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">Nenhuma cidade cadastrada para este estado</div>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Pipeline e Etapa */}

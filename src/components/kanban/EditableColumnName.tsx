@@ -5,14 +5,18 @@ import { Pencil, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import DeleteColumnDialog from "./DeleteColumnDialog";
 
 interface Props {
     stageId?: string;
+    stageValue?: string;
+    pipeline?: string;
     initialLabel: string;
     funnelType: "property" | "client";
+    className?: string;
 }
 
-export default function EditableColumnName({ stageId, initialLabel, funnelType }: Props) {
+export default function EditableColumnName({ stageId, stageValue, pipeline, initialLabel, funnelType, className }: Props) {
     const [isEditing, setIsEditing] = useState(false);
     const [label, setLabel] = useState(initialLabel);
     const { updateStage } = useKanbanStages(funnelType);
@@ -86,14 +90,25 @@ export default function EditableColumnName({ stageId, initialLabel, funnelType }
     }
 
     return (
-        <div
-            className="group flex items-center gap-2 flex-1 cursor-pointer overflow-hidden"
-            onClick={() => setIsEditing(true)}
-        >
-            <h3 className="text-sm font-bold truncate text-foreground flex-1">
-                {initialLabel}
-            </h3>
-            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+        <div className="group flex items-center gap-1 flex-1 overflow-hidden">
+            <div
+                className="flex items-center gap-2 flex-1 cursor-pointer truncate"
+                onClick={() => setIsEditing(true)}
+            >
+                <h3 className={cn("text-xs font-bold truncate text-foreground flex-1", className)} title={initialLabel}>
+                    {initialLabel}
+                </h3>
+                <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </div>
+
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center shrink-0">
+                <DeleteColumnDialog
+                    funnelType={funnelType}
+                    pipeline={pipeline}
+                    preSelectedStageValue={stageValue}
+                    triggerAsGhost
+                />
+            </div>
         </div>
     );
 }

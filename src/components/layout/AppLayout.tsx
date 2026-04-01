@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Users, Link2, CheckSquare, Settings, Menu, X, LogOut, CalendarRange } from "lucide-react";
+import { LayoutDashboard, Building2, Users, Handshake, CheckSquare, Settings, Menu, X, LogOut, CalendarRange, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,6 @@ const navItems = [{
   label: "Clientes",
   icon: Users
 }, {
-  path: "/matches",
-  label: "Vínculos",
-  icon: Link2
-}, {
   path: "/tasks",
   label: "Tarefas",
   icon: CheckSquare
@@ -34,15 +30,16 @@ const navItems = [{
 }, {
   path: "/partners",
   label: "Parceiros",
-  icon: Users
+  icon: Handshake
 }, {
   path: "/settings",
   label: "Configurações",
   icon: Settings
 }];
-const bottomNavItems = navItems.slice(0, 6);
+const bottomNavItems = navItems.slice(0, 5).concat(navItems[5]); // Dashboard, Imóveis, Clientes, Tarefas, Calendário, Parceiros
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -56,24 +53,85 @@ export default function AppLayout() {
   };
   return <div className="flex h-dvh overflow-hidden bg-background">
     {/* Desktop Sidebar */}
-    {!isMobile && <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
-      <div className="gap-2 px-6 py-5 border-b border-sidebar-border flex items-center justify-start">
-        <img alt="Logo" className="h-7 w-7 object-contain" src="/lovable-uploads/83f17020-424b-4962-9231-0f0e7bf02806.png" />
-        <span className="text-lg font-bold text-sidebar-foreground">CRM Invest</span>
-      </div>
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(item => <button key={item.path} onClick={() => navigate(item.path)} className={cn("flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors", isActive(item.path) ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-          <item.icon className="h-5 w-5" />
-          {item.label}
-        </button>)}
-      </nav>
-      <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
-        <ThemeToggle />
-        <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair">
-          <LogOut className="h-5 w-5" />
-        </Button>
-      </div>
-    </aside>}
+    {!isMobile && (
+      <aside 
+        className={cn(
+          "hidden md:flex flex-col border-r border-[#002B44]/20 bg-[#EDF0F4] transition-all duration-300 ease-in-out relative shadow-lg z-40",
+          isExpanded ? "w-52" : "w-20"
+        )}
+      >
+        <div className="px-4 py-5 border-b border-[#002B44]/10 flex items-center gap-3 overflow-hidden">
+          <img 
+            alt="Logo" 
+            className="h-8 w-8 min-w-[32px] object-contain" 
+            src="/lovable-uploads/83f17020-424b-4962-9231-0f0e7bf02806.png" 
+          />
+          {isExpanded && (
+            <span className="font-black text-lg truncate text-[#002B44] animate-in fade-in duration-500 uppercase tracking-tight">
+              CRM INVEST
+            </span>
+          )}
+        </div>
+
+        <nav className="flex-1 w-full px-3 py-6 space-y-2 overflow-y-auto overflow-x-hidden">
+          {navItems.map(item => (
+            <button 
+              key={item.path} 
+              title={!isExpanded ? item.label : ""} 
+              onClick={() => navigate(item.path)} 
+              className={cn(
+                "flex items-center w-full rounded-xl transition-all duration-200 group overflow-hidden",
+                isExpanded ? "px-4 py-3 gap-3" : "justify-center py-3",
+                isActive(item.path) 
+                  ? "bg-[#016FAE] text-white shadow-lg scale-[1.05]" 
+                  : "text-[#002B44] hover:text-[#F58228] hover:bg-white/50"
+              )}
+            >
+              <item.icon className={cn("h-6 w-6 min-w-[24px]", isActive(item.path) ? "text-white" : "text-[#002B44] group-hover:text-[#F58228]")} />
+              {isExpanded && (
+                <span className="text-sm font-black truncate whitespace-nowrap animate-in slide-in-from-left-2 uppercase tracking-tighter">
+                  {item.label}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-[#002B44]/10 flex flex-col gap-4 w-full">
+          <div className={cn("flex items-center w-full", isExpanded ? "justify-between px-2" : "justify-center")}>
+            <div className="text-[#002B44]">
+              <ThemeToggle />
+            </div>
+            {isExpanded && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLogout} 
+                className="text-[#002B44] hover:text-destructive transition-colors"
+                title="Sair"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="absolute -right-3 top-10 h-6 w-6 rounded-full border border-[#002B44]/20 bg-white shadow-sm hover:bg-[#EDF0F4] z-50 p-0 text-[#002B44]"
+          >
+            {isExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+
+          {!isExpanded && (
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair" className="text-[#002B44] hover:text-destructive">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+      </aside>
+    )}
 
     {/* Mobile Sidebar Overlay */}
     {isMobile && sidebarOpen && <div className="fixed inset-0 z-50 flex">

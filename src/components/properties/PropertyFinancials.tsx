@@ -119,92 +119,18 @@ export default function PropertyFinancials({ property }: Props) {
         <SummaryCard label="Lucro Líquido" value={nProfit} icon={<DollarSign className="h-4 w-4" />} color={nProfit >= 0 ? "text-emerald-600" : "text-destructive"} />
       </div>
 
-      {/* Guaraci share */}
-      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Users className="h-4 w-4 text-primary" /> Cotas Guaraci
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <NumField label="Nº Cotistas" value={numShareholders} onChange={setNumShareholders} />
-          <NumField label="% Cota Guaraci" value={guaraciPct} onChange={setGuaraciPct} />
-        </div>
-        <Separator />
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div><span className="text-muted-foreground">Fat. Bruto:</span> <span className="font-semibold">{formatCurrency(gRevenue * guaraciFactor)}</span></div>
-          <div><span className="text-muted-foreground">Fat. Líquido:</span> <span className="font-semibold">{formatCurrency(nRevenue * guaraciFactor)}</span></div>
-          <div><span className="text-muted-foreground">Lucro Bruto:</span> <span className="font-semibold">{formatCurrency(gProfit * guaraciFactor)}</span></div>
-          <div><span className="text-muted-foreground">Lucro Líquido:</span> <span className="font-semibold">{formatCurrency(nProfit * guaraciFactor)}</span></div>
+      {/* Monthly expenses */}
+      <div className="rounded-lg border bg-muted/30 p-3 mt-4 space-y-3">
+        <h3 className="text-sm font-semibold">Despesas Mensais</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <NumField label="Condomínio" value={condoMonthly} onChange={setCondoMonthly} />
+          <NumField label="Cuidador / Vizinho" value={caretakerMonthly} onChange={setCaretakerMonthly} />
+          <NumField label="IPTU" value={iptuMonthly} onChange={setIptuMonthly} />
+          <NumField label="Água / Luz" value={utilitiesMonthly} onChange={setUtilitiesMonthly} />
         </div>
       </div>
 
-      {/* Faturamento */}
-      <Collapsible open={revenueOpen} onOpenChange={setRevenueOpen}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <TrendingUp className="h-4 w-4 text-emerald-600" />
-            Faturamento
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-emerald-600">{formatCurrency(gRevenue)}</span>
-            {revenueOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2 space-y-2 px-1">
-          <NumField label="Valor de Venda (anúncio — não entra no cálculo)" value={saleValueRoi} onChange={setSaleValueRoi} />
-          <NumField label="Valor de Financiamento (recebido da Caixa)" value={financingValue} onChange={setFinancingValue} />
-          <NumField label="Valor de Entrada" value={downPayment} onChange={setDownPayment} />
-          <NumField label="Valor de Subsídio" value={subsidyValue} onChange={setSubsidyValue} />
-          <Separator className="my-2" />
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Deduções</p>
-          <NumField label="Cashback" value={cashbackValue} onChange={setCashbackValue} />
-          <NumField label="Valor de IR (Imposto de Renda)" value={incomeTax} onChange={setIncomeTax} />
-          <NumField label="Documentação de Venda" value={saleDocCost} onChange={setSaleDocCost} />
-        </CollapsibleContent>
-      </Collapsible>
-
-      {/* Investimento */}
-      <Collapsible open={investOpen} onOpenChange={setInvestOpen}>
-        <CollapsibleTrigger className="flex items-center justify-between w-full rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <TrendingDown className="h-4 w-4 text-destructive" />
-            Investimento
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-destructive">{formatCurrency(invest)}</span>
-            {investOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2 space-y-2 px-1">
-          <NumField label="Aquisição" value={purchasePrice} onChange={setPurchasePrice} />
-          <NumField label="ITBI" value={itbiCost} onChange={setItbiCost} />
-          <NumField label="Contrato" value={contractCost} onChange={setContractCost} />
-          <NumField label="Registro" value={registrationCost} onChange={setRegistrationCost} />
-          <NumField label="Desocupação" value={evictionCost} onChange={setEvictionCost} />
-          <NumField label="Reforma" value={renovationCost} onChange={setRenovationCost} />
-          <NumField label="Débitos de IPTU" value={iptuDebts} onChange={setIptuDebts} />
-          <NumField label="Débitos de Condomínio" value={condoDebts} onChange={setCondoDebts} />
-          <NumField label="Manutenção" value={maintenanceCost} onChange={setMaintenanceCost} />
-
-          {/* Monthly expenses nested */}
-          <Collapsible open={monthlyOpen} onOpenChange={setMonthlyOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full rounded-md border p-2 hover:bg-muted/50 transition-colors mt-2">
-              <span className="text-xs font-semibold">Despesas Mensais</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-muted-foreground">{formatCurrency(monthly)}/mês</span>
-                {monthlyOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-2 space-y-2 px-1">
-              <NumField label="Condomínio" value={condoMonthly} onChange={setCondoMonthly} />
-              <NumField label="Cuidador / Vizinho" value={caretakerMonthly} onChange={setCaretakerMonthly} />
-              <NumField label="IPTU" value={iptuMonthly} onChange={setIptuMonthly} />
-              <NumField label="Água / Luz" value={utilitiesMonthly} onChange={setUtilitiesMonthly} />
-            </CollapsibleContent>
-          </Collapsible>
-        </CollapsibleContent>
-      </Collapsible>
-
-      <Button onClick={save} disabled={updateProperty.isPending} className="w-full">
+      <Button onClick={save} disabled={updateProperty.isPending} className="w-full mt-4">
         {updateProperty.isPending ? "Salvando..." : "Salvar Financeiro"}
       </Button>
     </div>

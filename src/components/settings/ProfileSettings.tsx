@@ -30,33 +30,63 @@ export default function ProfileSettings() {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [occupation, setOccupation] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   if (profile && !initialized) {
     setFullName(profile.full_name || "");
     setPhone(profile.phone || "");
+    setOccupation((profile as any).occupation || "");
     setInitialized(true);
   }
 
+  const OCCUPATION_OPTIONS = [
+    { value: "gestor", label: "Gestor" },
+    { value: "coordenador", label: "Coordenador" },
+    { value: "administrativo", label: "Administrativo" },
+    { value: "estagiario", label: "Estagiário" },
+    { value: "outro", label: "Outro" },
+  ];
+
   const updateMutation = useMutation({
     mutationFn: async () => {
+      console.log("Iniciando atualização de perfil para:", user?.id);
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName, phone })
-        .eq("user_id", user!.id);
-      if (error) throw error;
+        .upsert({
+          user_id: user!.id,
+          full_name: fullName,
+          phone: phone || null,
+          occupation: occupation || null,
+          updated_at: new Date().toISOString()
+        } as any, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        });
+
+      if (error) {
+        console.error("Erro Supabase na atualização:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my_profile"] });
-      toast({ title: "Perfil atualizado" });
+      toast({ title: "Perfil atualizado com sucesso!", variant: "default" });
     },
-    onError: () => toast({ title: "Erro ao atualizar perfil", variant: "destructive" }),
+    onError: (error: any) => {
+      console.error("Erro na mutação:", error);
+      toast({
+        title: "Falha na atualização",
+        description: `Erro: ${error.message || "Permissão negada ou erro de rede. Verifique o console."}`,
+        variant: "destructive"
+      });
+    },
   });
 
   if (isLoading) return <div className="text-muted-foreground text-sm">Carregando...</div>;
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 max-w-lg text-foreground">
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -64,21 +94,39 @@ export default function ProfileSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
+          <div className="space-y-1.5">
             <Label>Email</Label>
-            <Input value={user?.email || ""} disabled className="bg-muted" />
+            <Input value={user?.email || ""} disabled className="bg-muted opacity-80" />
+            <p className="text-[10px] text-muted-foreground italic">O email não pode ser alterado diretamente.</p>
           </div>
-          <div>
+          <div className="space-y-1.5">
             <Label>Nome Completo</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" />
           </div>
-          <div>
-            <Label>Telefone</Label>
+          <div className="space-y-1.5">
+            <Label>Telefone / WhatsApp</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(00) 00000-0000" />
           </div>
-          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+          <div className="space-y-1.5">
+            <Label>Ocupação / Cargo</Label>
+            <select
+              value={occupation}
+              onChange={(e) => setOccupation(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">Selecione...</option>
+              {OCCUPATION_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <Button
+            className="w-full sm:w-auto font-bold"
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+          >
             <Save className="h-4 w-4 mr-2" />
-            Salvar
+            {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
           </Button>
         </CardContent>
       </Card>

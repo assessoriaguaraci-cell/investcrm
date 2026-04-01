@@ -327,6 +327,7 @@ export type Database = {
           updated_at: string
           whatsapp: string | null
           work_regime: Database["public"]["Enums"]["work_regime"] | null
+          tags: string[] | null
         }
         Insert: {
           ad_name?: string | null
@@ -363,6 +364,7 @@ export type Database = {
           updated_at?: string
           whatsapp?: string | null
           work_regime?: Database["public"]["Enums"]["work_regime"] | null
+          tags?: string[] | null
         }
         Update: {
           ad_name?: string | null
@@ -399,6 +401,7 @@ export type Database = {
           updated_at?: string
           whatsapp?: string | null
           work_regime?: Database["public"]["Enums"]["work_regime"] | null
+          tags?: string[] | null
         }
         Relationships: [
           {
@@ -524,6 +527,35 @@ export type Database = {
           subsidy_value: number | null
           updated_at: string
           utilities_monthly: number | null
+          appraisal_date: string | null
+          appraisal_notes: string | null
+          appraisal_status: string | null
+          auction_type: string | null
+          broker_id: string | null
+          caretaker_id: string | null
+          caretaker_notes: string | null
+          caretaker_payment_date: string | null
+          cash_sale_discount: number | null
+          cca_id: string | null
+          has_broker: boolean | null
+          landmark: string | null
+          marketing_ad_copy: string | null
+          marketing_banner: boolean | null
+          marketing_banner_property: boolean | null
+          marketing_board: boolean | null
+          marketing_facebook_group: boolean | null
+          marketing_flyer: boolean | null
+          marketing_influencer: boolean | null
+          marketing_paid_traffic: boolean | null
+          marketing_smartlink: boolean | null
+          marketing_whatsapp_group: boolean | null
+          operation_responsible_id: string | null
+          origin: string | null
+          owner: string | null
+          property_division: string | null
+          registration_number: string | null
+          sale_price: number | null
+          sale_type: string | null
           zip_code: string | null
         }
         Insert: {
@@ -585,6 +617,35 @@ export type Database = {
           subsidy_value?: number | null
           updated_at?: string
           utilities_monthly?: number | null
+          appraisal_date?: string | null
+          appraisal_notes?: string | null
+          appraisal_status?: string | null
+          auction_type?: string | null
+          broker_id?: string | null
+          caretaker_id?: string | null
+          caretaker_notes?: string | null
+          caretaker_payment_date?: string | null
+          cash_sale_discount?: number | null
+          cca_id?: string | null
+          has_broker?: boolean | null
+          landmark?: string | null
+          marketing_ad_copy?: string | null
+          marketing_banner?: boolean | null
+          marketing_banner_property?: boolean | null
+          marketing_board?: boolean | null
+          marketing_facebook_group?: boolean | null
+          marketing_flyer?: boolean | null
+          marketing_influencer?: boolean | null
+          marketing_paid_traffic?: boolean | null
+          marketing_smartlink?: boolean | null
+          marketing_whatsapp_group?: boolean | null
+          operation_responsible_id?: string | null
+          origin?: string | null
+          owner?: string | null
+          property_division?: string | null
+          registration_number?: string | null
+          sale_price?: number | null
+          sale_type?: string | null
           zip_code?: string | null
         }
         Update: {
@@ -646,6 +707,35 @@ export type Database = {
           subsidy_value?: number | null
           updated_at?: string
           utilities_monthly?: number | null
+          appraisal_date?: string | null
+          appraisal_notes?: string | null
+          appraisal_status?: string | null
+          auction_type?: string | null
+          broker_id?: string | null
+          caretaker_id?: string | null
+          caretaker_notes?: string | null
+          caretaker_payment_date?: string | null
+          cash_sale_discount?: number | null
+          cca_id?: string | null
+          has_broker?: boolean | null
+          landmark?: string | null
+          marketing_ad_copy?: string | null
+          marketing_banner?: boolean | null
+          marketing_banner_property?: boolean | null
+          marketing_board?: boolean | null
+          marketing_facebook_group?: boolean | null
+          marketing_flyer?: boolean | null
+          marketing_influencer?: boolean | null
+          marketing_paid_traffic?: boolean | null
+          marketing_smartlink?: boolean | null
+          marketing_whatsapp_group?: boolean | null
+          operation_responsible_id?: string | null
+          origin?: string | null
+          owner?: string | null
+          property_division?: string | null
+          registration_number?: string | null
+          sale_price?: number | null
+          sale_type?: string | null
           zip_code?: string | null
         }
         Relationships: []

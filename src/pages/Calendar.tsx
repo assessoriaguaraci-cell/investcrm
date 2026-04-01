@@ -106,34 +106,38 @@ export default function Calendar() {
     };
 
     return (
-        <div className="p-4 md:p-6 h-full flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <CalendarIcon className="h-6 w-6 text-primary" />
-                        Calendário
-                    </h1>
-                    <p className="text-sm text-muted-foreground">Gerencie seus compromissos e integre com o Google</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {!googleConnected ? (
-                        <Button variant="outline" onClick={handleConnectGoogle} className="gap-2">
-                            <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
-                            Conectar Google Agenda
-                        </Button>
-                    ) : (
-                        <Badge className="gap-1.5 py-1.5 px-3 bg-green-500 hover:bg-green-600 text-white border-none">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            Google Conectado
-                        </Badge>
-                    )}
-                    <Button className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Novo Evento
-                    </Button>
-                </div>
+    <div className="p-4 md:p-6 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4 shrink-0">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <CalendarIcon className="h-8 w-8 text-primary shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
+                Agenda / Calendário
+              </h1>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Eventos e Compromissos Google</p>
             </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {!googleConnected ? (
+              <Button variant="ghost" size="sm" onClick={handleConnectGoogle} className="gap-2 h-9 border border-border/20 shadow-sm text-foreground hover:bg-muted font-bold text-xs uppercase">
+                  <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
+                  Conectar Google
+              </Button>
+          ) : (
+              <Badge className="gap-1.5 py-1.5 px-3 bg-green-500/10 text-green-600 border border-green-200 font-bold text-[10px] uppercase">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  Google Sincronizado
+              </Badge>
+          )}
+          <Button className="gap-2 font-black shadow-sm h-9 px-4 uppercase text-xs">
+              <Plus className="h-4 w-4" />
+              Novo Evento
+          </Button>
+        </div>
+      </div>
 
             <Card className="flex-1 flex flex-col min-h-0 border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader className="p-4 border-b bg-muted/20">

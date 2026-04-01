@@ -17,9 +17,13 @@ export default function ResponsibleSelect({ value, onValueChange, className }: P
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="none">Sem responsável</SelectItem>
-        {members.map((m) => (
-          <SelectItem key={m.user_id} value={m.user_id}>
-            {m.full_name || "Sem nome"}
+        {members?.map((m) => (
+          <SelectItem
+            key={m.user_id}
+            value={m.user_id}
+            disabled={!m.is_registered}
+          >
+            {m.full_name || "Sem nome"} {!m.is_registered && "(Aguardando Registro)"}
           </SelectItem>
         ))}
       </SelectContent>

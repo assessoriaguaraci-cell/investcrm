@@ -6,7 +6,14 @@ export type ClientPropertyLink = Tables<"client_property_links">;
 
 export interface LinkWithRelations extends ClientPropertyLink {
   clients: { full_name: string; phone: string | null; whatsapp: string | null; temperature: string } | null;
-  properties: { code: string; city: string | null; state: string; listed_price: number | null; stage: string } | null;
+  properties: {
+    code: string;
+    city: string | null;
+    state: string;
+    listed_price: number | null;
+    final_sale_price: number | null;
+    stage: string;
+  } | null;
 }
 
 export function useClientPropertyLinks() {
@@ -15,7 +22,7 @@ export function useClientPropertyLinks() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_property_links")
-        .select("*, clients(full_name, phone, whatsapp, temperature), properties(code, city, state, listed_price, stage)")
+        .select("*, clients(full_name, phone, whatsapp, temperature), properties(code, city, state, listed_price, final_sale_price, stage)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as LinkWithRelations[];

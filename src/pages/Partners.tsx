@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, MessageCircle, Plus, FilterX, MapPin } from "lucide-react";
+import { Users, Search, MessageCircle, Plus, FilterX, MapPin, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import {
     useCityInfo,
     useCreateCityContact,
     useUpdateCityContact,
+    useDeleteCityContact,
     useAllCityContacts,
     useUpsertCityInfo,
     useBrazilStates,
@@ -21,33 +23,55 @@ import {
 } from "@/hooks/useCityInfo";
 import { CONTACT_ROLES } from "@/lib/partner-constants";
 import ServedCitiesSelector from "@/components/partners/ServedCitiesSelector";
+import ImportPartnersDialog from "@/components/partners/ImportPartnersDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import MultiSelectFilter from "@/components/properties/MultiSelectFilter";
+import { SavedFiltersButton } from "@/components/ui/saved-filters-button";
+import AddPartnerDialog from "@/components/partners/AddPartnerDialog";
+
+export interface PartnerFilterValues {
+    state: string[];
+    role: string[];
+    served: string[];
+}
+
+export const EMPTY_PARTNER_FILTERS: PartnerFilterValues = {
+    state: [],
+    role: [],
+    served: [],
+};
 
 export default function Partners() {
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterState, setFilterState] = useState<string>("all");
-    const [filterRole, setFilterRole] = useState<string>("all");
-    const [filterServed, setFilterServed] = useState<string>("all");
+    const [filters, setFilters] = useState<PartnerFilterValues>(EMPTY_PARTNER_FILTERS);
 
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingContact, setEditingContact] = useState<CityContact | null>(null);
+    const [deletingContact, setDeletingContact] = useState<CityContact | null>(null);
     const [selectedServedCities, setSelectedServedCities] = useState<{ state: string, city: string }[]>([]);
-    const [newContact, setNewContact] = useState({
-        contact_type: CONTACT_ROLES[0],
-        name: "",
-        phone: "",
-        notes: "",
-        has_served: false,
-        pix_key: ""
-    });
+    const [newContact, setNewContact] = useState<{
+        contact_type: string;
+        name: string;
+        phone: string;
+        notes: string;
+        has_served: boolean;
+        pix_key: string;
+    } | null>(null);
 
     const { data: allStates } = useBrazilStates();
     const { data: contacts, isLoading, refetch } = useAllCityContacts();
 
     const createContact = useCreateCityContact();
     const updateContact = useUpdateCityContact();
+    const deleteContact = useDeleteCityContact();
     const upsertCity = useUpsertCityInfo();
+
+    const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
+        if (selected.length === 0) return true; // "all"
+        if (selected.length === 1 && selected[0] === "__none__") return false;
+        return selected.includes(value || "");
+    };
 
     const filteredContacts = useMemo(() => {
         if (!contacts) return [];
@@ -56,13 +80,14 @@ export default function Partners() {
 
         return contacts.filter(contact => {
             // Check filters first (faster)
-            const matchesRole = filterRole === "all" || contact.contact_type === filterRole;
+            const matchesRole = matchesMultiSelect(contact.contact_type, filters.role);
             if (!matchesRole) return false;
 
-            const matchesServed = filterServed === "all" || (filterServed === "yes" ? contact.has_served : !contact.has_served);
+            const matchesServed = matchesMultiSelect(contact.has_served ? "yes" : "no", filters.served);
             if (!matchesServed) return false;
 
-            const matchesState = filterState === "all" || contact.served_cities?.some(sc => sc.city_info.state === filterState);
+            const matchesState = filters.state.length === 0 || 
+                contact.served_cities?.some(sc => filters.state.includes(sc.city_info.state));
             if (!matchesState) return false;
 
             // Search filtering (heavier)
@@ -79,135 +104,68 @@ export default function Partners() {
                 contact.notes?.toLowerCase().includes(searchLower) ||
                 contact.pix_key?.toLowerCase().includes(searchLower);
         });
-    }, [contacts, searchTerm, filterRole, filterServed, filterState]);
+    }, [contacts, searchTerm, filters]);
 
     const handleClearFilters = () => {
         setSearchTerm("");
-        setFilterState("all");
-        setFilterRole("all");
-        setFilterServed("all");
+        setFilters(EMPTY_PARTNER_FILTERS);
     };
 
     const handleEditClick = (contact: CityContact) => {
         setEditingContact(contact);
-        setNewContact({
-            contact_type: contact.contact_type,
-            name: contact.name,
-            phone: contact.phone || "",
-            notes: contact.notes || "",
-            has_served: contact.has_served,
-            pix_key: contact.pix_key || ""
-        });
-
-        // Map served cities for the selector
-        const cities = contact.served_cities?.map(sc => ({
-            state: sc.city_info.state,
-            city: sc.city_info.city
-        })) || [];
-
-        setSelectedServedCities(cities);
         setIsAddOpen(true);
     };
 
-    const handleSaveContact = async () => {
-        if (!newContact.name || selectedServedCities.length === 0) {
-            toast.error("Preencha ao menos o nome e selecione uma cidade.");
-            return;
-        }
 
+
+    const handleDeleteContact = async () => {
+        if (!deletingContact) return;
         try {
-            // 1. Upsert all selected cities to get their city_info IDs
-            toast.loading("Vinculando cidades...");
-            const cityInfoIds: string[] = [];
-
-            for (const cityData of selectedServedCities) {
-                const res = await upsertCity.mutateAsync(cityData);
-                cityInfoIds.push(res.id);
-            }
-
-            // 2. Create or Update the contact
-            if (editingContact) {
-                await updateContact.mutateAsync({
-                    id: editingContact.id,
-                    city_info_id: cityInfoIds[0],
-                    contact_type: newContact.contact_type,
-                    name: newContact.name,
-                    phone: newContact.phone,
-                    notes: newContact.notes,
-                    has_served: newContact.has_served,
-                    pix_key: newContact.pix_key,
-                    served_city_ids: cityInfoIds
-                });
-                toast.success("Parceiro atualizado com sucesso!");
-            } else {
-                await createContact.mutateAsync({
-                    city_info_id: cityInfoIds[0],
-                    contact_type: newContact.contact_type,
-                    name: newContact.name,
-                    phone: newContact.phone,
-                    email: "",
-                    notes: newContact.notes,
-                    has_served: newContact.has_served,
-                    pix_key: newContact.pix_key,
-                    served_city_ids: cityInfoIds
-                });
-                toast.success("Parceiro adicionado com sucesso!");
-            }
-
-            toast.dismiss();
-            setIsAddOpen(false);
-            setEditingContact(null);
-            setNewContact({
-                contact_type: CONTACT_ROLES[0],
-                name: "",
-                phone: "",
-                notes: "",
-                has_served: false,
-                pix_key: ""
+            await deleteContact.mutateAsync({
+                id: deletingContact.id,
+                city_info_id: deletingContact.city_info_id
             });
-            setSelectedServedCities([]);
+            toast.success(`Parceiro "${deletingContact.name}" excluído com sucesso!`);
+            setDeletingContact(null);
             refetch();
         } catch (e: any) {
-            toast.dismiss();
             console.error(e);
-            toast.error(e.message || "Erro ao salvar parceiro");
+            toast.error(e.message || "Erro ao excluir parceiro");
         }
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-black text-primary tracking-tight italic">INVEST CRM — PARCEIROS</h1>
-                    <p className="text-muted-foreground mt-1 font-medium">
-                        Base de dados centralizada de diligentes e prestadores de serviço
-                    </p>
-                </div>
-                <Button
-                    onClick={() => {
-                        setEditingContact(null);
-                        setNewContact({
-                            contact_type: CONTACT_ROLES[0],
-                            name: "",
-                            phone: "",
-                            notes: "",
-                            has_served: false,
-                            pix_key: ""
-                        });
-                        setSelectedServedCities([]);
-                        setIsAddOpen(true);
-                    }}
-                    className="gap-2 font-black shadow-lg bg-primary hover:bg-primary/90 text-white h-12 px-6"
-                >
-                    <Plus className="h-5 w-5" /> ADICIONAR PARCEIRO
-                </Button>
+    <div className="p-4 md:p-6 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4 shrink-0">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
+                Base de Parceiros
+              </h1>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Diretório de diligentes e prestadores</p>
             </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <ImportPartnersDialog />
+          <Button
+            onClick={() => {
+              setEditingContact(null);
+              setIsAddOpen(true);
+            }}
+            className="gap-2 font-black shadow-lg bg-primary hover:bg-primary/90 text-white h-10 px-6 uppercase text-xs shadow-primary/20 shrink-0"
+          >
+            <Plus className="h-4 w-4" /> Adicionar Parceiro
+          </Button>
+        </div>
+      </div>
 
             <Card className="border-none shadow-xl overflow-hidden bg-card/50 backdrop-blur-sm border-2 border-primary/5">
                 <CardHeader className="pb-3 border-b bg-muted/30">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <CardTitle className="text-xl flex items-center gap-2 font-black italic text-primary">
-                            <Users className="h-6 w-6" />
+                        <CardTitle className="text-lg flex items-center gap-2 font-black text-foreground uppercase tracking-tight">
                             DIRETÓRIO NACIONAL
                         </CardTitle>
                         <div className="flex flex-wrap items-center gap-2">
@@ -228,50 +186,51 @@ export default function Partners() {
                 <div className="p-4 border-b bg-muted/10 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div className="space-y-1.5">
                         <Label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Filtrar por Estado</Label>
-                        <Select value={filterState} onValueChange={setFilterState}>
-                            <SelectTrigger className="bg-background border-2 border-primary/5 h-10 font-bold">
-                                <SelectValue placeholder="Todos os Estados" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os Estados</SelectItem>
-                                {allStates?.map(st => <SelectItem key={st.sigla} value={st.sigla}>{st.nome}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <MultiSelectFilter
+                            label="Estado"
+                            options={allStates?.map(st => ({ value: st.sigla, label: st.nome })) || []}
+                            selected={filters.state}
+                            onSelectionChange={v => setFilters({ ...filters, state: v })}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Filtrar por Função</Label>
-                        <Select value={filterRole} onValueChange={setFilterRole}>
-                            <SelectTrigger className="bg-background border-2 border-primary/5 h-10 font-bold">
-                                <SelectValue placeholder="Todas as Funções" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todas as Funções</SelectItem>
-                                {CONTACT_ROLES.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <MultiSelectFilter
+                            label="Função"
+                            options={CONTACT_ROLES.map(role => ({ value: role, label: role }))}
+                            selected={filters.role}
+                            onSelectionChange={v => setFilters({ ...filters, role: v })}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Prestou Serviço?</Label>
-                        <Select value={filterServed} onValueChange={setFilterServed}>
-                            <SelectTrigger className="bg-background border-2 border-primary/5 h-10 font-bold">
-                                <SelectValue placeholder="Ambos" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Ambos</SelectItem>
-                                <SelectItem value="yes">Sim</SelectItem>
-                                <SelectItem value="no">Não</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <MultiSelectFilter
+                            label="Serviço"
+                            options={[
+                                { value: "yes", label: "Sim" },
+                                { value: "no", label: "Não" }
+                            ]}
+                            selected={filters.served}
+                            onSelectionChange={v => setFilters({ ...filters, served: v })}
+                        />
                     </div>
                     <div>
                         <Button
                             variant="outline"
                             onClick={handleClearFilters}
                             className="w-full gap-2 h-10 font-bold border-2 hover:bg-muted/50 transition-all"
-                            disabled={filterState === "all" && filterRole === "all" && filterServed === "all" && !searchTerm}
+                            disabled={filters.state.length === 0 && filters.role.length === 0 && filters.served.length === 0 && !searchTerm}
                         >
                             <FilterX className="h-4 w-4" /> LIMPAR FILTROS
                         </Button>
+                    </div>
+                    <div className="md:col-span-4 mt-2">
+                        <SavedFiltersButton
+                            entityType="partners"
+                            currentFilters={filters}
+                            emptyFilters={EMPTY_PARTNER_FILTERS}
+                            onLoadFilter={setFilters}
+                        />
                     </div>
                 </div>
 
@@ -304,7 +263,7 @@ export default function Partners() {
                                     <TableCell colSpan={7} className="h-64 text-center">
                                         <div className="flex flex-col items-center gap-2 text-muted-foreground opacity-50">
                                             <Users className="h-12 w-12" />
-                                            <p className="font-black italic">NENHUM PARCEIRO ENCONTRADO</p>
+                                            <p className="font-black uppercase tracking-widest text-muted-foreground/40">NENHUM PARCEIRO ENCONTRADO</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -318,7 +277,7 @@ export default function Partners() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] font-black italic px-2">
+                                            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] font-black uppercase px-2">
                                                 {contact.contact_type}
                                             </Badge>
                                         </TableCell>
@@ -365,14 +324,25 @@ export default function Partners() {
                                             {contact.notes || "-"}
                                         </TableCell>
                                         <TableCell className="text-right pr-6">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="font-black text-[10px] uppercase tracking-tighter hover:bg-primary hover:text-white transition-all"
-                                                onClick={() => handleEditClick(contact)}
-                                            >
-                                                Editar
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="font-black text-[10px] uppercase tracking-tighter hover:bg-primary hover:text-white transition-all"
+                                                    onClick={() => handleEditClick(contact)}
+                                                >
+                                                    Editar
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                                                    onClick={() => setDeletingContact(contact)}
+                                                    title="Excluir parceiro"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -382,116 +352,40 @@ export default function Partners() {
                 </div>
             </Card>
 
-            {/* Add Partner Dialog */}
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
-                    <div className="bg-primary p-6 text-white shrink-0">
-                        <DialogTitle className="text-2xl font-black italic tracking-tight uppercase">
-                            {editingContact ? "EDITAR PARCEIRO" : "CADASTRAR NOVO PARCEIRO"}
-                        </DialogTitle>
-                        <p className="text-primary-foreground/80 font-medium text-sm">
-                            {editingContact ? `Atualize os dados de ${editingContact.name}` : "Vincule diligentes às cidades que eles atendem"}
-                        </p>
-                    </div>
+            <AddPartnerDialog 
+                open={isAddOpen} 
+                onOpenChange={(v) => {
+                    setIsAddOpen(v);
+                    if (!v) setEditingContact(null);
+                }} 
+                editingContact={editingContact}
+                onSaved={() => refetch()}
+            />
 
-                    <ScrollArea className="flex-1 p-6">
-                        <div className="space-y-6 pb-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase text-primary">Nome Completo *</Label>
-                                        <Input
-                                            placeholder="Ex: João da Silva"
-                                            className="h-11 border-2 focus-visible:ring-primary font-bold"
-                                            value={newContact.name}
-                                            onChange={e => setNewContact({ ...newContact, name: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase text-primary">Função / Cargo *</Label>
-                                        <Select value={newContact.contact_type} onValueChange={(val) => setNewContact({ ...newContact, contact_type: val })}>
-                                            <SelectTrigger className="h-11 border-2 font-bold focus:ring-primary">
-                                                <SelectValue placeholder="Selecione a função" />
-                                            </SelectTrigger>
-                                            <SelectContent className="max-h-64">
-                                                {CONTACT_ROLES.map(role => <SelectItem key={role} value={role} className="font-bold">{role}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-2">
-                                            <Label className="text-[11px] font-black uppercase text-primary">Telefone / WhatsApp</Label>
-                                            <Input
-                                                placeholder="(00) 00000-0000"
-                                                className="h-11 border-2 font-bold"
-                                                value={newContact.phone}
-                                                onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-[11px] font-black uppercase text-primary">Chave PIX</Label>
-                                            <Input
-                                                placeholder="PIX"
-                                                className="h-11 border-2 font-bold"
-                                                value={newContact.pix_key}
-                                                onChange={e => setNewContact({ ...newContact, pix_key: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-[11px] font-black uppercase text-primary">Notas e Observações</Label>
-                                        <Input
-                                            placeholder="Detalhes sobre atendimento, preços, etc."
-                                            className="h-11 border-2 font-semibold"
-                                            value={newContact.notes}
-                                            onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-4 rounded-xl border-2 bg-muted/20">
-                                        <div className="space-y-0.5">
-                                            <Label className="font-black text-xs uppercase text-primary">Já prestou serviço?</Label>
-                                            <p className="text-[10px] text-muted-foreground font-bold">Marque se já houve parceria ativa</p>
-                                        </div>
-                                        <Switch checked={newContact.has_served} onCheckedChange={(val) => setNewContact({ ...newContact, has_served: val })} />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-[11px] font-black uppercase text-primary flex items-center gap-2">
-                                        <MapPin className="h-4 w-4" />
-                                        CIDADES DE ATENDIMENTO *
-                                    </Label>
-                                    <ServedCitiesSelector
-                                        selectedCities={selectedServedCities}
-                                        onSelect={setSelectedServedCities}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </ScrollArea>
-
-                    <DialogFooter className="p-6 border-t bg-muted/10 shrink-0">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsAddOpen(false)}
-                            className="h-12 px-8 font-black uppercase tracking-tight"
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deletingContact} onOpenChange={(open) => !open && setDeletingContact(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="font-black text-lg uppercase tracking-tight text-red-600">
+                            Excluir Parceiro?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm font-medium">
+                            Tem certeza que deseja excluir <strong>&quot;{deletingContact?.name}&quot;</strong>? Esta ação é irreversível e todos os dados deste parceiro serão permanentemente removidos.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="font-black uppercase tracking-tight">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteContact}
+                            disabled={deleteContact.isPending}
+                            className="bg-red-600 hover:bg-red-700 font-black uppercase tracking-tight gap-2"
                         >
-                            Cancelar
-                        </Button>
-                        <Button
-                            onClick={handleSaveContact}
-                            disabled={createContact.isPending || updateContact.isPending}
-                            className="h-12 px-10 font-black uppercase tracking-tight shadow-lg"
-                        >
-                            {(createContact.isPending || updateContact.isPending) ? "SALVANDO..." : (editingContact ? "ATUALIZAR PARCEIRO" : "SALVAR PARCEIRO")}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <Trash2 className="h-4 w-4" />
+                            {deleteContact.isPending ? "EXCLUINDO..." : "SIM, EXCLUIR"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

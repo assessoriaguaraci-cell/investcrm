@@ -16,29 +16,40 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
+    SelectGroup,
+    SelectLabel,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useKanbanStages, KanbanStage } from "@/hooks/useKanbanStages";
 import { cn } from "@/lib/utils";
+import { PROPERTY_STAGES } from "@/lib/property-constants";
+import { CLIENT_STAGES } from "@/lib/client-constants";
 
 interface Props {
     funnelType: "property" | "client";
     pipeline?: string;
+    preSelectedStageValue?: string;
+    triggerAsGhost?: boolean;
 }
 
-export default function DeleteColumnDialog({ funnelType, pipeline }: Props) {
+export default function DeleteColumnDialog({ funnelType, pipeline, preSelectedStageValue, triggerAsGhost }: Props) {
     const [open, setOpen] = useState(false);
-    const [step, setStep] = useState<"select" | "confirm">("select");
-    const [stageToDelete, setStageToDelete] = useState<string>("");
+    const [step, setStep] = useState<"select" | "confirm">(preSelectedStageValue ? "confirm" : "select");
+    const [stageToDelete, setStageToDelete] = useState<string>(preSelectedStageValue || "");
     const [destinationStage, setDestinationStage] = useState<string>("");
 
     const { stages, deleteStage, isDeleting } = useKanbanStages(funnelType);
     const { toast } = useToast();
 
+    // Fallback to constants if kanban_stages is empty (e.g. before SQL migration)
+    const actualStages = stages.length > 0
+        ? stages
+        : (funnelType === "property" ? PROPERTY_STAGES : CLIENT_STAGES);
+
     const filteredStages = pipeline
-        ? stages.filter(s => s.pipeline === pipeline)
-        : stages;
+        ? (actualStages as any[]).filter(s => s.pipeline === pipeline)
+        : actualStages;
 
     const handleNext = () => {
         if (!stageToDelete) {
@@ -74,17 +85,23 @@ export default function DeleteColumnDialog({ funnelType, pipeline }: Props) {
 
     const handleClose = () => {
         setOpen(false);
-        setStep("select");
-        setStageToDelete("");
+        setStep(preSelectedStageValue ? "confirm" : "select");
+        setStageToDelete(preSelectedStageValue || "");
         setDestinationStage("");
     };
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val ? handleClose() : setOpen(val)}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 w-9 p-0 rounded-full border-dashed border-red-200 hover:bg-red-50 hover:border-red-300">
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
+                {triggerAsGhost ? (
+                    <Button variant="ghost" size="icon" className="h-5 w-5 p-0 hover:bg-transparent" onClick={(e) => { e.stopPropagation(); }}>
+                        <Trash2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-500 transition-colors shrink-0" />
+                    </Button>
+                ) : (
+                    <Button variant="outline" size="sm" className="h-9 w-9 p-0 rounded-full border-dashed border-red-200 hover:bg-red-50 hover:border-red-300">
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
@@ -122,7 +139,7 @@ export default function DeleteColumnDialog({ funnelType, pipeline }: Props) {
                     ) : (
                         <div className="space-y-4">
                             <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700">
-                                Os cards que estão na coluna <b>{stages.find(s => s.value === stageToDelete)?.label}</b> precisam ser movidos para outra coluna antes da exclusão.
+                                Os cards que estão na coluna <b>{(actualStages as any[]).find(s => s.value === stageToDelete)?.label || "selecionada"}</b> precisam ser movidos para outra coluna antes da exclusão.
                             </div>
 
                             <div className="grid gap-2">
@@ -132,16 +149,39 @@ export default function DeleteColumnDialog({ funnelType, pipeline }: Props) {
                                         <SelectValue placeholder="Selecione a nova coluna..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {filteredStages
-                                            .filter(s => s.value !== stageToDelete)
-                                            .map((s) => (
-                                                <SelectItem key={s.value} value={s.value}>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={cn("w-2 h-2 rounded-full", s.color)} />
-                                                        {s.label}
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
+                                        {funnelType === "client" ? (
+                                            <>
+                                                {/* Group by Pipeline for Clients */}
+                                                {Array.from(new Set((actualStages as any[]).map(s => s.pipeline).filter(Boolean))).map(pipe => (
+                                                    <SelectGroup key={pipe as string}>
+                                                        <SelectLabel className="bg-muted/50 font-bold uppercase text-[10px] tracking-wider text-muted-foreground">{pipe as string}</SelectLabel>
+                                                        {(actualStages as any[])
+                                                            .filter(s => s.pipeline === pipe && s.value !== stageToDelete)
+                                                            .map((s) => (
+                                                                <SelectItem key={s.value} value={s.value}>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className={cn("w-2 h-2 rounded-full", s.color)} />
+                                                                        {s.label}
+                                                                    </div>
+                                                                </SelectItem>
+                                                            ))}
+                                                    </SelectGroup>
+                                                ))}
+                                            </>
+                                        ) : (
+                                            <>
+                                                {(actualStages as any[])
+                                                    .filter(s => s.value !== stageToDelete)
+                                                    .map((s) => (
+                                                        <SelectItem key={s.value} value={s.value}>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={cn("w-2 h-2 rounded-full", s.color)} />
+                                                                {s.label}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                            </>
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -161,9 +201,16 @@ export default function DeleteColumnDialog({ funnelType, pipeline }: Props) {
                         </>
                     ) : (
                         <>
-                            <Button variant="ghost" onClick={() => setStep("select")} disabled={isDeleting}>
-                                Voltar
-                            </Button>
+                            {(!preSelectedStageValue) && (
+                                <Button variant="ghost" onClick={() => setStep("select")} disabled={isDeleting}>
+                                    Voltar
+                                </Button>
+                            )}
+                            {(preSelectedStageValue) && (
+                                <Button variant="ghost" onClick={handleClose} disabled={isDeleting}>
+                                    Cancelar
+                                </Button>
+                            )}
                             <Button
                                 variant="destructive"
                                 onClick={handleConfirm}

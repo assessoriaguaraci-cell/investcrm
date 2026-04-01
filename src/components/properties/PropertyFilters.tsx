@@ -7,18 +7,18 @@ import { PROPERTY_STAGES, PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, 
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import MultiSelectFilter from "./MultiSelectFilter";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { DateRange } from "react-day-picker";
 import { format, parseISO } from "date-fns";
 import AddColumnDialog from "../kanban/AddColumnDialog";
-import DeleteColumnDialog from "../kanban/DeleteColumnDialog";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export interface PropertyFilterValues {
   search: string;
   stage: string[];
   property_type: string[];
   state: string[];
-  city: string;
+  city: string[];
   priority: string[];
   occupation_status: string[];
   price_min: string;
@@ -26,6 +26,9 @@ export interface PropertyFilterValues {
   responsible_user_id: string[];
   auction_date_start: string;
   auction_date_end: string;
+  neighborhood: string;
+  area_min: string;
+  area_max: string;
 }
 
 export const EMPTY_FILTERS: PropertyFilterValues = {
@@ -33,7 +36,7 @@ export const EMPTY_FILTERS: PropertyFilterValues = {
   stage: [],
   property_type: [],
   state: [],
-  city: "",
+  city: [],
   priority: [],
   occupation_status: [],
   price_min: "",
@@ -41,6 +44,9 @@ export const EMPTY_FILTERS: PropertyFilterValues = {
   responsible_user_id: [],
   auction_date_start: "",
   auction_date_end: "",
+  neighborhood: "",
+  area_min: "",
+  area_max: "",
 };
 
 interface Props {
@@ -50,12 +56,27 @@ interface Props {
 
 export default function PropertyFilters({ filters, onFiltersChange }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const { data: members } = useApprovedMembers();
+  const { data: members = [] } = useApprovedMembers();
   const { stages: dynamicStages } = useKanbanStages("property");
+  const [allCities, setAllCities] = useState<{ city: string, state: string }[]>([]);
+
+  useEffect(() => {
+    supabase.from("properties").select("city, state").not("city", "is", null).then(({ data }) => {
+      if (data) {
+        const unique = data.reduce((acc: any[], curr) => {
+          if (!acc.find(item => item.city === curr.city && item.state === curr.state)) {
+            acc.push(curr);
+          }
+          return acc;
+        }, []);
+        setAllCities(unique);
+      }
+    });
+  }, []);
 
   const update = <K extends keyof PropertyFilterValues>(key: K, value: PropertyFilterValues[K]) => {
     const next = { ...filters, [key]: value };
-    if (key === "state") next.city = "";
+    if (key === "state") next.city = [];
     onFiltersChange(next);
   };
 
@@ -97,7 +118,6 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
           )}
         </Button>
         <AddColumnDialog funnelType="property" />
-        <DeleteColumnDialog funnelType="property" />
         {activeCount > 0 && (
           <Button variant="ghost" size="sm" onClick={clear} className="gap-1 text-muted-foreground">
             <X className="h-3.5 w-3.5" /> Limpar
@@ -141,6 +161,21 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
           </div>
 
           <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Cidade</label>
+            <MultiSelectFilter
+              label="Cidade"
+              options={allCities
+                .filter(c => filters.state.length === 0 || filters.state.includes(c.state))
+                .map(c => ({ value: c.city, label: c.city }))
+                .sort((a, b) => a.label.localeCompare(b.label))
+              }
+              selected={filters.city}
+              onSelectionChange={v => update("city", v)}
+              placeholder={filters.state.length === 0 ? "Selecione um estado" : "Todas"}
+            />
+          </div>
+
+          <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Prioridade</label>
             <MultiSelectFilter
               label="Prioridade"
@@ -159,6 +194,43 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
               selected={filters.occupation_status}
               onSelectionChange={v => update("occupation_status", v)}
               placeholder="Todas"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável</label>
+            <MultiSelectFilter
+              label="Responsável"
+              options={memberOptions}
+              selected={filters.responsible_user_id}
+              onSelectionChange={v => update("responsible_user_id", v)}
+              placeholder="Todos"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Data de Arrematação</label>
+            <DateRangePicker
+              date={{
+                from: filters.auction_date_start ? parseISO(filters.auction_date_start) : undefined,
+                to: filters.auction_date_end ? parseISO(filters.auction_date_end) : undefined,
+              }}
+              onDateChange={(range) => {
+                const next = { ...filters };
+                next.auction_date_start = range?.from ? format(range.from, "yyyy-MM-dd") : "";
+                next.auction_date_end = range?.to ? format(range.to, "yyyy-MM-dd") : "";
+                onFiltersChange(next);
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Bairro</label>
+            <Input
+              placeholder="Ex: Centro"
+              value={filters.neighborhood}
+              onChange={e => update("neighborhood", e.target.value)}
+              className="h-9"
             />
           </div>
 
@@ -185,29 +257,24 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável</label>
-            <MultiSelectFilter
-              label="Responsável"
-              options={memberOptions}
-              selected={filters.responsible_user_id}
-              onSelectionChange={v => update("responsible_user_id", v)}
-              placeholder="Todos"
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Área Mín (m²)</label>
+            <Input
+              type="number"
+              placeholder="0"
+              value={filters.area_min}
+              onChange={e => update("area_min", e.target.value)}
+              className="h-9"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Data de arrematação</label>
-            <DateRangePicker
-              date={{
-                from: filters.auction_date_start ? parseISO(filters.auction_date_start) : undefined,
-                to: filters.auction_date_end ? parseISO(filters.auction_date_end) : undefined,
-              }}
-              onDateChange={(range) => {
-                const next = { ...filters };
-                next.auction_date_start = range?.from ? format(range.from, "yyyy-MM-dd") : "";
-                next.auction_date_end = range?.to ? format(range.to, "yyyy-MM-dd") : "";
-                onFiltersChange(next);
-              }}
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Área Máx (m²)</label>
+            <Input
+              type="number"
+              placeholder="∞"
+              value={filters.area_max}
+              onChange={e => update("area_max", e.target.value)}
+              className="h-9"
             />
           </div>
         </div>

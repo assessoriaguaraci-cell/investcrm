@@ -19,13 +19,39 @@ export function usePropertyUpdates(propertyId: string | undefined) {
     queryKey: ["property-updates", propertyId],
     enabled: !!propertyId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch updates
+      const { data: updates, error: updatesError } = await supabase
         .from("property_updates")
         .select("*")
         .eq("property_id", propertyId!)
         .order("update_date", { ascending: false });
-      if (error) throw error;
-      return data as PropertyUpdate[];
+      if (updatesError) throw updatesError;
+
+      // Fetch history to reconstruct null stages
+      const { data: history, error: historyError } = await supabase
+        .from("property_stage_history")
+        .select("*")
+        .eq("property_id", propertyId!);
+      if (historyError) throw historyError;
+
+      // Map to infer historical stage if missing
+      const enrichedUpdates = updates?.map((update) => {
+        if (!update.stage && history && history.length > 0) {
+          const updateDate = new Date(update.update_date + "T12:00:00").getTime();
+          // Find the stage interval covering this update_date
+          const matchedStage = history.find(h => {
+            const entered = new Date(h.entered_at).getTime();
+            const exited = h.exited_at ? new Date(h.exited_at).getTime() : Infinity;
+            return updateDate >= entered && updateDate <= exited;
+          });
+          if (matchedStage) {
+            return { ...update, stage: matchedStage.stage };
+          }
+        }
+        return update;
+      });
+
+      return enrichedUpdates as PropertyUpdate[];
     },
   });
 }

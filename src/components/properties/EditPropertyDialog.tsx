@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,6 +20,7 @@ import { useUpdateProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
 import ResponsibleSelect from "./ResponsibleSelect";
+import PartnerSelect from "../partners/PartnerSelect";
 import PropertyChecklist from "./PropertyChecklist";
 import LinkedClients from "./LinkedClients";
 import PropertyPhotoUpload from "./PropertyPhotoUpload";
@@ -49,6 +51,35 @@ const schema = z.object({
   responsible_user_id: z.string().optional().nullable(),
   auction_date: z.string().optional().nullable(),
   appraisal_expiry: z.string().optional().nullable(),
+  owner: z.string().optional().nullable(),
+  sale_type: z.string().optional().nullable(),
+  operation_responsible_id: z.string().optional().nullable(),
+  origin: z.string().optional().nullable(),
+  registration_number: z.string().optional().nullable(),
+  landmark: z.string().optional().nullable(),
+  property_division: z.string().optional().nullable(),
+  auction_type: z.string().optional().nullable(),
+  caretaker_id: z.string().optional().nullable(),
+  caretaker_payment_date: z.string().optional().nullable(),
+  caretaker_notes: z.string().optional().nullable(),
+  has_broker: z.boolean().optional().nullable(),
+  broker_id: z.string().optional().nullable(),
+  marketing_smartlink: z.boolean().optional().nullable(),
+  marketing_board: z.boolean().optional().nullable(),
+  marketing_banner: z.boolean().optional().nullable(),
+  marketing_banner_property: z.boolean().optional().nullable(),
+  marketing_paid_traffic: z.boolean().optional().nullable(),
+  marketing_facebook_group: z.boolean().optional().nullable(),
+  marketing_whatsapp_group: z.boolean().optional().nullable(),
+  marketing_flyer: z.boolean().optional().nullable(),
+  marketing_influencer: z.boolean().optional().nullable(),
+  cca_id: z.string().optional().nullable(),
+  marketing_ad_copy: z.string().optional().nullable(),
+  appraisal_status: z.string().optional().nullable(),
+  appraisal_notes: z.string().optional().nullable(),
+  appraisal_date: z.string().optional().nullable(),
+  sale_price: z.coerce.number().min(0).optional().nullable(),
+  cash_sale_discount: z.coerce.number().min(0).optional().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -94,6 +125,35 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
       responsible_user_id: property.responsible_user_id,
       auction_date: property.auction_date,
       appraisal_expiry: (property as any).appraisal_expiry ?? null,
+      owner: (property as any).owner ?? null,
+      sale_type: (property as any).sale_type ?? null,
+      operation_responsible_id: (property as any).operation_responsible_id ?? null,
+      origin: (property as any).origin ?? null,
+      registration_number: (property as any).registration_number ?? null,
+      landmark: (property as any).landmark ?? null,
+      property_division: (property as any).property_division ?? null,
+      auction_type: (property as any).auction_type ?? null,
+      caretaker_id: (property as any).caretaker_id ?? null,
+      caretaker_payment_date: (property as any).caretaker_payment_date ?? null,
+      caretaker_notes: (property as any).caretaker_notes ?? null,
+      has_broker: (property as any).has_broker ?? false,
+      broker_id: (property as any).broker_id ?? null,
+      marketing_smartlink: (property as any).marketing_smartlink ?? false,
+      marketing_board: (property as any).marketing_board ?? false,
+      marketing_banner: (property as any).marketing_banner ?? false,
+      marketing_banner_property: (property as any).marketing_banner_property ?? false,
+      marketing_paid_traffic: (property as any).marketing_paid_traffic ?? false,
+      marketing_facebook_group: (property as any).marketing_facebook_group ?? false,
+      marketing_whatsapp_group: (property as any).marketing_whatsapp_group ?? false,
+      marketing_flyer: (property as any).marketing_flyer ?? false,
+      marketing_influencer: (property as any).marketing_influencer ?? false,
+      cca_id: (property as any).cca_id ?? null,
+      marketing_ad_copy: (property as any).marketing_ad_copy ?? null,
+      appraisal_status: (property as any).appraisal_status ?? null,
+      appraisal_notes: (property as any).appraisal_notes ?? null,
+      appraisal_date: (property as any).appraisal_date ?? null,
+      sale_price: (property as any).sale_price ?? null,
+      cash_sale_discount: (property as any).cash_sale_discount ?? null,
     },
   });
 
@@ -125,6 +185,9 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
           <TabsList className="w-full flex-wrap h-auto gap-1">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
             <TabsTrigger value="financeiro" className="flex-1">Financeiro</TabsTrigger>
+            <TabsTrigger value="venda" className="flex-1">Venda</TabsTrigger>
+            <TabsTrigger value="marketing" className="flex-1">Mkt</TabsTrigger>
+            <TabsTrigger value="engenharia" className="flex-1">Engenharia</TabsTrigger>
             <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
             <TabsTrigger value="updates" className="flex-1">Atualizações</TabsTrigger>
             <TabsTrigger value="clientes" className="flex-1">Clientes</TabsTrigger>
@@ -156,236 +219,517 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
             <PropertyStageTimeline propertyId={property.id} auctionDate={property.auction_date} />
           </TabsContent>
 
-          <TabsContent value="dados" className="mt-4">
+          <TabsContent value="venda" className="mt-4">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {/* Photo upload */}
-                <PropertyPhotoUpload
-                  propertyId={property.id}
-                  currentUrl={photoUrl}
-                  onUploaded={setPhotoUrl}
-                />
-
-                <FormField control={form.control} name="code" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField control={form.control} name="property_type" render={({ field }) => (
+                  <FormField control={form.control} name="sale_price" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {PROPERTY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="priority" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Prioridade</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {PRIORITY_LEVELS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-
-                <FormField control={form.control} name="occupation_status" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ocupação</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {OCCUPATION_STATUSES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                {/* Auction date */}
-                <FormField control={form.control} name="auction_date" render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data de Arrematação</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}
-                          >
-                            {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? new Date(field.value + "T12:00:00") : undefined}
-                          onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField control={form.control} name="state" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {BRAZILIAN_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="city" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cidade</FormLabel>
-                      <CityCombobox value={field.value || ""} onValueChange={field.onChange} state={form.watch("state")} />
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-
-                <FormField control={form.control} name="neighborhood" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bairro</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="address" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Endereço</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="maps_url" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Link Google Maps</FormLabel>
-                    <FormControl><Input {...field} placeholder="https://maps.google.com/..." /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="drive_url" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pasta do Drive</FormLabel>
-                    <FormControl><Input {...field} value={field.value ?? ""} placeholder="https://drive.google.com/..." /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField control={form.control} name="purchase_price" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor Arrematação (R$)</FormLabel>
+                      <FormLabel>Valor de Venda (R$)</FormLabel>
                       <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={form.control} name="cash_sale_discount" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Desconto à Vista (%)</FormLabel>
+                      <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                
+                {/* Computed items for Venda */}
+                <div className="rounded border bg-muted/20 p-3 space-y-2 mt-2">
+                  <p className="text-sm font-semibold">Cálculos do Financiamento</p>
+                  <p className="text-xs text-muted-foreground">
+                    Cota Máx. Financiamento (80%): <strong>{form.watch("sale_price") ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(form.watch("sale_price")) * 0.8) : "R$ 0,00"}</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Valor à Vista com Desconto: <strong>{form.watch("sale_price") && form.watch("cash_sale_discount") ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(form.watch("sale_price")) * (1 - Number(form.watch("cash_sale_discount")) / 100)) : "R$ 0,00"}</strong>
+                  </p>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" disabled={updateProperty.isPending}>{updateProperty.isPending ? "Salvando..." : "Salvar"}</Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="marketing" className="mt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="rounded-md border p-4 bg-muted/10 space-y-4">
+                  <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Responsáveis Comerciais</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={form.control} name="broker_id" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Corretor Vinculado</FormLabel>
+                        <FormControl><PartnerSelect value={field.value ?? undefined} onValueChange={field.onChange} className="h-9" roleFilter={["CORRETOR"]} placeholder="Selecionar Corretor" defaultCity={{ state: form.watch("state") || property.state, city: form.watch("city") || property.city }} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="cca_id" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CCA</FormLabel>
+                        <FormControl><PartnerSelect value={field.value ?? undefined} onValueChange={field.onChange} className="h-9" roleFilter={["CCA"]} placeholder="Selecionar CCA" defaultCity={{ state: form.watch("state") || property.state, city: form.watch("city") || property.city }} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField control={form.control} name="has_broker" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Possui Corretor?</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_smartlink" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Smartlink</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_board" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Placa</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_banner" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Faixa</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_banner_property" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Faixa no Imóvel?</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_paid_traffic" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Tráfego Pago</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_facebook_group" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Grupo Facebook</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_whatsapp_group" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Grupo WhatsApp</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_flyer" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Panfletagem</FormLabel></div>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="marketing_influencer" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange} /></FormControl>
+                      <div className="space-y-1 leading-none"><FormLabel>Influencer</FormLabel></div>
+                    </FormItem>
+                  )} />
+                </div>
+
+                <FormField control={form.control} name="marketing_ad_copy" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Copy do Anúncio (Gerado a partir das informações)</FormLabel>
+                    <FormControl><Textarea rows={6} {...field} value={field.value ?? ""} /></FormControl>
+                  </FormItem>
+                )} />
+                <div className="flex justify-end pt-2">
+                  <Button type="button" variant="outline" className="mr-2" onClick={() => {
+                     const city = form.watch("city") || property.city || "";
+                     const neighborhood = form.watch("neighborhood") || property.neighborhood || "";
+                     const origin = form.watch("origin") || "";
+                     const sale_type = form.watch("sale_type") || "";
+                     const div = form.watch("property_division") || "";
+                     const useful = form.watch("area_useful") || "";
+                     const total = form.watch("area_total") || "";
+                     const price = form.watch("sale_price") || 0;
+                     const installment = price ? `R$${Math.round(Number(price) * 0.0045)}` : "R$470";
+
+                     form.setValue("marketing_ad_copy", 
+`As condições estão imperdíveis !!!
+🔥Compre agora sua casa própria de ${div || "2 quartos"} e parcelas a partir de ${installment}!
+
+📍 Bairro ${neighborhood}, ${city}.
+${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
+🏠 ${useful || "52"}m² de área construída
+📐 ${total || "180"}m² de terreno
+🛏 ${div || "2 quartos"}
+🚽 1 banheiro
+🚘 area ampla de garagem`);
+                  }}>Gerar Texto</Button>
+                  <Button type="submit" disabled={updateProperty.isPending}>{updateProperty.isPending ? "Salvando..." : "Salvar"}</Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="engenharia" className="mt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Row 1: Expedição | Vencimento */}
+                  <FormField control={form.control} name="appraisal_date" render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="mb-1 text-xs font-medium">Data de Expedição</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
+                              {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className="p-3 pointer-events-auto" />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  
+                  <FormField control={form.control} name="appraisal_expiry" render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="mb-1 text-xs font-medium">Vencimento do Laudo</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
+                              {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className="p-3 pointer-events-auto" />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Row 2: Status | Valor */}
+                  <FormField control={form.control} name="appraisal_status" render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="mb-1 text-xs font-medium">Status do Laudo</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="valido">Válido</SelectItem>
+                          <SelectItem value="negado">Negado</SelectItem>
+                          <SelectItem value="nao_solicitado">Não Solicitado</SelectItem>
+                          <SelectItem value="revisao">Revisão</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  
                   <FormField control={form.control} name="listed_price" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor do Laudo (R$)</FormLabel>
-                      <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="mb-1 text-xs font-medium">Valor do Laudo (R$)</FormLabel>
+                      <FormControl><Input type="number" {...field} value={field.value ?? ""} className="h-9" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                 </div>
 
-                {/* Appraisal expiry date */}
-                <FormField control={form.control} name="appraisal_expiry" render={({ field }) => (
+                <FormField control={form.control} name="appraisal_notes" render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Vencimento do Laudo</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}
-                          >
-                            {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value ? new Date(field.value + "T12:00:00") : undefined}
-                          onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField control={form.control} name="area_total" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Área Total (m²)</FormLabel>
-                      <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="area_useful" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Área Útil (m²)</FormLabel>
-                      <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-
-                <FormField control={form.control} name="responsible_user_id" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsável</FormLabel>
-                    <FormControl>
-                      <ResponsibleSelect value={field.value} onValueChange={field.onChange} className="h-9" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="notes" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Observações</FormLabel>
+                    <FormLabel className="mb-1 text-xs font-medium">Observação do Laudo</FormLabel>
                     <FormControl><Textarea rows={3} {...field} value={field.value ?? ""} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" disabled={updateProperty.isPending}>{updateProperty.isPending ? "Salvando..." : "Salvar"}</Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="dados" className="mt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                
+                {/* 1. Identificação Principal */}
+                <div className="rounded-md border p-4 space-y-4 bg-muted/10">
+                  <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Identificação Principal</h3>
+                  <PropertyPhotoUpload propertyId={property.id} currentUrl={photoUrl} onUploaded={setPhotoUrl} />
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={form.control} name="code" render={({ field }) => (
+                      <FormItem><FormLabel>Código</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="registration_number" render={({ field }) => (
+                      <FormItem><FormLabel>Matrícula</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="property_type" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {PROPERTY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="priority" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prioridade</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {PRIORITY_LEVELS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="occupation_status" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ocupação</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {OCCUPATION_STATUSES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="property_division" render={({ field }) => (
+                      <FormItem><FormLabel>Divisão do Imóvel</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="area_total" render={({ field }) => (
+                      <FormItem><FormLabel>Área Total (m²)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="area_useful" render={({ field }) => (
+                      <FormItem><FormLabel>Área Útil (m²)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <div className="col-span-2">
+                      <FormField control={form.control} name="owner" render={({ field }) => (
+                        <FormItem><FormLabel>Proprietário</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Informações de Arrematação */}
+                <div className="rounded-md border p-4 space-y-4 bg-muted/10">
+                  <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Leilão e Aquisição</h3>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={form.control} name="origin" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Origem</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="caixa">Caixa</SelectItem>
+                            <SelectItem value="emgea">Emgea</SelectItem>
+                            <SelectItem value="bancos_leiloes">Bancos de Leilões</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="auction_type" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Transação</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="a_vista">À Vista</SelectItem>
+                            <SelectItem value="financiado">Financiado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="sale_type" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Forma de Venda</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="novo">Novo</SelectItem>
+                            <SelectItem value="usado">Usado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="purchase_price" render={({ field }) => (
+                      <FormItem><FormLabel>Valor Arrematação (R$)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <div className="col-span-2">
+                       <FormField control={form.control} name="auction_date" render={({ field }) => (
+                         <FormItem className="flex flex-col">
+                           <FormLabel>Data de Arrematação</FormLabel>
+                           <Popover>
+                             <PopoverTrigger asChild>
+                               <FormControl>
+                                 <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
+                                   {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
+                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                 </Button>
+                               </FormControl>
+                             </PopoverTrigger>
+                             <PopoverContent className="w-auto p-0" align="start">
+                               <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                             </PopoverContent>
+                           </Popover>
+                           <FormMessage />
+                         </FormItem>
+                       )} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Localização */}
+                <div className="rounded-md border p-4 space-y-4 bg-muted/10">
+                  <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Localização Registrada</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={form.control} name="state" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {BRAZILIAN_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="city" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade</FormLabel>
+                        <CityCombobox value={field.value || ""} onValueChange={field.onChange} state={form.watch("state")} />
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="neighborhood" render={({ field }) => (
+                      <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="zip_code" render={({ field }) => (
+                      <FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <div className="col-span-2">
+                      <FormField control={form.control} name="address" render={({ field }) => (
+                        <FormItem><FormLabel>Endereço Completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+                    <div className="col-span-2">
+                       <FormField control={form.control} name="landmark" render={({ field }) => (
+                         <FormItem><FormLabel>Ponto de Referência</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
+                       )} />
+                    </div>
+                    <div className="col-span-2">
+                       <FormField control={form.control} name="maps_url" render={({ field }) => (
+                         <FormItem><FormLabel>Link Google Maps</FormLabel><FormControl><Input {...field} placeholder="https://maps.google.com/..." /></FormControl><FormMessage /></FormItem>
+                       )} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Documentação e Gestão */}
+                <div className="rounded-md border p-4 space-y-4 bg-muted/10">
+                  <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Acervo e Gestão</h3>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                       <FormField control={form.control} name="drive_url" render={({ field }) => (
+                         <FormItem>
+                           <FormLabel>Pasta do Drive</FormLabel>
+                           <div className="flex gap-2">
+                             <FormControl><Input {...field} value={field.value ?? ""} placeholder="https://drive.google.com/..." /></FormControl>
+                             {field.value && (
+                               <Button type="button" variant="outline" size="icon" onClick={() => window.open(field.value ?? "", '_blank')} title="Acessar Drive" className="shrink-0">
+                                 <ExternalLink className="h-4 w-4" />
+                               </Button>
+                             )}
+                           </div>
+                           <FormMessage />
+                         </FormItem>
+                       )} />
+                    </div>
+
+                    <FormField control={form.control} name="responsible_user_id" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável Geral</FormLabel>
+                        <FormControl><ResponsibleSelect value={field.value || undefined} onValueChange={field.onChange} className="h-9" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="operation_responsible_id" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável Operação</FormLabel>
+                        <FormControl><ResponsibleSelect value={field.value || undefined} onValueChange={field.onChange} className="h-9" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="caretaker_id" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vizinho/Cuidador</FormLabel>
+                        <FormControl><PartnerSelect value={field.value || undefined} onValueChange={field.onChange} className="h-9" roleFilter={["VIZINHO", "DILIGENTE"]} defaultCity={{ state: form.watch("state") || property.state, city: form.watch("city") || property.city }} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="caretaker_payment_date" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de Pagamento</FormLabel>
+                        <FormControl><Input type="number" min="1" max="31" placeholder="Dia do mês (Ex: 5)" {...field} value={field.value || ""} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <div className="col-span-2">
+                       <FormField control={form.control} name="caretaker_notes" render={({ field }) => (
+                         <FormItem>
+                           <FormLabel>Observação Cuidador/Vizinho</FormLabel>
+                           <FormControl><Textarea rows={2} {...field} value={field.value || ""} /></FormControl>
+                           <FormMessage />
+                         </FormItem>
+                       )} />
+                    </div>
+                    
+                    <div className="col-span-2">
+                       <FormField control={form.control} name="notes" render={({ field }) => (
+                         <FormItem>
+                           <FormLabel>Observações Extras</FormLabel>
+                           <FormControl><Textarea rows={3} {...field} value={field.value ?? ""} /></FormControl>
+                           <FormMessage />
+                         </FormItem>
+                       )} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 pb-4">
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                   <Button type="submit" disabled={updateProperty.isPending}>
-                    {updateProperty.isPending ? "Salvando..." : "Salvar"}
+                    {updateProperty.isPending ? "Salvando..." : "Salvar Dados"}
                   </Button>
                 </div>
+
               </form>
             </Form>
           </TabsContent>

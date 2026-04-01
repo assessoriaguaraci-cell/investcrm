@@ -1,20 +1,45 @@
 import { useMemo, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
-import { Users, Loader2, ArrowLeft, LayoutGrid, TableIcon } from "lucide-react";
+import { Users, Loader2, ArrowLeft, LayoutGrid, TableIcon, MoreHorizontal, ChevronDown, Search, CheckSquare, Download } from "lucide-react";
 import { useClients, useUpdateClient } from "@/hooks/useClients";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, formatPhone } from "@/lib/client-constants";
+import { formatCurrency } from "@/lib/property-constants";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import ClientKanbanColumn from "@/components/clients/ClientKanbanColumn";
 import ClientTable from "@/components/clients/ClientTable";
 import NewClientDialog from "@/components/clients/NewClientDialog";
 import ClientFilters, { EMPTY_CLIENT_FILTERS, type ClientFilterValues } from "@/components/clients/ClientFilters";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
+import { BoardSettingsMenu } from "@/components/kanban/BoardSettingsMenu";
+import { BulkActionBar } from "@/components/kanban/BulkActionBar";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useBoardSettings } from "@/hooks/useBoardSettings";
+import { BulkStageDialog } from "@/components/kanban/BulkStageDialog";
+import { BulkTagsDialog } from "@/components/kanban/BulkTagsDialog";
+import { BulkTaskDialog } from "@/components/kanban/BulkTaskDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { BulkFieldDialog } from "@/components/kanban/BulkFieldDialog";
+import ImportClientsDialog from "@/components/clients/ImportClientsDialog";
+import { exportToCSV, exportToExcel } from "@/utils/exportUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -24,10 +49,22 @@ export default function Clients() {
   const { data: clients, isLoading: isClientsLoading } = useClients();
   const { stages: dynamicStages, isLoading: isStagesLoading } = useKanbanStages("client");
   const updateClient = useUpdateClient();
+  const qc = useQueryClient();
   const [filters, setFilters] = useState<ClientFilterValues>(EMPTY_CLIENT_FILTERS);
   const [activePipeline, setActivePipeline] = useState<ClientPipeline>("inicial");
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
+  const [selectionModeActive, setSelectionModeActive] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [fieldDialogOpen, setFieldDialogOpen] = useState(false);
+  const [bulkFieldInitial, setBulkFieldInitial] = useState<string>("temperature");
+
+  const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const dashboardFilter = (location.state as any)?.from === "dashboard"
     ? (location.state as any)?.filter ?? null
@@ -38,6 +75,14 @@ export default function Clients() {
       window.history.replaceState({}, "");
     }
   }, []);
+
+  const boardSettings = useBoardSettings();
+
+  useEffect(() => {
+    if (user) {
+      boardSettings.loadFromCloud(user.id);
+    }
+  }, [user]);
 
   const [activeListView, setActiveListView] = useState<string | null>(dashboardFilter);
 
@@ -56,6 +101,12 @@ export default function Clients() {
     return clients.filter(c => !excludedStages.includes(c.stage));
   }, [clients, activeListView]);
 
+  const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
+    if (selected.length === 0) return true; // "all"
+    if (selected.length === 1 && selected[0] === "__none__") return false;
+    return selected.includes(value || "");
+  };
+
   const filtered = useMemo(() => {
     if (!clients) return [];
     return clients.filter(c => {
@@ -68,15 +119,24 @@ export default function Clients() {
           (c.email ?? "").toLowerCase().includes(q);
         if (!match) return false;
       }
-      if (filters.temperature && c.temperature !== filters.temperature) return false;
-      if (filters.state && c.state !== filters.state) return false;
-      if (filters.city && c.city !== filters.city) return false;
-      if (filters.work_regime && c.work_regime !== filters.work_regime) return false;
-      if (filters.marital_status && c.marital_status !== filters.marital_status) return false;
-      if (filters.has_fgts === "true" && !c.has_fgts) return false;
-      if (filters.has_fgts === "false" && c.has_fgts) return false;
+      if (!matchesMultiSelect(c.temperature, filters.temperature)) return false;
+      if (!matchesMultiSelect(c.state, filters.state)) return false;
+      if (!matchesMultiSelect(c.city, filters.city)) return false;
+      if (!matchesMultiSelect(c.work_regime, filters.work_regime)) return false;
+      if (!matchesMultiSelect(c.marital_status, filters.marital_status)) return false;
+      if (!matchesMultiSelect(c.has_fgts ? "true" : "false", filters.has_fgts)) return false;
+      if (!matchesMultiSelect(c.has_financial_pending ? "true" : "false", filters.has_financial_pending)) return false;
+      if (!matchesMultiSelect(c.can_compose_income ? "true" : "false", filters.can_compose_income)) return false;
+      if (!matchesMultiSelect(c.responsible_user_id, filters.responsible_user_id)) return false;
+      if (filters.created_at_start && c.created_at < filters.created_at_start) return false;
+      if (filters.created_at_end && (c.created_at || "") > (filters.created_at_end + "T23:59:59")) return false;
       if (filters.income_min && (c.income ?? 0) < Number(filters.income_min)) return false;
       if (filters.income_max && (c.income ?? 0) > Number(filters.income_max)) return false;
+      if (filters.tag) {
+        const clientTags = Array.isArray((c as any).tags) ? (c as any).tags : [];
+        const q = filters.tag.toLowerCase();
+        if (!clientTags.some((t: string) => t.toLowerCase().includes(q))) return false;
+      }
       return true;
     });
   }, [clients, filters, activePipeline]);
@@ -97,6 +157,185 @@ export default function Clients() {
     updateClient.mutate({ id: draggableId, stage: newStage as any });
   };
 
+  const handleSelect = (id: string, selected: boolean) => {
+    setSelectedIds(prev =>
+      selected ? [...prev, id] : prev.filter(item => item !== id)
+    );
+  };
+
+  const handleSelectAll = (ids: string[], selected: boolean) => {
+    if (selected) {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...ids])));
+    } else {
+      setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    
+    const confirmMessage = selectedIds.length === 1 
+      ? "Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita."
+      : `Tem certeza que deseja excluir ${selectedIds.length} leads? Esta ação excluirá todos os dados, tarefas e vínculos relacionados.`;
+      
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      // 1. Limpar dependências (se houver)
+      await Promise.all([
+        supabase.from("client_property_links").delete().in("client_id", selectedIds),
+        supabase.from("activities").delete().in("client_id", selectedIds),
+        supabase.from("client_documents").delete().in("client_id", selectedIds)
+      ]);
+
+      // 2. Excluir os clientes
+      const { error } = await supabase.from("clients").delete().in("id", selectedIds);
+
+      if (error) throw error;
+
+      setSelectedIds([]);
+      toast({ 
+        title: "Sucesso", 
+        description: `${selectedIds.length} lead(s) excluído(s) com sucesso.` 
+      });
+      
+      // Invalidar cache do React Query
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      
+    } catch (e: any) {
+      console.error("Erro ao excluir leads:", e);
+      toast({ 
+        title: "Erro ao excluir", 
+        description: "Não foi possível excluir alguns leads. Verifique se eles possuem dados vinculados que impedem a exclusão.", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleBulkMove = async (targetStage: string) => {
+    try {
+      // Find pipeline for target stage
+      const allStages = dynamicStages.length > 0 ? dynamicStages : CLIENT_STAGES;
+      const stageObj = allStages.find(s => s.value === targetStage);
+      const targetPipeline = stageObj?.pipeline as any;
+
+      for (const id of selectedIds) {
+        await supabase.from("clients").update({
+          stage: targetStage as any,
+          pipeline: targetPipeline || activePipeline
+        }).eq("id", id);
+      }
+      setSelectedIds([]);
+      toast({ title: "Sucesso", description: `${selectedIds.length} clientes movidos para ${stageObj?.label}` });
+      setTimeout(() => window.location.reload(), 500);
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkTags = async (newTags: string[]) => {
+    try {
+      console.log(`Starting bulk tags for ${selectedIds.length} clients:`, newTags);
+      for (const id of selectedIds) {
+        // Get current tags first
+        const { data: client, error: fetchError } = await supabase
+          .from("clients")
+          .select("tags")
+          .eq("id", id)
+          .single();
+
+        if (fetchError) {
+          console.error(`Error fetching tags for client ${id}:`, fetchError);
+          continue;
+        }
+
+        const rawCurrentTags = (client as any)?.tags;
+        let currentTags: string[] = [];
+        if (Array.isArray(rawCurrentTags)) {
+          currentTags = rawCurrentTags;
+        } else if (typeof rawCurrentTags === 'string' && rawCurrentTags.includes('{')) {
+          currentTags = rawCurrentTags.replace(/[{}]/g, '').split(',').map(t => t.trim()).filter(Boolean);
+        }
+
+        const combined = Array.from(new Set([...currentTags, ...newTags]));
+
+        console.log(`Updating client ${id} with tags:`, combined);
+
+        const { error: updateError } = await supabase
+          .from("clients")
+          .update({ tags: combined })
+          .eq("id", id);
+
+        if (updateError) {
+          console.error(`Error updating tags for client ${id}:`, updateError);
+          throw updateError;
+        }
+      }
+
+      try {
+        await qc.invalidateQueries({ queryKey: ["clients"] });
+        setSelectedIds([]);
+        toast({ title: "Sucesso", description: `Tags vinculadas a ${selectedIds.length} clientes.` });
+      } catch (err: any) {
+        if (err.message?.includes("tags") && err.message?.includes("schema cache")) {
+          toast({
+            title: "Erro de Sincronização",
+            description: "A coluna de etiquetas ainda não foi criada no banco de dados. Por favor, execute o script SQL de migração.",
+            variant: "destructive"
+          });
+        } else {
+          throw err;
+        }
+      }
+    } catch (e: any) {
+      console.error("Bulk tags fatal error:", e);
+      toast({ title: "Erro ao vincular tags", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkFieldUpdate = async (field: string, value: any) => {
+    try {
+      console.log(`Mass updating ${field} to ${value} for ${selectedIds.length} clients`);
+      for (const id of selectedIds) {
+        const { error } = await supabase
+          .from("clients")
+          .update({ [field]: value })
+          .eq("id", id);
+        if (error) throw error;
+      }
+      await qc.invalidateQueries({ queryKey: ["clients"] });
+      setSelectedIds([]);
+      toast({ title: "Sucesso", description: `${selectedIds.length} clientes atualizados.` });
+    } catch (e: any) {
+      console.error("Bulk field update fatal error:", e);
+      toast({ title: "Erro na atualização", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkTasks = async (data: { description: string, due_date: string, notes: string, activity_type: string }) => {
+    if (!user) return;
+    try {
+      const taskInserts = selectedIds.map(id => ({
+        client_id: id,
+        description: data.description,
+        due_date: new Date(data.due_date).toISOString(),
+        notes: data.notes,
+        responsible_user_id: user.id,
+        created_by: user.id,
+        activity_type: data.activity_type,
+        status: "pendente" as const
+      }));
+
+      await supabase.from("activities").insert(taskInserts);
+      await qc.invalidateQueries({ queryKey: ["activities"] });
+
+      setSelectedIds([]);
+      toast({ title: "Tarefas criadas", description: `${selectedIds.length} novas tarefas agendadas.` });
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    }
+  };
+
   const isLoading = isClientsLoading || isStagesLoading;
 
   if (isLoading) {
@@ -112,8 +351,8 @@ export default function Clients() {
     return (
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setActiveListView(null)}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Kanban
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao relatório de imóveis por etapa
           </Button>
           <h1 className="text-xl font-bold">Leads Ativos</h1>
           <Badge variant="secondary">{activeLeads.length}</Badge>
@@ -148,38 +387,120 @@ export default function Clients() {
     );
   }
 
+  const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
+
   return (
     <div className="p-4 md:p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Funil de Clientes
-          </h1>
-          <p className="text-xs text-muted-foreground">Arraste os cards entre as etapas</p>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <Select value={activePipeline} onValueChange={v => setActivePipeline(v as ClientPipeline)}>
+                <SelectTrigger className="border-none shadow-none bg-transparent p-0 h-auto focus:ring-0 w-auto gap-2 group flex items-center">
+                  <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
+                     FUNIL DE CLIENTES / {CLIENT_PIPELINES.find(p => p.value === activePipeline)?.label}
+                  </h1>
+                </SelectTrigger>
+                <SelectContent>
+                  {CLIENT_PIPELINES.map(p => (
+                    <SelectItem key={p.value} value={p.value} className="text-xs font-black uppercase text-foreground">{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Gestão de Funis e Leads</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 border-l pl-4">
+             <Badge variant="outline" className="bg-[#EDF0F4] dark:bg-[#016FAE] text-[#002B44] dark:text-white border-none font-black text-[10px] uppercase py-1 px-3 shadow-sm">Leads ativos</Badge>
+             <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary" />
+                <Input 
+                  placeholder="Busca e filtro" 
+                  value={filters.search}
+                  onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  className="h-8 w-48 pl-9 bg-muted/30 dark:bg-muted/10 border-none shadow-none text-xs focus-visible:ring-1 focus-visible:ring-primary/20 text-foreground"
+                />
+             </div>
+          </div>
+          
+          <div className="hidden lg:flex items-center gap-4 border-l pl-6">
+            <div className="text-center">
+              <p className="text-[10px] font-black text-muted-foreground uppercase">Leads</p>
+              <p className="text-sm font-black text-foreground">{filtered.length}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] font-black text-muted-foreground uppercase">Valor</p>
+              <p className="text-sm font-black text-primary">{formatCurrency(totalFunnelValue)}</p>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={activePipeline} onValueChange={v => setActivePipeline(v as ClientPipeline)}>
-            <SelectTrigger className="h-9 w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CLIENT_PIPELINES.map(p => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} className="bg-background border rounded-md p-1 h-9">
-            <ToggleGroupItem value="kanban" className="px-3 h-7 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-              <LayoutGrid className="h-4 w-4 mr-2" />
-              Kanban
-            </ToggleGroupItem>
-            <ToggleGroupItem value="table" className="px-3 h-7 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-              <TableIcon className="h-4 w-4 mr-2" />
-              Tabela
-            </ToggleGroupItem>
-          </ToggleGroup>
+
+        <div className="flex items-center gap-3">
           <NewClientDialog />
+
+          <div className="h-6 w-px bg-border/50 mx-1" />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground hover:bg-muted border border-border/20 shadow-sm" title="Mais opções (Visualização e Filtros)">
+                <MoreHorizontal className="h-6 w-6" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-2 shadow-xl border-border/40">
+              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 pt-2 tracking-widest">Visualização</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={viewMode} onValueChange={v => setViewMode(v as ViewMode)} className="px-1">
+                <DropdownMenuRadioItem value="kanban" className="text-xs font-bold uppercase py-2 cursor-pointer transition-colors">
+                  <LayoutGrid className="h-4 w-4 mr-2" /> Modo Kanban (Cards)
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="table" className="text-xs font-bold uppercase py-2 cursor-pointer transition-colors">
+                  <TableIcon className="h-4 w-4 mr-2" /> Modo Tabela (Lista)
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              
+              {viewMode === "kanban" && (
+                <BoardSettingsMenu triggerAsMenuItem />
+              )}
+
+              <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 tracking-widest">Operação</DropdownMenuLabel>
+              <div 
+                className="flex items-center gap-2 py-2 cursor-pointer hover:bg-muted/50 rounded px-2 transition-colors mx-1" 
+                onClick={() => {
+                  setSelectionModeActive(!selectionModeActive);
+                  if (!selectionModeActive) setSelectedIds([]);
+                }}
+              >
+                <div className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${selectionModeActive ? 'bg-[#002B44] border-[#002B44] text-white' : 'border-muted-foreground/30'}`}>
+                  {selectionModeActive && <CheckSquare className="h-2.5 w-2.5" />}
+                </div>
+                <span className="text-[11px] font-bold uppercase leading-none">Seleção em Massa (Editar)</span>
+              </div>
+              
+              <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 tracking-widest">Dados</DropdownMenuLabel>
+              <div className="px-1 space-y-1">
+                <ImportClientsDialog />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5 transition-all"
+                  onClick={() => exportToCSV('clientes_invest_crm', filtered)}
+                >
+                  <Download className="h-3.5 w-3.5 text-primary" /> Exportar CSV
+                </Button>
+                <Button 
+                  variant="outline" 
+                   size="sm" 
+                  className="w-full justify-start gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5 transition-all"
+                  onClick={() => exportToExcel('clientes_invest_crm', filtered)}
+                >
+                  <Download className="h-3.5 w-3.5 text-primary" /> Exportar Excel (XLSX)
+                </Button>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -188,6 +509,28 @@ export default function Clients() {
         onFiltersChange={setFilters}
         activePipeline={activePipeline}
       />
+
+      {selectedIds.length > 0 && (
+        <div className="mt-4 border-t border-slate-100/50">
+          <BulkActionBar
+            selectedCount={selectedIds.length}
+            onClear={() => setSelectedIds([])}
+            onDelete={handleDeleteSelected}
+            onChangeStage={() => setMoveDialogOpen(true)}
+            onAddTag={() => setTagsDialogOpen(true)}
+            onReassign={() => {
+              setBulkFieldInitial("responsible_user_id");
+              setFieldDialogOpen(true);
+            }}
+            onAddTask={() => setTaskDialogOpen(true)}
+            onChangeField={() => {
+              setBulkFieldInitial("temperature");
+              setFieldDialogOpen(true);
+            }}
+            inline
+          />
+        </div>
+      )}
 
       {viewMode === "kanban" ? (
         <DragDropContext onDragEnd={onDragEnd}>
@@ -200,7 +543,12 @@ export default function Clients() {
                   stageValue={stage.value}
                   stageLabel={stage.label}
                   stageColor={stage.color}
+                  pipeline={activePipeline}
                   clients={grouped[stage.value] || []}
+                  selectable={selectionModeActive}
+                  selectedIds={selectedIds}
+                  onSelect={handleSelect}
+                  onSelectAll={handleSelectAll}
                 />
               ))}
             </div>
@@ -211,6 +559,37 @@ export default function Clients() {
           <ClientTable clients={filtered} />
         </div>
       )}
+
+
+
+      <BulkStageDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        selectedCount={selectedIds.length}
+        onConfirm={handleBulkMove}
+      />
+
+      <BulkTagsDialog
+        open={tagsDialogOpen}
+        onOpenChange={setTagsDialogOpen}
+        selectedCount={selectedIds.length}
+        onConfirm={handleBulkTags}
+      />
+
+      <BulkTaskDialog
+        open={taskDialogOpen}
+        onOpenChange={setTaskDialogOpen}
+        selectedCount={selectedIds.length}
+        onConfirm={handleBulkTasks}
+      />
+
+      <BulkFieldDialog
+        open={fieldDialogOpen}
+        onOpenChange={setFieldDialogOpen}
+        selectedCount={selectedIds.length}
+        initialField={bulkFieldInitial}
+        onConfirm={handleBulkFieldUpdate}
+      />
     </div>
   );
 }

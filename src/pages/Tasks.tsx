@@ -14,6 +14,16 @@ import { toast } from "sonner";
 import { isPast, isToday, format } from "date-fns";
 import { useLocation } from "react-router-dom";
 import GoogleCalendarView from "@/components/tasks/GoogleCalendarView";
+import MultiSelectFilter from "@/components/properties/MultiSelectFilter";
+import { SavedFiltersButton } from "@/components/ui/saved-filters-button";
+
+export interface TaskFilterValues {
+  types: string[];
+}
+
+export const EMPTY_TASK_FILTERS: TaskFilterValues = {
+  types: [],
+};
 
 const TYPE_OPTIONS = [
   { value: "all", label: "Todos os tipos" },
@@ -45,13 +55,19 @@ export default function Tasks() {
   // const defaultTab = dashboardFilter === "pending" ? "pending" : "pending";
 
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [filters, setFilters] = useState<TaskFilterValues>(EMPTY_TASK_FILTERS);
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
+
+  const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
+    if (selected.length === 0) return true; // "all"
+    if (selected.length === 1 && selected[0] === "__none__") return false;
+    return selected.includes(value || "");
+  };
 
   const filtered = useMemo(() => {
     if (!activities) return [];
     return activities.filter((a) => {
-      if (typeFilter !== "all" && a.activity_type !== typeFilter) return false;
+      if (!matchesMultiSelect(a.activity_type, filters.types)) return false;
       if (search) {
         const q = search.toLowerCase();
         const matchDesc = a.description.toLowerCase().includes(q);
@@ -61,7 +77,7 @@ export default function Tasks() {
       }
       return true;
     });
-  }, [activities, search, typeFilter]);
+  }, [activities, search, filters]);
 
   const columns = useMemo(() => {
     const overdue = filtered.filter(
@@ -135,47 +151,58 @@ export default function Tasks() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto h-screen flex flex-col">
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Gestão de Atividades</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Organize suas tarefas no Kanban</p>
+    <div className="p-4 md:p-6 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4 shrink-0">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <CheckSquare className="h-8 w-8 text-primary shrink-0" />
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
+                Gestão de Atividades
+              </h1>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Organize suas tarefas e compromissos</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
         <div className="flex flex-1 gap-2">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar tarefa..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white border-slate-200 focus-visible:ring-primary/20"
+              className="pl-9 bg-background border-border focus-visible:ring-primary/20"
             />
           </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px] bg-white border-slate-200">
-              <ListFilter className="h-4 w-4 mr-2 text-slate-500" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TYPE_OPTIONS.map((t) => (
-                <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[220px]">
+            <MultiSelectFilter
+              label="Tipos"
+              options={TYPE_OPTIONS.filter(o => o.value !== "all").map(o => ({ value: o.value, label: o.label }))}
+              selected={filters.types}
+              onSelectionChange={v => setFilters({ ...filters, types: v })}
+              placeholder="Todos os tipos"
+            />
+          </div>
+          <SavedFiltersButton
+            entityType="tasks"
+            currentFilters={filters}
+            emptyFilters={EMPTY_TASK_FILTERS}
+            onLoadFilter={setFilters}
+          />
         </div>
         <NewTaskDialog />
       </div>
 
       <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="bg-slate-100/80 p-1 border border-slate-200 mb-6 self-start">
-          <TabsTrigger value="kanban" className="gap-2 px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+        <TabsList className="bg-muted/50 p-1 border border-border mb-6 self-start">
+          <TabsTrigger value="kanban" className="gap-2 px-6 py-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <KanbanIcon className="h-4 w-4" />
             Kanban
           </TabsTrigger>
-          <TabsTrigger value="calendar_view" className="gap-2 px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+          <TabsTrigger value="calendar_view" className="gap-2 px-6 py-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
             <CalendarDays className="h-4 w-4" />
             Calendário
           </TabsTrigger>

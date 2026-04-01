@@ -1,13 +1,26 @@
-import { useMemo } from "react";
-import { Building2, Users, Link2, TrendingUp, AlertTriangle, Plus, Clock, CalendarDays, ArrowRight, DollarSign, BarChart3, MapPin } from "lucide-react";
+import { useMemo, useState } from "react";
+import { 
+  Building2, Users, Link2, TrendingUp, AlertTriangle, Plus, Clock, 
+  CalendarDays, ArrowRight, DollarSign, BarChart3, MapPin, 
+  FileSpreadsheet, Download, ChevronDown 
+} from "lucide-react";
+import { exportToCSV, exportToExcel } from "@/utils/exportUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { useProperties } from "@/hooks/useProperties";
 import { useClients } from "@/hooks/useClients";
 import { useActivities } from "@/hooks/useActivities";
 import { useClientPropertyLinks } from "@/hooks/useClientPropertyLinks";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   PROPERTY_STAGES,
   formatCurrency,
@@ -18,16 +31,17 @@ import {
   netProfit,
 } from "@/lib/property-constants";
 import { TEMPERATURE_OPTIONS } from "@/lib/client-constants";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { format, isAfter, isBefore, startOfMonth, endOfMonth, parseISO, differenceInDays } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { format, isAfter, isBefore, startOfMonth, endOfMonth, parseISO, differenceInDays, eachMonthOfInterval, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import BrazilMap from "@/components/dashboard/BrazilMap";
+import EvolutionChart from "@/components/dashboard/EvolutionChart";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { useState } from "react";
+// Duplicate import removed
 
 const PIE_COLORS = [
-  "hsl(200, 98%, 39%)",
+  "hsl(202, 99%, 35%)", /* #016FAE */
   "hsl(142, 72%, 42%)",
   "hsl(38, 92%, 50%)",
   "hsl(0, 72%, 50%)",
@@ -50,6 +64,15 @@ export default function Dashboard() {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: activities = [], isLoading: loadingActivities } = useActivities();
   const { data: links = [] } = useClientPropertyLinks();
+
+  const { data: stageHistory = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ["all_property_stage_history"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("property_stage_history").select("id, stage, entered_at, property_id");
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const now = new Date();
   const [date, setDate] = useState<DateRange | undefined>({
@@ -81,11 +104,46 @@ export default function Dashboard() {
   }, [properties, clients, activities, date]);
 
   // Properties by stage chart - with quantities shown
-  const stageChartData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    properties.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; });
-    return PROPERTY_STAGES.map(s => ({ name: s.label, value: counts[s.value] || 0 }));
-  }, [properties]);
+  const stageChartDataByMonth = useMemo(() => {
+    if (!stageHistory.length) return [];
+
+    let start = date?.from;
+    let end = date?.to || new Date();
+
+    if (!start) {
+      // Find earliest entered_at in history
+      const earliest = stageHistory.reduce((min, h) => {
+        const d = parseISO(h.entered_at);
+        return d < min ? d : min;
+      }, new Date());
+      start = earliest;
+    }
+
+    let months: Date[] = [];
+    try {
+      months = eachMonthOfInterval({ start, end });
+    } catch {
+      months = [start];
+    }
+
+    return months.map(m => {
+      const monthLabel = format(m, "MMM/yy", { locale: ptBR }).toUpperCase();
+      
+      const historyInMonth = stageHistory.filter(h => isSameMonth(parseISO(h.entered_at), m));
+
+      const stageCounts: Record<string, number> = {};
+      
+      historyInMonth.forEach(h => {
+        const stageLabel = PROPERTY_STAGES.find(s => s.value === h.stage)?.label || h.stage;
+        stageCounts[stageLabel] = (stageCounts[stageLabel] || 0) + 1;
+      });
+
+      return {
+        name: monthLabel,
+        ...stageCounts,
+      };
+    });
+  }, [stageHistory, date]);
 
   // Leads by temperature
   const tempChartData = useMemo(() => {
@@ -152,14 +210,53 @@ export default function Dashboard() {
     };
   }, [properties, date]);
 
-  const isLoading = loadingProps || loadingClients || loadingActivities;
+  const activeStagesInChart = useMemo(() => {
+    const keys = new Set<string>();
+    stageChartDataByMonth.forEach(month => {
+      Object.keys(month).forEach(k => {
+        if (k !== 'name' && (month as any)[k] > 0) keys.add(k);
+      });
+    });
+    return Array.from(keys);
+  }, [stageChartDataByMonth]);
+
+  const isLoading = loadingProps || loadingClients || loadingActivities || loadingHistory;
 
   const kpis = [
     { label: "Imóveis Ativos", value: stats.activeProperties.toString(), icon: Building2, color: "text-primary", bgColor: "bg-primary/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "active" } }) },
-    { label: "Leads Ativos", value: stats.activeClients.toString(), icon: Users, color: "text-info", bgColor: "bg-info/10", onClick: () => navigate("/clients", { state: { from: "dashboard", filter: "active" } }) },
-    { label: "Vendas no Período", value: stats.salesCount > 0 ? formatCurrency(stats.salesRevenue) : "0", subtitle: stats.salesCount > 0 ? `${stats.salesCount} venda${stats.salesCount > 1 ? "s" : ""}` : undefined, icon: TrendingUp, color: "text-success", bgColor: "bg-success/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "sales_this_month" } }) },
-    { label: "Pendências", value: stats.pendingActivities.toString(), subtitle: stats.overdueActivities > 0 ? `${stats.overdueActivities} atrasada${stats.overdueActivities > 1 ? "s" : ""}` : undefined, icon: AlertTriangle, color: stats.overdueActivities > 0 ? "text-destructive" : "text-warning", bgColor: stats.overdueActivities > 0 ? "bg-destructive/10" : "bg-warning/10", onClick: () => navigate("/tasks", { state: { from: "dashboard", filter: "pending" } }) },
+    { label: "Leads Ativos", value: stats.activeClients.toString(), icon: Users, color: "text-primary", bgColor: "bg-primary/10", onClick: () => navigate("/clients", { state: { from: "dashboard", filter: "active" } }) },
+    { label: "Vendas no Período", value: stats.salesCount > 0 ? formatCurrency(stats.salesRevenue) : "0", subtitle: stats.salesCount > 0 ? `${stats.salesCount} venda${stats.salesCount > 1 ? "s" : ""}` : undefined, icon: TrendingUp, color: "text-warning", bgColor: "bg-warning/10", onClick: () => navigate("/properties", { state: { from: "dashboard", filter: "sales_this_month" } }) },
+    { label: "Pendências", value: stats.pendingActivities.toString(), subtitle: stats.overdueActivities > 0 ? `${stats.overdueActivities} atrasada${stats.overdueActivities > 1 ? "s" : ""}` : undefined, icon: AlertTriangle, color: "text-warning", bgColor: "bg-warning/10", onClick: () => navigate("/tasks", { state: { from: "dashboard", filter: "pending" } }) },
   ];
+
+  const handleExportReport = (format: 'csv' | 'xlsx') => {
+    const reportData = [
+      { Categoria: "KPIs", Descricao: "Imóveis Ativos", Valor: stats.activeProperties },
+      { Categoria: "KPIs", Descricao: "Leads Ativos", Valor: stats.activeClients },
+      { Categoria: "KPIs", Descricao: "Vendas no Período", Valor: stats.salesCount },
+      { Categoria: "KPIs", Descricao: "Faturamento Bruto Realizado", Valor: financialStats.realizedGrossRev },
+      { Categoria: "Financeiro Esperado", Descricao: "Faturamento Bruto Esp.", Valor: financialStats.expectedGrossRev },
+      { Categoria: "Financeiro Esperado", Descricao: "Lucro Líquido Esperado", Valor: financialStats.expectedNetProfit },
+      { Categoria: "Atividades", Descricao: "Pendentes", Valor: stats.pendingActivities },
+      { Categoria: "Atividades", Descricao: "Atrasadas", Valor: stats.overdueActivities },
+    ];
+
+    stageChartDataByMonth.forEach(m => {
+      activeStagesInChart.forEach(k => {
+         if ((m as any)[k] > 0) reportData.push({ Categoria: `Imóveis Adicionados por Etapa (${m.name})`, Descricao: k, Valor: (m as any)[k] });
+      })
+    });
+
+    tempChartData.forEach(t => {
+      reportData.push({ Categoria: "Leads por Temperatura", Descricao: t.name, Valor: t.value });
+    });
+
+    if (format === 'csv') {
+      exportToCSV("relatorio_geral_invest_crm", reportData);
+    } else {
+      exportToExcel("relatorio_geral_invest_crm", reportData);
+    }
+  };
 
   const handleQuickPeriod = (period: 'month' | 'quarter' | 'year' | 'all') => {
     const end = new Date();
@@ -176,20 +273,45 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Visão geral do CRM — {format(now, "dd 'de' MMMM, yyyy", { locale: ptBR })}
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4">
+        <div className="flex items-center gap-4">
+          <BarChart3 className="h-8 w-8 text-primary shrink-0" />
+          <div className="flex flex-col">
+            <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter leading-none font-heading">Dashboard</h1>
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">
+               {format(now, "dd 'de' MMMM, yyyy", { locale: ptBR })}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 gap-2 font-black uppercase text-[10px] border-primary/20 hover:bg-primary/5 px-4 shadow-sm"
+              >
+                <FileSpreadsheet className="h-4 w-4" /> Extrair Relatório <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[180px]">
+              <DropdownMenuItem onClick={() => handleExportReport('csv')} className="text-xs font-bold uppercase cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportReport('xlsx')} className="text-xs font-bold uppercase cursor-pointer">
+                <Download className="h-4 w-4 mr-2" /> Exportar Excel (XLSX)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="h-6 w-px bg-border/50 mx-2 hidden sm:block" />
+
           <div className="flex gap-1">
-            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('month')}>Mês</Button>
-            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('quarter')}>Trimestre</Button>
-            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('year')}>Ano</Button>
-            <Button variant="outline" size="sm" className="h-8 text-[10px]" onClick={() => handleQuickPeriod('all')}>Tudo</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold" onClick={() => handleQuickPeriod('month')}>Mês</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold" onClick={() => handleQuickPeriod('quarter')}>Trimestre</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold" onClick={() => handleQuickPeriod('year')}>Ano</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold" onClick={() => handleQuickPeriod('all')}>Tudo</Button>
           </div>
           <DateRangePicker
             date={date}
@@ -305,34 +427,15 @@ export default function Dashboard() {
       {/* Brazil Map */}
       <BrazilMap properties={properties} />
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center justify-between">
-              Imóveis por Etapa
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/properties")}>
-                Ver todos <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stageChartData.some(d => d.value > 0) ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={stageChartData} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="hsl(200, 98%, 39%)" radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 11, fontWeight: 600 }} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-muted-foreground py-8 text-center">Nenhum imóvel cadastrado ainda.</p>
-            )}
-          </CardContent>
-        </Card>
+      {/* Evolution Line Chart (Replaces old static bar chart) */}
+      <div className="mt-4">
+        <EvolutionChart stageHistory={stageHistory} />
+      </div>
 
-        <Card>
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        {/* Leads por Temperatura */}
+        <Card className="col-span-1 md:col-span-1 border">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center justify-between">
               Leads por Temperatura
@@ -348,7 +451,7 @@ export default function Dashboard() {
                   <PieChart>
                     <Pie data={tempChartData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value">
                       {tempChartData.map((_, i) => (
-                        <Cell key={i} fill={["hsl(199, 89%, 48%)", "hsl(38, 92%, 50%)", "hsl(0, 72%, 50%)"][i] || PIE_COLORS[i]} />
+                        <Cell key={i} fill={["hsl(202, 99%, 35%)", "hsl(38, 92%, 50%)", "hsl(26, 91%, 56%)"][i] || PIE_COLORS[i]} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -357,7 +460,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   {tempChartData.map((d, i) => (
                     <div key={d.name} className="flex items-center gap-2 text-sm">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: ["hsl(199, 89%, 48%)", "hsl(38, 92%, 50%)", "hsl(0, 72%, 50%)"][i] }} />
+                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: ["hsl(202, 99%, 35%)", "hsl(38, 92%, 50%)", "hsl(26, 91%, 56%)"][i] }} />
                       <span className="text-muted-foreground">{d.name}</span>
                       <span className="font-semibold">{d.value}</span>
                     </div>
@@ -429,16 +532,10 @@ export default function Dashboard() {
               Novo Imóvel
             </Button>
             <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/clients")}>
-              <div className="flex items-center justify-center h-7 w-7 rounded-md bg-info/10">
-                <Plus className="h-3.5 w-3.5 text-info" />
+              <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10">
+                <Plus className="h-3.5 w-3.5 text-primary" />
               </div>
               Novo Cliente
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/matches")}>
-              <div className="flex items-center justify-center h-7 w-7 rounded-md bg-success/10">
-                <Link2 className="h-3.5 w-3.5 text-success" />
-              </div>
-              Vincular Cliente ↔ Imóvel
             </Button>
             <Button variant="outline" className="w-full justify-start gap-3 h-11" onClick={() => navigate("/tasks")}>
               <div className="flex items-center justify-center h-7 w-7 rounded-md bg-warning/10">

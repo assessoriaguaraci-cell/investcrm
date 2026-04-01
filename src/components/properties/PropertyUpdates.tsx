@@ -36,19 +36,21 @@ export default function PropertyUpdates({ propertyId, currentStage, auctionDate 
   const handleSave = () => {
     if (!content.trim()) return;
     const daysSinceAuction = auctionDate
-      ? differenceInDays(new Date(), new Date(auctionDate))
+      ? differenceInDays(date, new Date(auctionDate))
       : undefined;
     createUpdate.mutate({
       propertyId,
       content: content.trim(),
       updateDate: format(date, "yyyy-MM-dd"),
       userId: user?.id ?? "",
-      stage: currentStage,
+      stage: currentStage, // 100% automático, puxando do contexto
       daysSinceAuction,
     }, {
       onSuccess: () => { setContent(""); setAdding(false); setDate(new Date()); }
     });
   };
+
+  const stagesList = dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES;
 
   if (isLoading) {
     return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -76,6 +78,7 @@ export default function PropertyUpdates({ propertyId, currentStage, auctionDate 
               <Calendar mode="single" selected={date} onSelect={d => d && setDate(d)} className={cn("p-3 pointer-events-auto")} />
             </PopoverContent>
           </Popover>
+          
           <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="O que aconteceu nesta semana?" rows={3} className="text-xs" />
           <div className="flex justify-end gap-1">
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setAdding(false)}>Cancelar</Button>
@@ -93,28 +96,31 @@ export default function PropertyUpdates({ propertyId, currentStage, auctionDate 
           const stageInfo = (dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES).find(s => s.value === u.stage);
           return (
             <div key={u.id} className="border rounded-md p-3 bg-card">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-medium text-primary">
-                  {format(new Date(u.update_date + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </span>
-                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => deleteUpdate.mutate({ id: u.id, propertyId })}>
-                  <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-bold text-primary">
+                      {format(new Date(u.update_date + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </span>
+                    {/* Stage Badge fallback if not found in maps */}
+                    {u.stage && (
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-black uppercase tracking-wider border-primary/30 text-primary bg-primary/5 shadow-sm">
+                        {stageInfo ? stageInfo.label : u.stage.replace(/_/g, ' ')}
+                      </Badge>
+                    )}
+                  </div>
+                  {u.days_since_auction != null && (
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 gap-1 w-fit border-border/50 text-muted-foreground/80 font-bold">
+                      <Clock className="h-2.5 w-2.5" />
+                      {u.days_since_auction}d desde arrematação
+                    </Badge>
+                  )}
+                </div>
+                <Button variant="ghost" size="icon" className="h-[22px] w-[22px] rounded-full hover:bg-destructive/10 shrink-0" onClick={() => deleteUpdate.mutate({ id: u.id, propertyId })}>
+                  <Trash2 className="h-[10px] w-[10px] text-muted-foreground hover:text-destructive" />
                 </Button>
               </div>
-              <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-                {stageInfo && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                    {stageInfo.label}
-                  </Badge>
-                )}
-                {u.days_since_auction != null && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
-                    <Clock className="h-2.5 w-2.5" />
-                    {u.days_since_auction}d desde arrematação
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs whitespace-pre-wrap">{u.content}</p>
+              <p className="text-xs whitespace-pre-wrap leading-relaxed font-medium text-foreground/90 bg-muted/20 p-2.5 rounded-md border border-border/50">{u.content}</p>
             </div>
           );
         })}

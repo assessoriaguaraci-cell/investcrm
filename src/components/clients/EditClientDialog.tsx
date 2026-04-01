@@ -10,9 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateClient, type Client } from "@/hooks/useClients";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, WORK_REGIMES, MARITAL_STATUSES } from "@/lib/client-constants";
-import { BRAZILIAN_STATES } from "@/lib/property-constants";
+import { BRAZILIAN_STATES, formatCurrency } from "@/lib/property-constants";
+import { supabase } from "@/integrations/supabase/client";
 import LinkedProperties from "./LinkedProperties";
 import type { Database } from "@/integrations/supabase/types";
+import { Badge } from "@/components/ui/badge";
+import { Plus, X, ExternalLink } from "lucide-react";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -46,7 +50,55 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
   const [financialPendingDesc, setFinancialPendingDesc] = useState(client.financial_pending_description ?? "");
   const [canComposeIncome, setCanComposeIncome] = useState(client.can_compose_income ?? false);
   const [notes, setNotes] = useState(client.notes ?? "");
+  const [driveUrl, setDriveUrl] = useState((client as any).drive_url ?? "");
   const [lostReason, setLostReason] = useState(client.lost_reason ?? "");
+  const [tags, setTags] = useState<string[]>(() => {
+    const raw = (client as any).tags;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string' && raw.includes('{')) {
+      return raw.replace(/[{}]/g, '').split(',').map(t => t.trim()).filter(Boolean);
+    }
+    return [];
+  });
+  const [newTagInput, setNewTagInput] = useState("");
+  const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [responsibleUserId, setResponsibleUserId] = useState(client.responsible_user_id ?? "");
+
+  const { data: members = [] } = useApprovedMembers();
+  const [allCities, setAllCities] = useState<{ city: string, state: string }[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      fetchExistingTags();
+      // Fetch unique cities from city_info and clients
+      Promise.all([
+        supabase.from("city_info").select("city, state"),
+        supabase.from("clients").select("city, state").not("city", "is", null)
+      ]).then(([infoRes, clientRes]) => {
+        const combined = [...(infoRes.data || []), ...(clientRes.data || [])];
+        const unique = combined.reduce((acc: any[], curr) => {
+          if (!acc.find(item => item.city === curr.city && item.state === curr.state)) {
+            acc.push(curr);
+          }
+          return acc;
+        }, []);
+        setAllCities(unique);
+      });
+    }
+  }, [open]);
+
+  const fetchExistingTags = async () => {
+    try {
+      const { data } = await supabase.from("clients").select("tags").not("tags", "is", null);
+      if (data) {
+        const allTags = data.flatMap(d => (Array.isArray(d.tags) ? d.tags : []));
+        const uniqueTags = [...new Set(allTags)].sort();
+        setExistingTags(uniqueTags);
+      }
+    } catch (e) {
+      console.error("Error fetching tags", e);
+    }
+  };
 
   useEffect(() => {
     setPipeline(client.pipeline);
@@ -68,8 +120,29 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
     setFinancialPendingDesc(client.financial_pending_description ?? "");
     setCanComposeIncome(client.can_compose_income ?? false);
     setNotes(client.notes ?? "");
+    setDriveUrl((client as any).drive_url ?? "");
     setLostReason(client.lost_reason ?? "");
+    const raw = (client as any).tags;
+    let initialTags: string[] = [];
+    if (Array.isArray(raw)) initialTags = raw;
+    else if (typeof raw === 'string' && raw.includes('{')) {
+      initialTags = raw.replace(/[{}]/g, '').split(',').map(t => t.trim()).filter(Boolean);
+    }
+    setTags(initialTags);
+    setResponsibleUserId(client.responsible_user_id ?? "");
   }, [client]);
+
+  const handleAddTag = () => {
+    const val = newTagInput.trim();
+    if (val && !tags.includes(val)) {
+      setTags([...tags, val]);
+      setNewTagInput("");
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setTags(tags.filter(t => t !== tag));
+  };
 
   const stagesForPipeline = CLIENT_STAGES.filter(s => s.pipeline === pipeline);
 
@@ -85,7 +158,7 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
       return;
     }
     try {
-      await updateClient.mutateAsync({
+      const updateData: any = {
         id: client.id,
         full_name: fullName.trim(),
         phone: phone || null,
@@ -97,19 +170,41 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
         pipeline,
         stage,
         temperature,
-        income: income ? Number(income) : null,
-        work_regime: workRegime ? (workRegime as Database["public"]["Enums"]["work_regime"]) : null,
+        income: income ? parseFloat(income) : null,
+        work_regime: workRegime || null,
         marital_status: maritalStatus || null,
         has_fgts: hasFgts,
         fgts_above_300: fgtsAbove300,
         has_financial_pending: hasFinancialPending,
-        financial_pending_description: financialPendingDesc || null,
+        financial_pending_description: financialPendingDesc,
         can_compose_income: canComposeIncome,
         notes: notes || null,
-        lost_reason: isLostStage ? lostReason : null,
-      });
-      toast({ title: "Cliente atualizado!" });
-      onOpenChange(false);
+        drive_url: driveUrl || null,
+        lost_reason: lostReason || null,
+        responsible_user_id: responsibleUserId || null,
+        tags: tags
+      };
+
+      try {
+        await updateClient.mutateAsync(updateData);
+        toast({ title: "Cliente atualizado!" });
+        onOpenChange(false);
+      } catch (err: any) {
+        // Fallback for when the 'tags' column is still propagating in the DB
+        if (err.message?.includes("tags") && err.message?.includes("schema cache")) {
+          console.warn("Tags column not found in cache, retrying without tags field...");
+          const { tags, ...dataWithoutTags } = updateData;
+          await updateClient.mutateAsync(dataWithoutTags);
+          toast({
+            title: "Informações salvas parcialmente",
+            description: "O banco de dados ainda não possui a coluna de etiquetas. Por favor, execute o código SQL de migração no painel do Supabase para habilitar esta função.",
+            variant: "destructive"
+          });
+          onOpenChange(false);
+        } else {
+          throw err;
+        }
+      }
     } catch (err: any) {
       toast({ title: "Erro ao atualizar", description: err.message, variant: "destructive" });
     }
@@ -134,6 +229,49 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
             <span className="text-sm font-semibold text-slate-700">Dados Cliente</span>
           </div>
 
+          <div className="grid gap-2 mb-6">
+            <Label>Tags do Cliente</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Adicionar tag..."
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
+              />
+              <Button type="button" size="icon" variant="outline" onClick={handleAddTag}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {tags.map(t => (
+                <Badge key={t} variant="secondary" className="gap-1 pl-2 pr-1 py-1 bg-blue-50 text-blue-700 border-blue-100">
+                  {t}
+                  <button onClick={() => removeTag(t)} className="hover:bg-blue-200 rounded-full p-0.5">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+
+            {existingTags.length > 0 && (
+              <div className="mt-3">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Sugestões:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {existingTags.filter(t => !tags.includes(t)).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTags([...tags, t])}
+                      className="text-[10px] px-2 py-0.5 rounded-full border border-slate-200 bg-white text-slate-500 hover:border-primary hover:text-primary transition-colors"
+                    >
+                      + {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-1">
               <Label>CPF</Label>
@@ -156,6 +294,41 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
               <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
             <div className="space-y-1">
+              <Label>Link do Drive</Label>
+              <div className="flex gap-2">
+                <Input type="url" value={driveUrl} onChange={e => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." />
+                {driveUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => window.open(driveUrl, '_blank')}
+                    title="Acessar Drive"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Responsável</Label>
+              <Select value={responsibleUserId} onValueChange={setResponsibleUserId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o corretor" /></SelectTrigger>
+                <SelectContent>
+                  {members.map(m => (
+                    <SelectItem
+                      key={m.user_id}
+                      value={m.user_id}
+                      disabled={!m.is_registered}
+                    >
+                      {m.full_name} {!m.is_registered && "(Aguardando Registro)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Estado Civil</Label>
               <Select value={maritalStatus} onValueChange={setMaritalStatus}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -175,7 +348,21 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
             </div>
             <div className="space-y-1">
               <Label>Cidade</Label>
-              <Input value={city} onChange={e => setCity(e.target.value)} />
+              <Select value={city} onValueChange={setCity} disabled={!state}>
+                <SelectTrigger>
+                  <SelectValue placeholder={!state ? "Selecione um estado" : "Selecione a cidade"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCities
+                    .filter(c => c.state === state)
+                    .sort((a, b) => a.city.localeCompare(b.city))
+                    .map(c => <SelectItem key={c.city} value={c.city}>{c.city}</SelectItem>)
+                  }
+                  {state && !allCities.some(c => c.state === state) && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">Nenhuma cidade cadastrada para este estado</div>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1">
@@ -220,7 +407,7 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
               <Select value={workRegime} onValueChange={setWorkRegime}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {WORK_REGIMES.map(w => <SelectItem key={w.value} value={w.label} className="flex justify-between">{w.label}</SelectItem>)}
+                  {WORK_REGIMES.map(w => <SelectItem key={w.value} value={w.value} className="flex justify-between">{w.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
