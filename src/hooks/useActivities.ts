@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -9,6 +10,24 @@ export type Activity = Tables<"activities"> & {
 };
 
 export function useActivities() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("activities-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "activities" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["activities"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
   return useQuery({
     queryKey: ["activities"],
     queryFn: async () => {
