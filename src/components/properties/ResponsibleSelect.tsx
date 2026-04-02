@@ -21,7 +21,6 @@ export default function ResponsibleSelect({ value, onValueChange, className }: P
           <SelectItem
             key={m.user_id}
             value={m.user_id}
-            disabled={!m.is_registered}
           >
             {m.full_name || "Sem nome"} {!m.is_registered && "(Aguardando Registro)"}
           </SelectItem>

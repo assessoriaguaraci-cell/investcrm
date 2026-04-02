@@ -30,12 +30,12 @@ export function useTeamMembers() {
       const teamList = Array.isArray(teamData) ? teamData : [];
 
       return profiles.map((p) => {
-        // Find matching email from the team RPC data if possible
-        const authUser = teamList.find(u => u.id === p.id);
+        // Find matching email from the team RPC data if possible since emails only exist in auth.users
+        const authUser = teamList.find(u => (u.id === p.id) || (u.id === p.user_id));
         
         return {
           id: p.id,
-          user_id: p.id,
+          user_id: p.user_id, // Use the real auth user id
           full_name: p.full_name || "Sem nome",
           phone: p.phone,
           status: p.status || "approved",
