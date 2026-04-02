@@ -29,16 +29,16 @@ export function useTeamMembers() {
       const { data: teamData } = await (supabase.rpc as any)("get_team_members");
       const teamList = Array.isArray(teamData) ? teamData : [];
 
-      return profiles.map((p) => {
-        // Find matching email from the team RPC data if possible since emails only exist in auth.users
-        const authUser = teamList.find(u => (u.id === p.id) || (u.id === p.user_id));
+      return profiles.map((p: any) => {
+        // Since emails only exist in auth.users, try to get it from the RPC
+        const authUser = teamList.find((u: any) => (u.id === p.id) || (u.id === p.user_id));
         
         return {
           id: p.id,
           user_id: p.user_id, // Use the real auth user id
           full_name: p.full_name || "Sem nome",
           phone: p.phone,
-          status: p.status || "approved",
+          status: "approved", // Hardcode to approved since column doesn't exist yet
           roles: authUser?.roles || ["investor"],
           is_registered: !!p.full_name && p.full_name !== "EMPTY",
           email: authUser?.email
