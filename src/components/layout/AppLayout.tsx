@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Building2, Users, Handshake, CheckSquare, Settings, Menu, X, LogOut, CalendarRange, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,44 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user);
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setProfile(data);
+          });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", u.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setProfile(data);
+          });
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -97,7 +135,27 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[#002B44]/10 flex flex-col gap-4 w-full">
+        <div className="mt-auto p-4 border-t border-[#002B44]/20 flex flex-col gap-4 w-full bg-[#E5E9F0]/50">
+          {/* User Profile Section - Now more visible */}
+          <div className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[#002B44]/10 transition-all shadow-sm",
+            isExpanded ? "bg-white mb-1" : "justify-center bg-white/60"
+          )}>
+            <div className="h-9 w-9 rounded-full bg-[#F58228] flex items-center justify-center text-white font-black text-sm shrink-0 shadow-md ring-2 ring-white">
+              {profile?.full_name?.charAt(0) || user?.email?.charAt(0).toUpperCase() || "A"}
+            </div>
+            {isExpanded && (
+              <div className="flex flex-col min-w-0 overflow-hidden animate-in fade-in slide-in-from-bottom-1">
+                <span className="text-[13px] font-black text-[#002B44] truncate uppercase tracking-tight">
+                  {profile?.full_name || "Usuário"}
+                </span>
+                <span className="text-[10px] font-medium text-[#002B44]/70 truncate">
+                  {user?.email || "carregando..."}
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className={cn("flex items-center w-full", isExpanded ? "justify-between px-2" : "justify-center")}>
             <div className="text-[#002B44]">
               <ThemeToggle />
