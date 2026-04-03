@@ -102,7 +102,7 @@ export default function AppLayout() {
           <img 
             alt="Logo" 
             className="h-8 w-8 min-w-[32px] object-contain" 
-            src="/lovable-uploads/83f17020-424b-4962-9231-0f0e7bf02806.png" 
+            src={logoImg} 
           />
           {isExpanded && (
             <span className="font-black text-lg truncate text-[#002B44] animate-in fade-in duration-500 uppercase tracking-tight">
@@ -198,7 +198,7 @@ export default function AppLayout() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
             <img src={logoImg} alt="Logo" className="h-6 w-6 object-contain" />
-            <span className="text-lg font-bold text-sidebar-foreground">SmartApp</span>
+            <span className="text-lg font-bold text-sidebar-foreground">CRM INVEST</span>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
