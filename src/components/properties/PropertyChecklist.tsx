@@ -213,7 +213,7 @@ function ChecklistItemRow({
         />
         <div className="flex-1 min-w-0">
           <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>
-            {item.task_name.includes("fluxo do CRM") ? "Imóvel cadastrado no SMARTAPP" : item.task_name}
+            {item.task_name.toLowerCase().includes("fluxo do crm") || item.task_name.toLowerCase().includes("cadastrado no crm") ? "Imóvel cadastrado no SMARTAPP" : item.task_name}
           </span>
           {disabled && (
             <p className="text-[10px] text-destructive mt-0.5">Bloqueado (CCV assinado)</p>
