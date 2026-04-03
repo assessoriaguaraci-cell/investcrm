@@ -103,7 +103,7 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
   { stage: "venda", group: "Divulgação", task: "Anúncio criado", sort: 4 },
   { stage: "venda", group: "Divulgação", task: "Anúncio ativo", sort: 5 },
   { stage: "venda", group: "Divulgação", task: "Post no Instagram", sort: 6 },
-  { stage: "venda", group: "Divulgação", task: "Imóvel cadastrado no SmartApp", sort: 7 },
+  { stage: "venda", group: "Divulgação", task: "Imóvel cadastrado no fluxo do SMART APP", sort: 7 },
   // Grupo 3: Negociação
   { stage: "venda", group: "Negociação", task: "Visita", sort: 8 },
   { stage: "venda", group: "Negociação", task: "Cliente aprovado", sort: 9 },
@@ -117,7 +117,7 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
   { stage: "pos_venda", group: "Finalização da Venda", task: "Fotos do cliente com as chaves", sort: 2 },
   { stage: "pos_venda", group: "Finalização da Venda", task: "Post depoimento no Instagram", sort: 3 },
   { stage: "pos_venda", group: "Finalização da Venda", task: "Registro concluído", sort: 4 },
-  { stage: "pos_venda", group: "Finalização da Venda", task: "Conferir gastos lançados em Splitwise e SmartApp", sort: 5 },
+  { stage: "pos_venda", group: "Finalização da Venda", task: "Conferir gastos lançados em Splitwise e SMART APP", sort: 5 },
 ];
 
 /** Returns the next stage in the pipeline, or null if at the end. */

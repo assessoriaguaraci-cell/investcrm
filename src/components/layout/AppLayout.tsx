@@ -106,7 +106,7 @@ export default function AppLayout() {
           />
           {isExpanded && (
             <span className="font-black text-lg truncate text-[#002B44] animate-in fade-in duration-500 uppercase tracking-tight">
-              SmartApp <span className="text-[10px] font-medium lowercase opacity-50 block">v2.3.1 (Moeda Corrigida)</span>
+              CRM INVEST
             </span>
           )}
         </div>
@@ -231,7 +231,7 @@ export default function AppLayout() {
         </Button>
         <div className="flex items-center gap-2">
           <img src={logoImg} alt="Logo" className="h-5 w-5 object-contain" />
-          <span className="font-semibold">SmartApp</span>
+          <span className="font-semibold">CRM INVEST</span>
         </div>
         <ThemeToggle />
       </header>}
