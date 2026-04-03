@@ -103,7 +103,7 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
   { stage: "venda", group: "Divulgação", task: "Anúncio criado", sort: 4 },
   { stage: "venda", group: "Divulgação", task: "Anúncio ativo", sort: 5 },
   { stage: "venda", group: "Divulgação", task: "Post no Instagram", sort: 6 },
-  { stage: "venda", group: "Divulgação", task: "Imóvel cadastrado no fluxo do CRM", sort: 7 },
+  { stage: "venda", group: "Divulgação", task: "Imóvel cadastrado no SmartApp", sort: 7 },
   // Grupo 3: Negociação
   { stage: "venda", group: "Negociação", task: "Visita", sort: 8 },
   { stage: "venda", group: "Negociação", task: "Cliente aprovado", sort: 9 },

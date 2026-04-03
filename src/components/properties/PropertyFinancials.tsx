@@ -16,16 +16,17 @@ interface Props {
   property: Property;
 }
 
-function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+import { CurrencyInput } from "@/components/ui/currency-input";
+
+function NumField({ label, value, onChange }: { label: string; value: number | undefined; onChange: (v: number | undefined) => void }) {
   return (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
-      <Input
-        type="number"
-        value={value || ""}
-        onChange={e => onChange(Number(e.target.value) || 0)}
+      <CurrencyInput
+        value={value}
+        onChange={onChange}
         className="h-8 text-sm"
-        placeholder="0"
+        placeholder="R$ 0,00"
       />
     </div>
   );

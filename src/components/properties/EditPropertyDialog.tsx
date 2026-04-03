@@ -30,6 +30,9 @@ import PropertyReportGenerator from "./PropertyReportGenerator";
 import PropertyFinancials from "./PropertyFinancials";
 import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
 import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { SmartDatePicker } from "@/components/ui/smart-date-picker";
+import { Plus, Trash2 } from "lucide-react";
 
 const schema = z.object({
   code: z.string().min(1, "Código obrigatório"),
@@ -78,6 +81,14 @@ const schema = z.object({
   appraisal_status: z.string().optional().nullable(),
   appraisal_notes: z.string().optional().nullable(),
   appraisal_date: z.string().optional().nullable(),
+  appraisal_history: z.array(z.object({
+    date: z.string().optional().nullable(),
+    expiry: z.string().optional().nullable(),
+    status: z.string().optional().nullable(),
+    situation: z.string().optional().nullable(),
+    value: z.number().optional().nullable(),
+    notes: z.string().optional().nullable(),
+  })).optional().nullable(),
   sale_price: z.coerce.number().min(0).optional().nullable(),
   cash_sale_discount: z.coerce.number().min(0).optional().nullable(),
 });
@@ -152,6 +163,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
       appraisal_status: (property as any).appraisal_status ?? null,
       appraisal_notes: (property as any).appraisal_notes ?? null,
       appraisal_date: (property as any).appraisal_date ?? null,
+      appraisal_history: (property as any).appraisal_history || [],
       sale_price: (property as any).sale_price ?? null,
       cash_sale_discount: (property as any).cash_sale_discount ?? null,
     },
@@ -226,7 +238,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
                   <FormField control={form.control} name="sale_price" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Valor de Venda (R$)</FormLabel>
-                      <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
+                      <FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -243,10 +255,29 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
                 <div className="rounded border bg-muted/20 p-3 space-y-2 mt-2">
                   <p className="text-sm font-semibold">Cálculos do Financiamento</p>
                   <p className="text-xs text-muted-foreground">
-                    Cota Máx. Financiamento (80%): <strong>{form.watch("sale_price") ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(form.watch("sale_price")) * 0.8) : "R$ 0,00"}</strong>
+                    Cota Máx. Financiamento (80%): <strong>{
+                      (() => {
+                        let val = form.watch("sale_price");
+                        if (val === undefined || val === null || val === "") return "R$ 0,00";
+                        // Safety: ensure it's treated as a clean number
+                        const cleanVal = typeof val === "string" ? parseFloat(val.replace(/\./g, "").replace(",", ".")) : Number(val);
+                        if (isNaN(cleanVal)) return "R$ 0,00";
+                        return Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cleanVal * 0.8);
+                      })()
+                    }</strong>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Valor à Vista com Desconto: <strong>{form.watch("sale_price") && form.watch("cash_sale_discount") ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(form.watch("sale_price")) * (1 - Number(form.watch("cash_sale_discount")) / 100)) : "R$ 0,00"}</strong>
+                    Valor à Vista com Desconto: <strong>{
+                      (() => {
+                        let val = form.watch("sale_price");
+                        const desc = form.watch("cash_sale_discount");
+                        if (val === undefined || val === null || val === "" || desc === undefined) return "R$ 0,00";
+                        // Safety: ensure it's treated as a clean number
+                        const cleanVal = typeof val === "string" ? parseFloat(val.replace(/\./g, "").replace(",", ".")) : Number(val);
+                        if (isNaN(cleanVal)) return "R$ 0,00";
+                        return Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cleanVal * (1 - Number(desc) / 100));
+                      })()
+                    }</strong>
                   </p>
                 </div>
                 <div className="flex justify-end pt-2">
@@ -378,85 +409,117 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
 
           <TabsContent value="engenharia" className="mt-4">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Row 1: Expedição | Vencimento */}
-                  <FormField control={form.control} name="appraisal_date" render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel className="mb-1 text-xs font-medium">Data de Expedição</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className="p-3 pointer-events-auto" />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  
-                  <FormField control={form.control} name="appraisal_expiry" render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel className="mb-1 text-xs font-medium">Vencimento do Laudo</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className="p-3 pointer-events-auto" />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  {/* Row 2: Status | Valor */}
-                  <FormField control={form.control} name="appraisal_status" render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel className="mb-1 text-xs font-medium">Status do Laudo</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                        <FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="valido">Válido</SelectItem>
-                          <SelectItem value="negado">Negado</SelectItem>
-                          <SelectItem value="nao_solicitado">Não Solicitado</SelectItem>
-                          <SelectItem value="revisao">Revisão</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  
-                  <FormField control={form.control} name="listed_price" render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel className="mb-1 text-xs font-medium">Valor do Laudo (R$)</FormLabel>
-                      <FormControl><Input type="number" {...field} value={field.value ?? ""} className="h-9" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Histórico de Laudos</h3>
+                  <Button type="button" size="sm" variant="outline" onClick={() => {
+                    const history = form.getValues("appraisal_history") || [];
+                    form.setValue("appraisal_history", [
+                      ...history,
+                      { date: "", expiry: "", status: "aceito", situation: "valido", value: 0, notes: "" }
+                    ]);
+                  }}>
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar Laudo
+                  </Button>
                 </div>
 
-                <FormField control={form.control} name="appraisal_notes" render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="mb-1 text-xs font-medium">Observação do Laudo</FormLabel>
-                    <FormControl><Textarea rows={3} {...field} value={field.value ?? ""} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+                <div className="space-y-6">
+                  {(form.watch("appraisal_history") || []).map((_, index) => (
+                    <div key={index} className="relative rounded-lg border p-4 bg-muted/10 space-y-4">
+                      <Button 
+                        type="button" 
+                        size="icon" 
+                        variant="ghost" 
+                        className="absolute top-2 right-2 h-7 w-7 text-destructive"
+                        onClick={() => {
+                          const history = form.getValues("appraisal_history") || [];
+                          form.setValue("appraisal_history", history.filter((_, i) => i !== index));
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+
+                      <div className="grid grid-cols-2 gap-4 pt-4">
+                        <FormField control={form.control} name={`appraisal_history.${index}.date`} render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel className="text-xs">Data de Expedição</FormLabel>
+                            <FormControl><SmartDatePicker value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
+                          </FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name={`appraisal_history.${index}.expiry`} render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel className="text-xs">Vencimento do Laudo</FormLabel>
+                            <FormControl><SmartDatePicker value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
+                          </FormItem>
+                        )} />
+
+                        <FormField control={form.control} name={`appraisal_history.${index}.status`} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Status do Laudo</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                              <FormControl><SelectTrigger className="h-9"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="aceito">Aceito</SelectItem>
+                                <SelectItem value="negado">Negado</SelectItem>
+                                <SelectItem value="nao_solicitado">Não Solicitado</SelectItem>
+                                <SelectItem value="revisao">Revisão</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )} />
+
+                        <FormField control={form.control} name={`appraisal_history.${index}.situation`} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Situação do Laudo</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                              <FormControl><SelectTrigger className="h-9"><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="valido">Válido</SelectItem>
+                                <SelectItem value="vencido">Vencido</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )} />
+
+                        <FormField control={form.control} name={`appraisal_history.${index}.value`} render={({ field }) => (
+                          <FormItem className="col-span-2">
+                            <FormLabel className="text-xs">Valor do Laudo (R$)</FormLabel>
+                            <FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} className="h-9" /></FormControl>
+                          </FormItem>
+                        )} />
+                      </div>
+
+                      <FormField control={form.control} name={`appraisal_history.${index}.notes`} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Observação</FormLabel>
+                          <FormControl><Textarea rows={2} {...field} value={field.value ?? ""} /></FormControl>
+                        </FormItem>
+                      )} />
+                    </div>
+                  ))}
+
+                  {(!form.watch("appraisal_history") || form.watch("appraisal_history")?.length === 0) && (
+                    <div className="text-center py-8 border rounded-lg border-dashed text-muted-foreground text-sm">
+                      Nenhum laudo cadastrado. Clique no botão acima para adicionar.
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex justify-end pt-2">
-                  <Button type="submit" disabled={updateProperty.isPending}>{updateProperty.isPending ? "Salvando..." : "Salvar"}</Button>
+                  <Button type="submit" disabled={updateProperty.isPending} onClick={() => {
+                    // Update main appraisal fields based on latest entry before saving
+                    const history = form.getValues("appraisal_history") || [];
+                    if (history.length > 0) {
+                      const latest = [...history].sort((a, b) => (b.expiry || "").localeCompare(a.expiry || ""))[0];
+                      form.setValue("appraisal_expiry", latest.expiry);
+                      form.setValue("appraisal_date", latest.date);
+                      form.setValue("appraisal_status", latest.status);
+                      form.setValue("listed_price", latest.value);
+                    }
+                  }}>
+                    {updateProperty.isPending ? "Salvando..." : "Salvar Histórico"}
+                  </Button>
                 </div>
               </form>
             </Form>
@@ -577,25 +640,13 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="purchase_price" render={({ field }) => (
-                      <FormItem><FormLabel>Valor Arrematação (R$)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Valor Arrematação (R$)</FormLabel><FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <div className="col-span-2">
                        <FormField control={form.control} name="auction_date" render={({ field }) => (
                          <FormItem className="flex flex-col">
                            <FormLabel>Data de Arrematação</FormLabel>
-                           <Popover>
-                             <PopoverTrigger asChild>
-                               <FormControl>
-                                 <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
-                                   {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
-                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                 </Button>
-                               </FormControl>
-                             </PopoverTrigger>
-                             <PopoverContent className="w-auto p-0" align="start">
-                               <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className={cn("p-3 pointer-events-auto")} />
-                             </PopoverContent>
-                           </Popover>
+                           <FormControl><SmartDatePicker value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
                            <FormMessage />
                          </FormItem>
                        )} />

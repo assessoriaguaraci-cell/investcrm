@@ -113,56 +113,41 @@ export default function PropertyReportGenerator({ property }: Props) {
 
     lines.push("");
 
-    // Checklist grouped by stage then group
-    if (allItems && allItems.length > 0) {
-      // Group by stage
-      const byStage = new Map<string, typeof allItems>();
-      allItems.forEach(item => {
-        const list = byStage.get(item.stage) || [];
+    // Checklist grouped by group for current stage only
+    const currentStageItems = (allItems || []).filter(item => item.stage === property.stage);
+    
+    if (currentStageItems.length > 0) {
+      const done = currentStageItems.filter(i => i.completed).length;
+      const total = currentStageItems.length;
+
+      // Determine stage emoji
+      let stageEmoji = "🔴";
+      if (done === total) stageEmoji = "🟢";
+      else if (done > 0) stageEmoji = "🟡";
+
+      lines.push(`${stageEmoji} *Checklist — ${stageLabel}* (${done}/${total})`);
+
+      // Group by group_name
+      const byGroup = new Map<string, typeof currentStageItems>();
+      currentStageItems.forEach(item => {
+        const list = byGroup.get(item.group_name) || [];
         list.push(item);
-        byStage.set(item.stage, list);
+        byGroup.set(item.group_name, list);
       });
 
-      // Order stages
-      const stageOrder = PROPERTY_STAGES.map(s => s.value);
-
-      for (const stageVal of stageOrder) {
-        const stageItems = byStage.get(stageVal);
-        if (!stageItems || stageItems.length === 0) continue;
-
-        const stageName = PROPERTY_STAGES.find(s => s.value === stageVal)?.label ?? stageVal;
-        const done = stageItems.filter(i => i.completed).length;
-        const total = stageItems.length;
-
-        // Determine stage emoji
-        let stageEmoji = "🔴";
-        if (done === total) stageEmoji = "🟢";
-        else if (done > 0) stageEmoji = "🟡";
-
-        lines.push(`${stageEmoji} *${stageName}* (${done}/${total})`);
-
-        // Group by group_name
-        const byGroup = new Map<string, typeof stageItems>();
-        stageItems.forEach(item => {
-          const list = byGroup.get(item.group_name) || [];
-          list.push(item);
-          byGroup.set(item.group_name, list);
+      for (const [groupName, groupItems] of byGroup.entries()) {
+        lines.push(`  _${groupName}_`);
+        groupItems.forEach(item => {
+          const emoji = item.completed ? "✅" : "⬜";
+          const datePart = item.completed && item.completed_at
+            ? ` (${format(new Date(item.completed_at), "dd/MM")})`
+            : "";
+          lines.push(`    ${emoji} ${item.task_name}${datePart}`);
         });
-
-        for (const [groupName, groupItems] of byGroup.entries()) {
-          lines.push(`  _${groupName}_`);
-          groupItems.forEach(item => {
-            const emoji = item.completed ? "✅" : "⬜";
-            const datePart = item.completed && item.completed_at
-              ? ` (${format(new Date(item.completed_at), "dd/MM")})`
-              : "";
-            lines.push(`    ${emoji} ${item.task_name}${datePart}`);
-          });
-        }
-        lines.push("");
       }
+      lines.push("");
     } else {
-      lines.push("_Nenhum checklist registrado._");
+      lines.push("_Nenhum checklist registrado para esta etapa._");
       lines.push("");
     }
 

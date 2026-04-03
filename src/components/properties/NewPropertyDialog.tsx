@@ -21,6 +21,8 @@ import CityCombobox from "./CityCombobox";
 import ResponsibleSelect from "./ResponsibleSelect";
 import PartnerSelect from "../partners/PartnerSelect";
 import { toast } from "sonner";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { SmartDatePicker } from "@/components/ui/smart-date-picker";
 
 const schema = z.object({
   code: z.string().optional(),
@@ -229,25 +231,13 @@ export default function NewPropertyDialog() {
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="purchase_price" render={({ field }) => (
-                  <FormItem><FormLabel>Valor Arrematação (R$)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Valor Arrematação (R$)</FormLabel><FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <div className="col-span-2">
                   <FormField control={form.control} name="auction_date" render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Data de Arrematação</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button variant="outline" className={cn("w-full pl-3 text-left font-normal h-9", !field.value && "text-muted-foreground")}>
-                              {field.value ? format(new Date(field.value + "T12:00:00"), "dd/MM/yyyy") : "Selecionar data"}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value ? new Date(field.value + "T12:00:00") : undefined} onSelect={d => field.onChange(d ? format(d, "yyyy-MM-dd") : null)} initialFocus className={cn("p-3 pointer-events-auto")} />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl><SmartDatePicker value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
