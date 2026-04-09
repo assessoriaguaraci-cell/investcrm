@@ -484,10 +484,18 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
 
                         <FormField control={form.control} name={`appraisal_history.${index}.value`} render={({ field }) => (
                           <FormItem className="col-span-2">
-                            <FormLabel className="text-xs">Valor do Laudo (R$)</FormLabel>
-                            <FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} className="h-9" /></FormControl>
+                            <FormLabel className="text-xs font-semibold">Valor do Laudo (R$)</FormLabel>
+                            <FormControl>
+                              <CurrencyInput 
+                                value={field.value ?? undefined} 
+                                onChange={field.onChange} 
+                                className="h-9" 
+                                placeholder="(valor será preenchido manualmente)" 
+                              />
+                            </FormControl>
                           </FormItem>
                         )} />
+
                       </div>
 
                       <FormField control={form.control} name={`appraisal_history.${index}.notes`} render={({ field }) => (

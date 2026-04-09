@@ -4,18 +4,22 @@
 
 export async function parseCSV(file: File): Promise<any[]> {
   const text = await file.text();
-  const rows = text.split('\n').filter(row => row.trim() !== '');
+  const rows = text.split(/\r?\n/).filter(row => row.trim() !== '');
   
   if (rows.length < 2) return [];
 
-  const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  // Detect delimiter (comma or semicolon)
+  const firstRow = rows[0];
+  const commaCount = (firstRow.match(/,/g) || []).length;
+  const semicolonCount = (firstRow.match(/;/g) || []).length;
+  const delimiter = semicolonCount > commaCount ? ';' : ',';
+
+  const headers = rows[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
   const results: any[] = [];
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    
-    // Improved regex to handle quoted values with commas
-    const values = [];
+    const values: string[] = [];
     let current = '';
     let inQuotes = false;
 
@@ -26,7 +30,7 @@ export async function parseCSV(file: File): Promise<any[]> {
         charIdx++;
       } else if (char === '"') {
         inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
+      } else if (char === delimiter && !inQuotes) {
         values.push(current.trim().replace(/"/g, ''));
         current = '';
       } else {

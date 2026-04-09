@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, FileDown, Loader2, Check, AlertCircle } from "lucide-react";
+import { Upload, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,77 +10,53 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { parseCSV } from "@/utils/importUtils";
-import { exportToCSV } from "@/utils/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function ImportPropertiesDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
-  const [duplicates, setDuplicates] = useState<any[]>([]);
-  const [showDuplicates, setShowDuplicates] = useState(false);
-  const [mergeMode, setMergeMode] = useState(false);
   const qc = useQueryClient();
 
   const handleDownloadTemplate = () => {
-    const template = [
-      {
-        code: "IMV001",
-        property_type: "Apartamento",
-        purchase_price: 350000,
-        address: "Rua Exemplo, 123",
-        neighborhood: "Centro",
-        city: "São Paulo",
-        state: "SP",
-        area_total: 75,
-        rooms: 3,
-        bathrooms: 2,
-        parking_spots: 1,
-        description: "Belo apartamento reformado"
-      }
+    const headers = [
+      "CÓDIGO DO IMÓVEL", "UF", "CIDADE", "BAIRRO", "RUA", "TIPO DE IMÓVEL", "NÚM. MATRÍCULA", "LINK DO MAPS", 
+      "PONTO DE REFER. DO IMÓVEL", "DIVISÃO INTERNA", "ÁREA DO TERRENO", "ÁREA CONSTR. / PRIVAT.", "VAGA DE GARAGEM", 
+      "ELEVADOR", "VALOR MENSAL CONDOMÍNIO", "OBS ÚNICA DO IMÓVEL", "PROPRIETÁRIO", "FASE", "STATUS OCUPAÇÃO", 
+      "FORMA DE VENDA", "RESP. INVEST LAR", "RESP. OPERAÇÃO", "DATA DE ARREMATAÇÃO", "ORIGEM", "Nº. SÓCIOS", 
+      "PARTICIPAÇÃO GUARA %", "LINK DRIVE", "CUIDADOR VIZINHO", "VALOR MENSAL", "PIX PARA PAGAMENTO", 
+      "DATA COMBINADA PAGAM.", "FORMA PGMTO", "VALOR ARREMATAÇÃO", "INVESTIMENTO TOTAL", "POSSUI CORRETOR", 
+      "CONTATO CORRETOR", "% CORRETOR LOCAL", "COPY ANÚNCIOS", "SMART LINK", "PLACA?", "FAIXA NA RUA?", 
+      "TRÁFEGO PAGO?", "GRUPO FACE?", "GRUPO WHATS?", "PANFLETO", "INFLUENCIADOR / PÁGINA?", "CCA", 
+      "OBS ENGENHARIA QUANDO NEGADA", "DATA EXPEDIÇÃO LAUDO", "STATUS ENGENHARIA / LAUDO", "DATA DE VALIDADE DO LAUDO", 
+      "VALOR DO LAUDO", "ATT- 01/01/2026"
     ];
-    exportToCSV("modelo_importacao_imoveis", template);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(";");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "modelo_importacao.csv");
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setLoading(true);
     try {
       const data = await parseCSV(file);
-      
-      // Fetch existing properties to check for duplicate CODES
-      const { data: existingProperties } = await supabase
-        .from("properties")
-        .select("code");
-
-      const dupes: any[] = [];
-      const uniques: any[] = [];
-
-      data.forEach(item => {
-        const isDuplicate = existingProperties?.some(existing => 
-          item.code && existing.code === item.code
-        );
-
-        if (isDuplicate) {
-          dupes.push(item);
-        } else {
-          uniques.push(item);
-        }
-      });
-
       setPreview(data);
-      setDuplicates(dupes);
-      setShowDuplicates(false);
-      
-      if (dupes.length > 0) {
-        toast.warning(`${data.length} registros detectados, sendo ${dupes.length} com códigos já existentes.`);
-      } else {
-        toast.success(`${data.length} imóveis detectados no arquivo.`);
-      }
+      toast.success(`${data.length} imóveis detectados.`);
     } catch (error) {
       toast.error("Erro ao ler arquivo CSV.");
     } finally {
@@ -88,113 +64,133 @@ export default function ImportPropertiesDialog() {
     }
   };
 
-  const handleRemoveDuplicates = () => {
-    const uniques = preview.filter(item => !duplicates.includes(item));
-    setPreview(uniques);
-    setDuplicates([]);
-    setShowDuplicates(false);
-    toast.info("Duplicatas removidas da lista de importação.");
-  };
-
-  const handleIgnoreDuplicates = () => {
-    setDuplicates([]);
-    setShowDuplicates(false);
-    setMergeMode(false);
-    toast.info("Imóveis com códigos repetidos serão importados (gerando novos registros).");
-  };
-
-  const handleMergeDuplicates = () => {
-    setMergeMode(true);
-    setDuplicates([]);
-    setShowDuplicates(false);
-    toast.info("Modo Enriquecimento Ativado: Dados técnicos ausentes serão preenchidos.");
-  };
-
   const handleImport = async () => {
     if (preview.length === 0) return;
-
     setLoading(true);
     try {
-      if (mergeMode) {
-        toast.info("Iniciando enriquecimento de imóveis...");
-        const { data: existing } = await supabase.from("properties").select("*");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const mapStage = (v: string): any => {
+        const s = v?.toLowerCase() || "";
+        if (s.includes("itbi") || s.includes("contrato")) return "itbi_contrato";
+        if (s.includes("registro") && s.includes("venda")) return "registro";
+        if (s.includes("registro")) return "registro";
+        if (s.includes("desocupação") || s.includes("desocupacao")) return "desocupacao";
+        if (s.includes("reforma")) return "reforma";
+        if (s.includes("reserva")) return "venda";
+        if (s.includes("venda")) return "venda";
+        if (s.includes("pós") || s.includes("pos")) return "pos_venda";
+        if (s.includes("ir") || s.includes("imposto")) return "ir";
+        if (s.includes("finalizado") || s.includes("cancelado")) return "finalizado";
+        if (s.includes("pré") || s.includes("pre")) return "pre_arrematacao";
+        return "pre_arrematacao";
+      };
+
+      const mapType = (v: string): any => {
+        const t = v?.toLowerCase() || "";
+        if (t.includes("apto") || t.includes("apartamento")) return "apartamento";
+        if (t.includes("condominio") && t.includes("casa")) return "casa_condominio";
+        if (t.includes("casa")) return "casa";
+        if (t.includes("terreno")) return "terreno";
+        if (t.includes("comercial")) return "comercial";
+        return "apartamento";
+      };
+
+      const mapOccupation = (v: string): any => {
+        const o = v?.toLowerCase() || "";
+        if (o.includes("desocupado")) return "desocupado";
+        if (o.includes("imissão") || o.includes("imissao")) return "imissao_na_posse";
+        if (o.includes("venda para ocupante")) return "venda_para_ocupante";
+        if (o.includes("ocupado")) return "ocupado";
+        return "ocupado";
+      };
+
+      const cleanNum = (v: any) => {
+        if (!v) return null;
+        // Remove R$, spaces and other currency symbols
+        let cleaned = v.toString().replace(/[^\d,.-]/g, '').trim();
+        // Brazilian format: 1.234,56 -> we need 1234.56
+        // If there's a comma and a dot, the dot is usually thousands and comma is decimal
+        if (cleaned.includes(',') && cleaned.includes('.')) {
+          cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+        } else if (cleaned.includes(',')) {
+          // If only comma, it's the decimal separator
+          cleaned = cleaned.replace(',', '.');
+        }
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      };
+
+      for (const item of preview) {
+        const code = item["CODIGO DO IMOVEL"] || item["CÓDIGO DO IMÓVEL"] || item["code"] || `IMV-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
         
-        let updatedCount = 0;
-        let insertedCount = 0;
+        const propertyData: any = {
+          code,
+          state: item["UF"] || "SP",
+          city: item["CIDADE"] || "Não Informada",
+          neighborhood: item["BAIRRO"] || null,
+          address: item["RUA"] || null,
+          property_type: mapType(item["TIPO DE IMOVEL"] || item["TIPO DE IMÓVEL"]),
+          registration_number: item["NUM. MATRICULA"] || item["NÚM. MATRÍCULA"] || null,
+          landmark: item["PONTO DE REFER. DO IMÓVEL"] || null,
+          property_division: `${item["DIVISÃO INTERNA"] || ""} | Vagas: ${item["VAGA DE GARAGEM "] || "0"} | Elevador: ${item["ELEVADOR"] || "Não"}`.trim(),
+          area_total: cleanNum(item["ÁREA DO TERRENO"]),
+          area_useful: cleanNum(item["ÁREA CONSTR. / PRIVAT."]),
+          condo_monthly: cleanNum(item["VALOR MENSAL CONDOMINIO"] || item["VALOR MENSAL CONDOMÍNIO"]),
+          owner: item["PROPRIETÁRIO"] || null,
+          stage: mapStage(item["FASE"]),
+          occupation_status: mapOccupation(item["STATUS OCUPAÇÃO"]),
+          sale_type: item["FORMA DE VENDA "] || item["FORMA DE VENDA"] || null,
+          auction_date: item["DATA DE ARREMATAÇÃO"] || null,
+          origin: item["ORIGEM"] || null,
+          num_shareholders: item["NO. SOCIOS"] || item["Nº. SÓCIOS"] ? parseInt(item["NO. SOCIOS"] || item["Nº. SÓCIOS"]) : null,
+          guaraci_share_pct: cleanNum(item["PARTICIPAÇÃO GUARA %"]),
+          drive_url: item["LINK DRIVE"] || null,
+          caretaker_notes: `Cuidador: ${item["CUIDADOR VIZINHO"] || "N/A"} | Valor: ${item["VALOR MENSAL DO RESPONS. SEGURANÇA"] || "0"} | PIX: ${item["PIX PARA PAGAMENTO"] || "N/A"}`,
+          purchase_price: cleanNum(item["VALOR ARREMATAÇÃO"]),
+          has_broker: !!item["CONTATO CORRETOR"],
+          marketing_ad_copy: item["COPY ANUNCIO"] || item["COPY ANÚNCIOS"] || null,
+          appraisal_status: item["STATUS ENGENHARIA / LAUDO"] || null,
+          appraisal_date: item["DATA EXPEDIÇÃO LAUDO"] || null,
+          appraisal_expiry: item["DATA DE VALIDADE DO LAUDO"] || null,
+          listed_price: cleanNum(item["VALOR DO LAUDO"]),
+          notes: item["OBS UNICA DO IMOVEL"] || item["OBS ÚNICA DO IMÓVEL"] || null,
+        };
 
-        for (const item of preview) {
-          const duplicate = existing?.find(ex => item.code && ex.code === item.code);
+        const { data: existing } = await supabase.from("properties").select("id").eq("code", code).maybeSingle();
+        let pId;
 
-          if (duplicate) {
-            const updates: any = {};
-            let hasNewData = false;
+        if (existing) {
+          await supabase.from("properties").update(propertyData).eq("id", existing.id);
+          pId = existing.id;
+        } else {
+          const { data: inserted } = await supabase.from("properties").insert(propertyData).select("id").single();
+          pId = inserted?.id;
+        }
 
-            const fields = ['purchase_price', 'address', 'neighborhood', 'city', 'state', 'area_total', 'rooms', 'bathrooms', 'parking_spots', 'description'];
-            fields.forEach(f => {
-              if (!duplicate[f] && item[f]) {
-                const isNumeric = ['purchase_price', 'area_total', 'rooms', 'bathrooms', 'parking_spots'].includes(f);
-                updates[f] = isNumeric ? parseFloat(item[f]) : item[f];
-                hasNewData = true;
-              }
-            });
-
-            if (hasNewData) {
-              await supabase.from("properties").update(updates).eq("id", duplicate.id);
-              updatedCount++;
+        if (pId) {
+          const attFields = Object.keys(item).filter(k => k.toUpperCase().startsWith("ATT-"));
+          for (const field of attFields) {
+            const content = item[field];
+            if (content && content.toString().trim() !== "") {
+              await supabase.from("property_updates").insert({
+                property_id: pId,
+                content: content.trim(),
+                update_date: new Date().toISOString(),
+                stage: propertyData.stage,
+                created_by: user.id
+              });
             }
-          } else {
-            const newItem = {
-              code: item.code || `IMPORT-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-              property_type: item.property_type || 'Apartamento',
-              purchase_price: item.purchase_price ? parseFloat(item.purchase_price) : null,
-              address: item.address || null,
-              neighborhood: item.neighborhood || null,
-              city: item.city || null,
-              state: item.state || null,
-              area_total: item.area_total ? parseFloat(item.area_total) : null,
-              rooms: item.rooms ? parseInt(item.rooms) : null,
-              bathrooms: item.bathrooms ? parseInt(item.bathrooms) : null,
-              parking_spots: item.parking_spots ? parseInt(item.parking_spots) : null,
-              description: item.description || null,
-              stage: 'oportunidade' as any
-            };
-            await supabase.from("properties").insert(newItem);
-            insertedCount++;
           }
         }
-        toast.success(`${updatedCount} imóveis enriquecidos e ${insertedCount} novos importados!`);
-      } else {
-        const batchSize = 100;
-        for (let i = 0; i < preview.length; i += batchSize) {
-          const batch = preview.slice(i, i + batchSize);
-          const cleanBatch = batch.map(item => ({
-            code: item.code || `IMPORT-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-            property_type: item.property_type || 'Apartamento',
-            purchase_price: item.purchase_price ? parseFloat(item.purchase_price) : null,
-            address: item.address || null,
-            neighborhood: item.neighborhood || null,
-            city: item.city || null,
-            state: item.state || null,
-            area_total: item.area_total ? parseFloat(item.area_total) : null,
-            rooms: item.rooms ? parseInt(item.rooms) : null,
-            bathrooms: item.bathrooms ? parseInt(item.bathrooms) : null,
-            parking_spots: item.parking_spots ? parseInt(item.parking_spots) : null,
-            description: item.description || null,
-            stage: 'oportunidade' as any
-          }));
-
-          const { error } = await supabase.from("properties").insert(cleanBatch);
-          if (error) throw error;
-        }
-        toast.success(`${preview.length} imóveis importados com sucesso!`);
       }
 
-      await qc.invalidateQueries({ queryKey: ["properties"] });
+      toast.success("Importação concluída!");
+      qc.invalidateQueries({ queryKey: ["properties"] });
       setOpen(false);
-      setPreview([]);
-      setMergeMode(false);
-    } catch (error: any) {
-      toast.error(`Erro na importação: ${error.message}`);
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -203,134 +199,55 @@ export default function ImportPropertiesDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5">
+        <Button variant="outline" size="sm" className="gap-2 font-bold uppercase text-[10px] h-8 border-primary/20">
           <Upload className="h-3.5 w-3.5" /> Importar CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading font-black uppercase text-xl">Importar Imóveis</DialogTitle>
-          <DialogDescription className="font-medium">
-            Suba uma lista de imóveis em formato CSV. 
-          </DialogDescription>
+          <DialogTitle className="font-black uppercase text-xl">Importar Portfólio</DialogTitle>
+          <DialogDescription>Importação ultra-rápida (56 colunas + Histórico ATT-).</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="flex justify-center">
+        <div className="space-y-6 pt-4">
+          <div className="flex justify-center gap-4">
             <Button variant="ghost" className="text-primary font-bold text-xs gap-2" onClick={handleDownloadTemplate}>
-              <FileDown className="h-4 w-4" /> Baixar Modelo CSV
+              <FileDown className="h-4 w-4" /> Modelo Atualizado
             </Button>
           </div>
 
-          <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl p-8 flex flex-col items-center gap-4 hover:border-primary/50 transition-colors cursor-pointer relative bg-muted/5">
-            <input 
-              type="file" 
-              accept=".csv" 
-              className="absolute inset-0 opacity-0 cursor-pointer" 
-              onChange={handleFileUpload}
-              disabled={loading}
-            />
-            {loading ? (
-              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
-            ) : (
-              <Upload className="h-10 w-10 text-muted-foreground" />
-            )}
-            <div className="text-center">
-              <p className="font-bold text-sm">Clique ou arraste o arquivo</p>
-              <p className="text-xs text-muted-foreground">Apenas arquivos .CSV</p>
-            </div>
+          <div className="border-2 border-dashed border-muted-foreground/20 rounded-xl p-8 flex flex-col items-center gap-4 relative bg-muted/5">
+            <input type="file" accept=".csv" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} disabled={loading} />
+            {loading ? <Loader2 className="animate-spin h-10 w-10 text-primary" /> : <Upload className="h-10 w-10 text-muted-foreground" />}
+            <p className="font-bold text-sm">Arraste seu CSV aqui</p>
           </div>
 
           {preview.length > 0 && (
             <div className="space-y-4">
-              {duplicates.length > 0 && !showDuplicates && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col gap-3">
-                  <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
-                    <AlertCircle className="h-5 w-5" />
-                    Detectamos {duplicates.length} imóveis com códigos já registrados
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setShowDuplicates(true)}
-                      className="text-[10px] font-bold uppercase h-7 border-amber-300 text-amber-800 hover:bg-amber-100"
-                    >
-                      Ver Duplicatas
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleRemoveDuplicates}
-                      className="text-[10px] font-bold uppercase h-7 border-red-300 text-red-700 hover:bg-red-50"
-                    >
-                      Remover Duplicatas
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleMergeDuplicates}
-                      className="text-[10px] font-bold uppercase h-7 border-primary/30 text-primary hover:bg-primary/5"
-                    >
-                      Mesclar e Enriquecer
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={handleIgnoreDuplicates}
-                      className="text-[10px] font-bold uppercase h-7 text-amber-700 hover:bg-amber-100"
-                    >
-                      Ignorar e Limpar
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {mergeMode && (
-                <div className="bg-primary/10 border border-primary/20 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                  <div className="bg-primary rounded-full p-1">
-                    <Check className="h-3 w-3 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[11px] font-black uppercase text-primary">Modo Enriquecimento Ativo</p>
-                    <p className="text-[10px] text-primary/70 font-semibold">Duplicatas serão mescladas para completar campos vazios.</p>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => setMergeMode(false)} className="h-7 text-[9px] uppercase font-bold">Cancelar</Button>
-                </div>
-              )}
-
-              {showDuplicates && (
-                <div className="border rounded-xl overflow-hidden">
-                  <div className="bg-muted/30 p-2 border-b flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground px-1">CÓDIGOS DUPLICADOS</span>
-                    <Button variant="ghost" size="sm" onClick={() => setShowDuplicates(false)} className="h-6 px-2 text-[10px] uppercase font-bold">X Fechar</Button>
-                  </div>
-                  <div className="max-h-[150px] overflow-y-auto p-2 space-y-1 bg-white">
-                    {duplicates.map((d, idx) => (
-                      <div key={idx} className="text-[11px] p-1.5 border-b last:border-0 flex justify-between">
-                        <span className="font-bold truncate max-w-[200px]">{d.code}</span>
-                        <span className="text-muted-foreground">{d.address || d.neighborhood}</span>
-                      </div>
+              <div className="border rounded-lg overflow-x-auto">
+                <Table className="text-[10px]">
+                  <TableHeader>
+                    <TableRow>
+                      {Object.keys(preview[0]).slice(0, 8).map(h => <TableHead key={h} className="whitespace-nowrap">{h}</TableHead>)}
+                      <TableHead>...</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {preview.slice(0, 3).map((row, i) => (
+                      <TableRow key={i}>
+                        {Object.values(row).slice(0, 8).map((v: any, j) => <TableCell key={j} className="whitespace-nowrap">{v}</TableCell>)}
+                        <TableCell>...</TableCell>
+                      </TableRow>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-primary/5 p-4 rounded-lg flex items-center justify-between border border-primary/10">
-                <div className="flex items-center gap-3">
-                  <Check className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-bold">{preview.length} Imóveis prontos</span>
-                </div>
-                <Button onClick={handleImport} disabled={loading || (duplicates.length > 0 && !mergeMode)} size="sm" className="font-black uppercase text-xs">
-                  {loading ? "Processando..." : mergeMode ? "Confirmar Mesclagem" : "Confirmar Importação"}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setPreview([])}>Sair</Button>
+                <Button onClick={handleImport} disabled={loading} className="font-black uppercase">
+                  {loading ? "Importando..." : "Iniciar Importação Agora"}
                 </Button>
               </div>
-              
-              {duplicates.length > 0 && !mergeMode && (
-                <p className="text-[10px] text-center text-muted-foreground italic">
-                  Resolva os conflitos de código acima para habilitar a importação.
-                </p>
-              )}
             </div>
           )}
         </div>

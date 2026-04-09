@@ -45,8 +45,13 @@ export const BRAZILIAN_STATES = [
 ];
 
 export function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return "R$ 0";
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
+  if (value == null) return "R$ 0,00";
+  return new Intl.NumberFormat("pt-BR", { 
+    style: "currency", 
+    currency: "BRL", 
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2 
+  }).format(value);
 }
 
 export function totalInvestment(p: {

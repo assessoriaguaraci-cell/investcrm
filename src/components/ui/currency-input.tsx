@@ -21,31 +21,66 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
   };
 
   React.useEffect(() => {
+    // Quando valor mudar pelo componente pai (ex: carregamento), formatamos para exibição completa
     if (value === undefined || value === null) {
-      setDisplayValue("");
+      if (displayValue !== "") setDisplayValue("");
       return;
     }
     
+    // Verificamos se o valor numérico atual já não é o mesmo que está sendo exibido
+    // Para evitar formatar (adicionar ,00) enquanto o usuário ainda está digitando a vírgula ou uma fração
+    const currentNumeric = parseFloat(displayValue.replace(/\./g, "").replace(",", "."));
+    if (currentNumeric === value && displayValue.includes(",")) {
+      return;
+    }
+
     const formatted = formatValue(value);
     if (displayValue !== formatted) {
       setDisplayValue(formatted);
     }
-  }, [value]);
+  }, [value, displayValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, "");
+    let raw = e.target.value.replace(/[^\d,]/g, "");
     
-    if (rawValue === "") {
+    // Garante apenas uma vírgula
+    const firstComma = raw.indexOf(",");
+    if (firstComma !== -1) {
+      raw = raw.slice(0, firstComma + 1) + raw.slice(firstComma + 1).replace(/,/g, "");
+    }
+
+    if (raw === "") {
       setDisplayValue("");
       onChange(undefined);
       return;
     }
 
-    const numericValue = parseInt(rawValue);
-    const formatted = formatValue(numericValue);
+    const parts = raw.split(",");
+    const integer = parts[0] || "0";
+    const decimals = (parts[1] || "").slice(0, 2);
 
-    setDisplayValue(formatted);
+    // Formata parte inteira para exibição visual (ex: 1.000)
+    const numericInt = parseInt(integer || "0", 10);
+    const formattedInteger = integer ? new Intl.NumberFormat("pt-BR").format(numericInt) : "0";
+    
+    let newDisplay = formattedInteger;
+    if (raw.includes(",")) {
+      newDisplay += "," + decimals;
+    }
+
+    setDisplayValue(newDisplay);
+
+    // Converte para número para o pai
+    const normalized = `${integer || "0"}.${decimals || "0"}`;
+    const numericValue = parseFloat(normalized);
     onChange(numericValue);
+  };
+
+  const handleBlur = () => {
+    // Ao sair do campo, formata para o padrão financeiro completo (adiciona ,00 se faltar)
+    if (value !== undefined && value !== null) {
+      setDisplayValue(formatValue(value));
+    }
   };
 
   return (
@@ -54,12 +89,15 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
       <Input
         {...rest}
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         value={displayValue}
         onChange={handleChange}
+        onBlur={handleBlur}
         placeholder="0,00"
         className={`pl-9 ${props.className}`}
       />
     </div>
   );
 }
+
+
