@@ -21,16 +21,15 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
   };
 
   React.useEffect(() => {
-    // Quando valor mudar pelo componente pai (ex: carregamento), formatamos para exibição completa
     if (value === undefined || value === null) {
       if (displayValue !== "") setDisplayValue("");
       return;
     }
     
     // Verificamos se o valor numérico atual já não é o mesmo que está sendo exibido
-    // Para evitar formatar (adicionar ,00) enquanto o usuário ainda está digitando a vírgula ou uma fração
+    // IMPORTANTE: Se o valor numérico já está correto, NÃO formatamos para não travar a digitação (ex: ,00)
     const currentNumeric = parseFloat(displayValue.replace(/\./g, "").replace(",", "."));
-    if (currentNumeric === value && displayValue.includes(",")) {
+    if (!isNaN(currentNumeric) && currentNumeric === value) {
       return;
     }
 
@@ -38,7 +37,7 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
     if (displayValue !== formatted) {
       setDisplayValue(formatted);
     }
-  }, [value, displayValue]);
+  }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/[^\d,]/g, "");
@@ -59,7 +58,7 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
     const integer = parts[0] || "0";
     const decimals = (parts[1] || "").slice(0, 2);
 
-    // Formata parte inteira para exibição visual (ex: 1.000)
+    // Formata parte inteira para exibição visual (ex: 1.000) mas sem forçar decimais ainda
     const numericInt = parseInt(integer || "0", 10);
     const formattedInteger = integer ? new Intl.NumberFormat("pt-BR").format(numericInt) : "0";
     
@@ -70,14 +69,14 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
 
     setDisplayValue(newDisplay);
 
-    // Converte para número para o pai
+    // Envia o valor numérico para o pai
     const normalized = `${integer || "0"}.${decimals || "0"}`;
     const numericValue = parseFloat(normalized);
     onChange(numericValue);
   };
 
   const handleBlur = () => {
-    // Ao sair do campo, formata para o padrão financeiro completo (adiciona ,00 se faltar)
+    // Ao sair do campo, aí sim aplicamos o rigor da formatação ",00"
     if (value !== undefined && value !== null) {
       setDisplayValue(formatValue(value));
     }
@@ -99,5 +98,6 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
     </div>
   );
 }
+
 
 
