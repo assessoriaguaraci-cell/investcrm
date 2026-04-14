@@ -390,7 +390,7 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
                 <FormField control={form.control} name="operation_responsible_id" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Responsável Operação</FormLabel>
-                    <FormControl><ResponsibleSelect value={field.value || undefined} onValueChange={field.onChange} className="h-9" /></FormControl>
+                    <FormControl><ResponsibleSelect value={field.value || undefined} onValueChange={field.onChange} className="h-9" showMentoria={true} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

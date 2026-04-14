@@ -5,9 +5,10 @@ interface Props {
   value: string | null | undefined;
   onValueChange: (value: string) => void;
   className?: string;
+  showMentoria?: boolean;
 }
 
-export default function ResponsibleSelect({ value, onValueChange, className }: Props) {
+export default function ResponsibleSelect({ value, onValueChange, className, showMentoria }: Props) {
   const { data: members } = useApprovedMembers();
 
   return (
@@ -17,6 +18,7 @@ export default function ResponsibleSelect({ value, onValueChange, className }: P
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="none">Sem responsável</SelectItem>
+        <SelectItem value="mentoria">MENTORIA</SelectItem>
         {members?.map((m) => (
           <SelectItem
             key={m.user_id}
