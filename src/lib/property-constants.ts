@@ -15,6 +15,7 @@ export const PROPERTY_STAGES: { value: PropertyStage; label: string; color: stri
   { value: "pos_venda", label: "Pós-Venda", color: "bg-[hsl(var(--stage-post-sale))]" },
   { value: "ir", label: "IR", color: "bg-[hsl(var(--stage-tax))]" },
   { value: "finalizado", label: "Finalizado", color: "bg-[hsl(var(--stage-finished))]" },
+  { value: "cancelados", label: "Cancelados", color: "bg-red-500" },
 ];
 
 export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [

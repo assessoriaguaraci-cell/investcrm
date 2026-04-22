@@ -14,6 +14,7 @@ import NewPropertyDialog from "@/components/properties/NewPropertyDialog";
 import ImportPropertiesDialog from "@/components/properties/ImportPropertiesDialog";
 import PropertyFilters, { EMPTY_FILTERS, type PropertyFilterValues } from "@/components/properties/PropertyFilters";
 import SavedFiltersButton from "@/components/properties/SavedFiltersButton";
+import AddColumnDialog from "@/components/kanban/AddColumnDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -69,12 +70,20 @@ export default function Properties() {
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
 
+  const stages = useMemo(() => {
+    const base = dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES;
+    const hasCancelados = base.some(s => s.value === "cancelados");
+    if (!hasCancelados) {
+      return [...base, { value: "cancelados", label: "Cancelados", color: "bg-red-500" } as any];
+    }
+    return base;
+  }, [dynamicStages]);
+
   const stageOrder = useMemo(() => {
     const map: Record<string, number> = {};
-    const stages = dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES;
     stages.forEach((s, i) => { map[s.value] = i; });
     return map;
-  }, [dynamicStages]);
+  }, [stages]);
 
   const listItems = useMemo(() => {
     if (!properties || !activeListView) return [];
@@ -128,13 +137,12 @@ export default function Properties() {
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    const stages = dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES;
     stages.forEach(s => (map[s.value] = []));
     filtered.forEach(p => {
       if (map[p.stage]) map[p.stage]!.push(p);
     });
     return map;
-  }, [filtered, dynamicStages]);
+  }, [filtered, stages]);
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -172,7 +180,7 @@ export default function Properties() {
           <p className="text-sm text-muted-foreground text-center py-12">Nenhum imóvel encontrado.</p>
         ) : (
           <div className="space-y-4">
-            {(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES)
+            {stages
               .filter(s => listItems.some(p => p.stage === s.value))
               .map(stage => {
                 const stageItems = listItems.filter(p => p.stage === stage.value);
@@ -258,6 +266,7 @@ export default function Properties() {
         </div>
 
         <div className="flex items-center gap-3">
+          <AddColumnDialog funnelType="property" />
           <NewPropertyDialog />
 
           <div className="h-6 w-px bg-border/50 mx-1" />
@@ -349,7 +358,7 @@ export default function Properties() {
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="flex-1 overflow-x-auto mt-4">
             <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
-              {(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES).map(stage => (
+              {stages.map(stage => (
                 <KanbanColumn
                   key={stage.value}
                   stageId={(stage as any).id}
@@ -360,6 +369,10 @@ export default function Properties() {
                   cardSettings={cardSettings}
                 />
               ))}
+              <div className="flex flex-col min-w-[100px] shrink-0 items-center justify-start pt-4">
+                <AddColumnDialog funnelType="property" />
+                <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-wider">Nova Coluna</p>
+              </div>
             </div>
           </div>
         </DragDropContext>
