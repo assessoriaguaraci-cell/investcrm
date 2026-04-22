@@ -19,9 +19,10 @@ import { cn } from "@/lib/utils";
 interface Props {
     funnelType: "property" | "client";
     pipeline?: string;
+    showLabel?: boolean;
 }
 
-export default function AddColumnDialog({ funnelType, pipeline }: Props) {
+export default function AddColumnDialog({ funnelType, pipeline, showLabel }: Props) {
     const [open, setOpen] = useState(false);
     const [label, setLabel] = useState("");
     const [color, setColor] = useState("bg-blue-500");
@@ -67,8 +68,9 @@ export default function AddColumnDialog({ funnelType, pipeline }: Props) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 w-9 p-0 rounded-full border-dashed">
+                <Button variant="outline" size="sm" className={cn("h-9 border-dashed font-bold text-[10px] uppercase", showLabel ? "px-3 gap-2" : "w-9 p-0 rounded-full")}>
                     <Plus className="h-4 w-4" />
+                    {showLabel && "Nova Coluna"}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">

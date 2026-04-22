@@ -266,7 +266,7 @@ export default function Properties() {
         </div>
 
         <div className="flex items-center gap-3">
-          <AddColumnDialog funnelType="property" />
+          <AddColumnDialog funnelType="property" showLabel />
           <NewPropertyDialog />
 
           <div className="h-6 w-px bg-border/50 mx-1" />
