@@ -5,7 +5,7 @@ type PropertyType = Database["public"]["Enums"]["property_type"];
 type OccupationStatus = Database["public"]["Enums"]["occupation_status"];
 type PriorityLevel = Database["public"]["Enums"]["priority_level"];
 
-export const PROPERTY_STAGES: { value: PropertyStage; label: string; color: string }[] = [
+export const PROPERTY_STAGES: { value: string; label: string; color: string }[] = [
   { value: "pre_arrematacao", label: "Pré-Arrematação", color: "bg-[hsl(var(--stage-pre-auction))]" },
   { value: "itbi_contrato", label: "ITBI/Contrato", color: "bg-[hsl(var(--stage-itbi-contract))]" },
   { value: "registro", label: "Registro", color: "bg-[hsl(var(--stage-registration))]" },
