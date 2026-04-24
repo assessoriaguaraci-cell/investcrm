@@ -15,6 +15,7 @@ import Tasks from "@/pages/Tasks";
 import Calendar from "@/pages/Calendar";
 import Partners from "@/pages/Partners";
 import SettingsPage from "@/pages/SettingsPage";
+import PreAuctionKanban from "@/pages/PreAuctionKanban";
 import NotFound from "./pages/NotFound";
 
 console.log('App.tsx top-level executing');
@@ -40,6 +41,7 @@ const App = () => {
                 }
               >
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/pre-auction" element={<PreAuctionKanban />} />
                 <Route path="/properties" element={<Properties />} />
                 <Route path="/clients" element={<Clients />} />
                 <Route path="/matches" element={<Matches />} />

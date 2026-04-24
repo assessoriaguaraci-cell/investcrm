@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Building2, Users, Handshake, CheckSquare, Settings, Menu, X, LogOut, CalendarRange, ChevronRight, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Building2, Users, Handshake, CheckSquare, Settings, Menu, X, LogOut, CalendarRange, ChevronRight, ChevronLeft, Gavel } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ const navItems = [{
   path: "/",
   label: "Dashboard",
   icon: LayoutDashboard
+}, {
+  path: "/pre-auction",
+  label: "Pré-Arremate",
+  icon: Gavel
 }, {
   path: "/properties",
   label: "Imóveis",
