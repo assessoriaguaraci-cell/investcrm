@@ -144,7 +144,7 @@ export default function AddPartnerDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
         <div className="bg-primary p-6 text-white shrink-0">
           <DialogTitle className="text-2xl font-black tracking-tight uppercase flex items-center gap-2">
             <ClipboardCheck className="h-6 w-6" />
