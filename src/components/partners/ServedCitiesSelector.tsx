@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useBrazilStates, useBrazilCities } from "@/hooks/useCityInfo";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { BRAZILIAN_STATES } from "@/lib/property-constants";
 
 interface Props {
     selectedCities: { state: string; city: string }[];
@@ -49,11 +50,11 @@ export default function ServedCitiesSelector({ selectedCities, onSelect }: Props
             <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-muted-foreground">Estado Atendido</Label>
                 <Select value={selectedState} onValueChange={setSelectedState}>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-background h-11 border-2 font-bold focus:ring-primary">
                         <SelectValue placeholder="Selecione o estado..." />
                     </SelectTrigger>
-                    <SelectContent>
-                        {states?.map(s => (
+                    <SelectContent className="z-[9999]">
+                        {(states && states.length > 0 ? states.map(s => ({ sigla: s.sigla, nome: s.nome })) : BRAZILIAN_STATES.map(s => ({ sigla: s, nome: s }))).map(s => (
                             <SelectItem key={s.sigla} value={s.sigla}>{s.nome} ({s.sigla})</SelectItem>
                         ))}
                     </SelectContent>
