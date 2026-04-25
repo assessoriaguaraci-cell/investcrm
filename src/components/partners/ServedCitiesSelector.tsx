@@ -17,9 +17,15 @@ interface Props {
 export default function ServedCitiesSelector({ selectedCities, onSelect }: Props) {
     const [selectedState, setSelectedState] = useState<string>("");
     const [searchTerm, setSearchTerm] = useState("");
-
     const { data: states } = useBrazilStates();
     const { data: cities, isLoading: loadingCities } = useBrazilCities(selectedState);
+
+    // Auto-select state if cities are already selected but no state is picked
+    useEffect(() => {
+        if (!selectedState && selectedCities.length > 0) {
+            setSelectedState(selectedCities[0].state);
+        }
+    }, [selectedCities, selectedState]);
 
     const handleToggleCity = (city: string) => {
         const exists = selectedCities.find(c => c.state === selectedState && c.city === city);
