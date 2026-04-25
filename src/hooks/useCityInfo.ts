@@ -198,9 +198,31 @@ export function useBrazilCities(uf?: string) {
     queryKey: ["brazil_cities", uf],
     enabled: !!uf,
     queryFn: async () => {
+      if (!uf) return [];
+
+      // Try to get from local storage first for instant loading
+      const cacheKey = `cities-cache-${uf}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached) as IBGECity[];
+        } catch (e) {
+          localStorage.removeItem(cacheKey);
+        }
+      }
+
       const resp = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
-      return resp.json() as Promise<IBGECity[]>;
+      const data = await resp.json() as IBGECity[];
+
+      // Save to local storage for next time
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch (e) {
+        // LocalStorage might be full, ignore
+      }
+
+      return data;
     },
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours in memory
   });
 }
