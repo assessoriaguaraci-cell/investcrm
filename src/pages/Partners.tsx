@@ -270,9 +270,9 @@ export default function Partners() {
                             ) : (
                                 filteredContacts.map((contact) => (
                                     <TableRow key={contact.id} className="hover:bg-primary/5 transition-all group">
-                                        <TableCell className="pl-6 py-4">
+                                        <TableCell className="pl-6 py-4 cursor-pointer group/name" onClick={() => handleEditClick(contact)}>
                                             <div className="flex flex-col">
-                                                <span className="font-black text-sm text-primary uppercase tracking-tight">{contact.name}</span>
+                                                <span className="font-black text-sm text-primary uppercase tracking-tight group-hover/name:underline">{contact.name}</span>
                                                 <span className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">ID: {contact.id.slice(0, 8)}</span>
                                             </div>
                                         </TableCell>
@@ -353,6 +353,7 @@ export default function Partners() {
             </Card>
 
             <AddPartnerDialog 
+                key={editingContact?.id || "new"}
                 open={isAddOpen} 
                 onOpenChange={(v) => {
                     setIsAddOpen(v);

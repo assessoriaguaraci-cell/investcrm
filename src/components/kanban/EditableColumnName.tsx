@@ -39,17 +39,17 @@ export default function EditableColumnName({ stageId, stageValue, pipeline, init
 
         try {
             if (!stageId) {
-                toast({
-                    title: "Recurso não disponível",
-                    description: "Esta é uma coluna padrão. Para editar nomes ou cores, você precisa aplicar a migração SQL no Supabase.",
-                    variant: "destructive",
+                // If it's a default stage, create it in the database with the new name
+                await addStage({
+                    funnel_type: funnelType,
+                    value: stageValue!,
+                    label: label.trim(),
+                    color: "bg-blue-500", // Default color
+                    pipeline: pipeline || null,
                 });
-                setLabel(initialLabel);
-                setIsEditing(false);
-                return;
+            } else {
+                await updateStage({ id: stageId, label: label.trim() });
             }
-
-            await updateStage({ id: stageId, label: label.trim() });
             toast({ title: "Nome da coluna atualizado!" });
             setIsEditing(false);
         } catch (error: any) {

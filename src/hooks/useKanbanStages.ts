@@ -22,18 +22,27 @@ export const PRESET_COLORS = [
     { name: "Cinza", class: "bg-slate-500" },
 ];
 
-export function useKanbanStages(funnelType: "property" | "client") {
+export function useKanbanStages(funnelType: "property" | "client", funnelId?: string) {
     const queryClient = useQueryClient();
 
     const { data: stages = [], isLoading } = useQuery({
-        queryKey: ["kanban_stages", funnelType],
+        queryKey: ["kanban_stages", funnelType, funnelId],
         queryFn: async () => {
             try {
-                const { data, error } = await (supabase as any)
+                let query = (supabase as any)
                     .from("kanban_stages")
                     .select("*")
                     .eq("funnel_type", funnelType)
                     .order("sort_order", { ascending: true });
+
+                if (funnelId) {
+                    query = query.eq("funnel_id", funnelId);
+                } else if (funnelType === 'property') {
+                    // For main property funnel, we might want stages with NULL funnel_id
+                    query = query.is("funnel_id", null);
+                }
+
+                const { data, error } = await query;
 
                 if (error) {
                     console.warn("Kanban stages table not found or error fetching, falling back to constants:", error.message);

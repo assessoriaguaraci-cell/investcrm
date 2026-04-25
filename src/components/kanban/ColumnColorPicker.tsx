@@ -18,14 +18,16 @@ export default function ColumnColorPicker({ stageId, stageValue, stageLabel, cur
     const handleColorChange = async (newColor: string) => {
         try {
             if (!stageId) {
-                toast({
-                    title: "Recurso não disponível",
-                    description: "Esta é uma coluna padrão. Para mudar a cor de colunas padrão ou criar novas, você precisa aplicar a migração SQL no Supabase.",
-                    variant: "destructive",
+                // Create the stage if it doesn't exist yet
+                await addStage({
+                    funnel_type: funnelType,
+                    value: stageValue,
+                    label: stageLabel,
+                    color: newColor,
                 });
-                return;
+            } else {
+                await updateStage({ id: stageId, color: newColor });
             }
-            await updateStage({ id: stageId, color: newColor });
             toast({ title: "Cor da coluna atualizada!" });
         } catch (error: any) {
             console.error("Error updating column color:", error);

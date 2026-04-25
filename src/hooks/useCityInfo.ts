@@ -24,6 +24,7 @@ export interface CityContact {
   notes: string | null;
   has_served: boolean;
   pix_key: string | null;
+  diligence_history: string | null;
   created_at: string;
   served_cities?: {
     city_info: CityInfo;
@@ -74,6 +75,7 @@ export function useAllCityContacts() {
           has_served, 
           pix_key, 
           notes, 
+          diligence_history,
           city_info:city_info_id(city, state),
           served_cities:contact_served_cities(
             city_info:city_info_id(city, state)

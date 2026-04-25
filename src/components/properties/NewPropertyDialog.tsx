@@ -75,7 +75,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export default function NewPropertyDialog() {
+interface Props {
+    defaultFunnelId?: string;
+}
+
+export default function NewPropertyDialog({ defaultFunnelId }: Props) {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const createProperty = useCreateProperty();
@@ -99,6 +103,7 @@ export default function NewPropertyDialog() {
         code: values.code || "",
         responsible_user_id: values.responsible_user_id || user?.id || null,
         state: values.state,
+        funnel_id: defaultFunnelId as any
       });
       toast.success("Imóvel cadastrado com sucesso!");
       form.reset();

@@ -59,7 +59,7 @@ export default function PreAuctionKanban() {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none">
-              Kanban de Pré-Arrematação
+              Kanban de Pós-Arrematação
             </h1>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Gestão de diligências e propostas</p>
           </div>

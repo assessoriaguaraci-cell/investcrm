@@ -7,7 +7,7 @@ import { format, subDays } from "date-fns";
 
 export type Property = Tables<"properties">;
 
-export function useProperties() {
+export function useProperties(funnelId?: string) {
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export function useProperties() {
         "postgres_changes",
         { event: "*", schema: "public", table: "properties" },
         () => {
-          qc.invalidateQueries({ queryKey: ["properties"] });
+          qc.invalidateQueries({ queryKey: ["properties", funnelId] });
         }
       )
       .subscribe();
@@ -25,15 +25,24 @@ export function useProperties() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [qc, funnelId]);
 
   return useQuery({
-    queryKey: ["properties"],
+    queryKey: ["properties", funnelId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("properties")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (funnelId) {
+        query = query.eq("funnel_id", funnelId);
+      } else {
+        // Option to filter by NULL funnel_id for the "Default" funnel
+        // query = query.is("funnel_id", null);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Property[];
     },
@@ -72,7 +81,7 @@ export function useCreateProperty() {
       if (error) throw error;
 
       // Auto-create checklist for the initial stage
-      const stage = data.stage ?? "pre_arrematacao";
+      const stage = data.stage ?? "pos_arrematacao";
       const templates = getTemplatesForStage(stage);
       if (templates.length > 0) {
         const rows = templates.map(t => ({

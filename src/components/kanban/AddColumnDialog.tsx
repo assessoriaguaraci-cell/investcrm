@@ -18,15 +18,16 @@ import { cn } from "@/lib/utils";
 
 interface Props {
     funnelType: "property" | "client";
+    funnelId?: string;
     pipeline?: string;
     showLabel?: boolean;
 }
 
-export default function AddColumnDialog({ funnelType, pipeline, showLabel }: Props) {
+export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLabel }: Props) {
     const [open, setOpen] = useState(false);
     const [label, setLabel] = useState("");
     const [color, setColor] = useState("bg-blue-500");
-    const { addStage, isAdding } = useKanbanStages(funnelType);
+    const { addStage, isAdding } = useKanbanStages(funnelType, funnelId);
     const { toast } = useToast();
 
     const handleSave = async () => {
@@ -50,6 +51,7 @@ export default function AddColumnDialog({ funnelType, pipeline, showLabel }: Pro
                 label,
                 color,
                 pipeline: pipeline || null,
+                funnel_id: funnelId as any
             });
 
             toast({ title: "Coluna adicionada com sucesso!" });
