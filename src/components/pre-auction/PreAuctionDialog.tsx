@@ -148,7 +148,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
@@ -158,9 +158,9 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <ScrollArea className="flex-1 p-6">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               
               {/* SEÇÃO 1: IDENTIFICAÇÃO E FOTO */}
               <div className="space-y-4">
@@ -521,10 +521,10 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
                 )} />
               </div>
 
-              <div className="h-px bg-transparent" /> {/* Spacer */}
-            </form>
-          </Form>
-        </div>
+                <div className="h-px bg-transparent" /> {/* Spacer */}
+              </form>
+            </Form>
+        </ScrollArea>
 
         <DialogFooter className="p-6 border-t bg-muted/20">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="font-black uppercase tracking-tight">Cancelar</Button>
