@@ -24,7 +24,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
     queryFn: async () => {
       let query = supabase
         .from("pre_auction_properties")
-        .select("*")
+        .select("*, responsible:profiles!pre_auction_properties_responsible_id_fkey(full_name)")
         .order("created_at", { ascending: false });
       
       if (funnelId) {

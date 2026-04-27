@@ -23,7 +23,7 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
     arrematado: { label: 'COMPRADO', color: 'bg-purple-600' },
   };
 
-  const status = statusMap[property.stage];
+  const status = statusMap[property.stage] || { label: 'PENDENTE', color: 'bg-gray-400' };
 
   return (
     <Card 
@@ -80,15 +80,15 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
             <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Responsável</span>
             <div className="flex items-center gap-1 text-xs font-bold truncate">
               <User className="h-3 w-3 text-primary" />
-              {property.responsible?.full_name || "N/A"}
+              {(property as any).responsible?.full_name || "N/A"}
             </div>
           </div>
         </div>
 
-        {property.google_maps_link && (
+        {property.maps_url && (
             <div className="pt-1 flex justify-end">
                 <a 
-                    href={property.google_maps_link} 
+                    href={property.maps_url} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
