@@ -560,9 +560,46 @@ export default function Clients() {
 
       {viewMode === "kanban" ? (
         <DragDropContext onDragEnd={onDragEnd}>
-              ))}
-            </div>
-          </div>
+          <Droppable droppableId="board" type="column" direction="horizontal">
+            {(provided) => (
+              <div 
+                className="flex-1 overflow-x-auto min-h-0 pb-4 mt-2"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                <div className="flex gap-4" style={{ minWidth: "fit-content" }}>
+                  {stagesForPipeline.map((stage, index) => (
+                    <Draggable key={stage.value} draggableId={stage.value} index={index}>
+                        {(draggableProvided) => (
+                            <div
+                                ref={draggableProvided.innerRef}
+                                {...draggableProvided.draggableProps}
+                            >
+                                <ClientKanbanColumn
+                                    key={stage.value}
+                                    stageId={(stage as any).id}
+                                    stageValue={stage.value}
+                                    stageLabel={stage.label}
+                                    stageColor={stage.color}
+                                    clients={grouped[stage.value] || []}
+                                    onSelect={handleSelect}
+                                    onSelectAll={handleSelectAll}
+                                    selectedIds={selectedIds}
+                                    dragHandleProps={draggableProvided.dragHandleProps}
+                                />
+                            </div>
+                        )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                  <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add">
+                    <AddColumnDialog funnelType="client" pipeline={activePipeline} showLabel />
+                    <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Coluna</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Droppable>
         </DragDropContext>
       ) : (
         <div className="flex-1 overflow-hidden mt-4">
