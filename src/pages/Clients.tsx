@@ -569,7 +569,7 @@ export default function Clients() {
               >
                 <div className="flex gap-4" style={{ minWidth: "fit-content" }}>
                   {stagesForPipeline.map((stage, index) => (
-                    <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={stage.value || `stage-${index}`} index={index}>
+                    <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={`col-${stage.value}-${(stage as any).id || index}`} index={index}>
                         {(draggableProvided) => (
                             <div
                                 ref={draggableProvided.innerRef}

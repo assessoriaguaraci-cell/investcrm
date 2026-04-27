@@ -302,13 +302,14 @@ export default function Properties() {
               >
                 <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
                   {stages.map((stage, index) => (
-                    <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={stage.value || `stage-${index}`} index={index}>
+                    <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={`col-${stage.value}-${(stage as any).id || index}`} index={index}>
                         {(draggableProvided) => (
                             <div 
                                 ref={draggableProvided.innerRef}
                                 {...draggableProvided.draggableProps}
                             >
                                 <KanbanColumn
+                                    key={stage.value}
                                     stageId={(stage as any).id}
                                     stageValue={stage.value}
                                     stageLabel={stage.label}
