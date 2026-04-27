@@ -20,7 +20,15 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
     em_andamento: { label: 'EM ANDAMENTO', color: 'bg-yellow-500' },
     concluido: { label: 'CONCLUÍDO', color: 'bg-green-500' },
     cancelado: { label: 'DESISTÊNCIA', color: 'bg-gray-500' },
-    arrematado: { label: 'COMPRADO', color: 'bg-purple-600' },
+    arrematado: { label: 'ARREMATADO', color: 'bg-purple-600' },
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Concluído': return 'bg-green-500';
+      case 'Em Andamento': return 'bg-blue-500';
+      default: return 'bg-orange-500'; // Não Iniciado
+    }
   };
 
   const status = statusMap[property.stage] || { label: 'PENDENTE', color: 'bg-gray-400' };
@@ -55,21 +63,21 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
         </div>
       </div>
       
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-3">
         <div className="flex flex-col gap-0.5">
           <h3 className="font-black text-sm text-foreground uppercase tracking-tight truncate">
             {property.city || "Cidade não informada"}
           </h3>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-black uppercase tracking-wider">
             <MapPin className="h-3 w-3 shrink-0" />
-            {property.neighborhood} - {property.property_type || "Imóvel"}
+            {property.neighborhood} — {property.property_type || "Imóvel"}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-primary/5">
           <div className="flex flex-col gap-0.5">
             <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Vencimento</span>
-            <div className="flex items-center gap-1 text-xs font-bold tabular-nums">
+            <div className="flex items-center gap-1 text-[11px] font-bold tabular-nums">
               <Calendar className="h-3 w-3 text-primary" />
               {property.proposal_deadline 
                 ? format(new Date(property.proposal_deadline), "dd/MM/yyyy") 
@@ -78,15 +86,31 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Responsável</span>
-            <div className="flex items-center gap-1 text-xs font-bold truncate">
+            <div className="flex items-center gap-1 text-[11px] font-bold truncate">
               <User className="h-3 w-3 text-primary" />
               {(property as any).responsible?.full_name || "N/A"}
             </div>
           </div>
         </div>
 
-        {property.maps_url && (
-            <div className="pt-1 flex justify-end">
+        {/* Minimalist Indicators */}
+        <div className="flex items-center justify-between pt-2 border-t border-primary/5">
+            <div className="flex gap-2">
+                <div className="flex flex-col items-center gap-1">
+                    <div className={cn("h-1.5 w-6 rounded-full", getStatusColor((property as any).status_diligence))} title="Diligência" />
+                    <span className="text-[7px] font-black text-muted-foreground uppercase tracking-tighter text-center">Dili</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                    <div className={cn("h-1.5 w-6 rounded-full", getStatusColor((property as any).status_debts))} title="Débitos" />
+                    <span className="text-[7px] font-black text-muted-foreground uppercase tracking-tighter text-center">Débi</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                    <div className={cn("h-1.5 w-6 rounded-full", getStatusColor((property as any).status_market_analysis))} title="Mercado" />
+                    <span className="text-[7px] font-black text-muted-foreground uppercase tracking-tighter text-center">Merc</span>
+                </div>
+            </div>
+
+            {property.maps_url && (
                 <a 
                     href={property.maps_url} 
                     target="_blank" 
@@ -96,8 +120,8 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
                 >
                     Maps <ExternalLink className="h-2.5 w-2.5" />
                 </a>
-            </div>
-        )}
+            )}
+        </div>
       </CardContent>
     </Card>
   );
