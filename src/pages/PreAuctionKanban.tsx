@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePreAuctionProperties, usePreAuctionFunnels, useUpdatePreAuctionProperty, useCreatePreAuctionFunnel } from "@/hooks/usePreAuction";
 import { PreAuctionBoard } from "@/components/pre-auction/PreAuctionBoard";
 import { PreAuctionDialog } from "@/components/pre-auction/PreAuctionDialog";
@@ -22,6 +22,10 @@ export default function PreAuctionKanban() {
   const { data: properties, isLoading } = usePreAuctionProperties(selectedFunnelId);
   const updateMutation = useUpdatePreAuctionProperty();
   const createFunnelMutation = useCreatePreAuctionFunnel();
+
+  useEffect(() => {
+    document.title = "Invest CRM | Pré-Arrematação";
+  }, []);
 
   const handleMoveProperty = (id: string, newStage: PreAuctionStage) => {
     updateMutation.mutate({ id, stage: newStage });
@@ -59,7 +63,7 @@ export default function PreAuctionKanban() {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none">
-              Kanban de Pós-Arrematação
+              PRÉ-ARREMATAÇÃO
             </h1>
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Gestão de diligências e propostas</p>
           </div>

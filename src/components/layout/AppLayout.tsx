@@ -13,7 +13,7 @@ const navItems = [{
   icon: LayoutDashboard
 }, {
   path: "/pre-auction",
-  label: "Pós-Arremate",
+  label: "Pré-Arrematação",
   icon: Gavel
 }, {
   path: "/properties",
