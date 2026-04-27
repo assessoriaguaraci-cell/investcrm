@@ -45,8 +45,8 @@ type ViewMode = "kanban" | "table";
 
 export default function Properties() {
   const [selectedFunnelId, setSelectedFunnelId] = useState<string | undefined>(undefined);
-  const { data: properties, isLoading: isPropertiesLoading } = useProperties(selectedFunnelId);
-  const { stages: dynamicStages, isLoading: isStagesLoading } = useKanbanStages("property", selectedFunnelId);
+  const { data: properties, isLoading: isPropertiesLoading } = useProperties();
+  const { stages: dynamicStages, isLoading: isStagesLoading, updateStage, addStage } = useKanbanStages("property", selectedFunnelId);
   const { data: funnels } = usePropertyFunnels();
   const createFunnelMutation = useCreatePropertyFunnel();
 
@@ -174,11 +174,13 @@ export default function Properties() {
         const [removed] = newStages.splice(source.index, 1);
         newStages.splice(destination.index, 0, removed);
         
+        // Use a flag to ensure we handle the first move by promoting all stages
         for (let i = 0; i < newStages.length; i++) {
             const s = newStages[i];
             if ((s as any).id) {
                 await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
             } else {
+                // Promote to dynamic to lock the order and exclude deleted ones
                 await addStage({
                     funnel_type: "property",
                     value: s.value,

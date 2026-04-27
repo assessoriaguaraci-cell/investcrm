@@ -165,6 +165,7 @@ export default function Clients() {
             if ((s as any).id) {
                 await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
             } else {
+                // Promote to dynamic to lock the order and exclude deleted ones
                 await addStage({
                     funnel_type: "client",
                     value: s.value,

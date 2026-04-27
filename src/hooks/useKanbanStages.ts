@@ -114,6 +114,29 @@ export function useKanbanStages(funnelType: "property" | "client" | "pre_auction
                 .eq("value", stageValue);
 
             if (deleteError) throw deleteError;
+
+            // 3. If we just deleted a default stage (or any stage), 
+            // ensure all other current stages are saved to DB so they don't reset to defaults
+            const currentStages = stages; // From the hook's scope
+            for (let i = 0; i < currentStages.length; i++) {
+                const s = currentStages[i];
+                if (s.value === stageValue) continue; // Skip the one we deleted
+                
+                if (!(s as any).id) {
+                    await (supabase as any)
+                        .from("kanban_stages")
+                        .insert({
+                            funnel_type: funnelType,
+                            value: s.value,
+                            label: s.label,
+                            color: s.color,
+                            pipeline: (s as any).pipeline || null,
+                            funnel_id: (s as any).funnel_id || null,
+                            sort_order: i * 10,
+                            checklist: (s as any).checklist || []
+                        });
+                }
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["kanban_stages", funnelType] });
