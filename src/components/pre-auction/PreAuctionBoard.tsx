@@ -3,7 +3,7 @@ import { PreAuctionProperty, PreAuctionStage } from "@/types/pre-auction";
 import { PreAuctionCard } from "./PreAuctionCard";
 import { cn } from "@/lib/utils";
 import { useKanbanStages, PRESET_COLORS } from "@/hooks/useKanbanStages";
-import { MoreHorizontal, Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { MoreHorizontal, Plus, Pencil, Trash2, Check, X, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -47,11 +47,21 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
         const [removed] = newStages.splice(source.index, 1);
         newStages.splice(destination.index, 0, removed);
         
-        // Update sort order in DB for all dynamic stages
+        // Update sort order in DB for all stages
         for (let i = 0; i < newStages.length; i++) {
             const s = newStages[i];
             if ((s as any).id) {
-                updateStage.mutate({ id: (s as any).id, sort_order: i * 10 });
+                await updateStage.mutateAsync({ id: (s as any).id, sort_order: i * 10 });
+            } else {
+                // Promote to dynamic if it doesn't have an id yet
+                await addStage.mutateAsync({
+                    label: s.label,
+                    value: s.value,
+                    color: s.color,
+                    funnel_type: "pre_auction",
+                    funnel_id: funnelId || null,
+                    sort_order: i * 10
+                } as any);
             }
         }
         return;
@@ -123,7 +133,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                     key={stage.value} 
                     draggableId={stage.value} 
                     index={index}
-                    isDragDisabled={!(stage as any).id} // Disable dragging for default stages
+                    isDragDisabled={false} // Enable dragging for all stages
                 >
                     {(draggableProvided) => (
                         <div 
@@ -139,6 +149,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                                 )}
                             >
                 <div className="flex items-center gap-2 flex-1 mr-2 overflow-hidden">
+                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0" />
                     <div className={cn("h-2 w-2 rounded-full shrink-0", stage.color)} />
                     {editingStage === (stage as any).id || editingStage === stage.value ? (
                         <div className="flex items-center gap-1 w-full">
