@@ -45,9 +45,20 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
     onMoveProperty(draggableId, destination.droppableId as PreAuctionStage);
   };
 
-  const handleUpdateStage = async (id: string, label: string) => {
+  const handleUpdateStage = async (id: string | undefined, label: string, stageValue?: string, stageColor?: string) => {
     try {
-      await updateStage.mutateAsync({ id, label });
+      if (id) {
+        await updateStage.mutateAsync({ id, label });
+      } else {
+        // Promote default stage to dynamic
+        await addStage.mutateAsync({ 
+          label, 
+          value: stageValue || label.toLowerCase().replace(/\s+/g, '_'), 
+          color: stageColor || "bg-blue-500",
+          funnel_type: "pre_auction",
+          funnel_id: funnelId || null
+        } as any);
+      }
       setEditingStage(null);
       toast.success("Coluna atualizada!");
     } catch (error) {
@@ -55,7 +66,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
     }
   };
 
-  const handleDeleteStage = async (stageValue: string) => {
+  const handleDeleteStage = async (stageValue: string, id?: string) => {
       const destination = STAGES.find(s => s.value !== stageValue)?.value || "";
       if (!destination) {
           toast.error("Não é possível excluir a única coluna");
@@ -64,7 +75,15 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
       
       if (confirm("Tem certeza que deseja excluir esta coluna? Os itens serão movidos para a primeira coluna disponível.")) {
           try {
-              await deleteStage.mutateAsync({ stageValue, destinationStageValue: destination });
+              if (id) {
+                await deleteStage.mutateAsync({ stageValue, destinationStageValue: destination });
+              } else {
+                // If it's a default stage, we can't delete it from DB, 
+                // but we can't really delete it from the UI either unless we move to dynamic.
+                // For now, let's just alert that they should edit it instead or create dynamic columns.
+                toast.error("Colunas padrão não podem ser excluídas. Renomeie-as ou crie novas colunas.");
+                return;
+              }
               toast.success("Coluna excluída!");
           } catch (error) {
               toast.error("Erro ao excluir coluna");
@@ -86,16 +105,16 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
               )}>
                 <div className="flex items-center gap-2 flex-1 mr-2 overflow-hidden">
                     <div className={cn("h-2 w-2 rounded-full shrink-0", stage.color)} />
-                    {editingStage === (stage as any).id ? (
+                    {editingStage === (stage as any).id || editingStage === stage.value ? (
                         <div className="flex items-center gap-1 w-full">
                             <Input 
                                 value={editLabel} 
                                 onChange={e => setEditLabel(e.target.value)}
                                 className="h-6 text-[10px] font-black uppercase py-0 px-2"
                                 autoFocus
-                                onKeyDown={e => e.key === 'Enter' && handleUpdateStage((stage as any).id, editLabel)}
+                                onKeyDown={e => e.key === 'Enter' && handleUpdateStage((stage as any).id, editLabel, stage.value, stage.color)}
                             />
-                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => handleUpdateStage((stage as any).id, editLabel)}>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => handleUpdateStage((stage as any).id, editLabel, stage.value, stage.color)}>
                                 <Check className="h-3 w-3 text-green-600" />
                             </Button>
                             <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditingStage(null)}>
@@ -114,21 +133,21 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                         {stageProperties.length}
                     </span>
 
-                    {(stage as any).id && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/header:opacity-100 transition-opacity">
-                                    <MoreHorizontal className="h-3.5 w-3.5" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => {
-                                    setEditingStage((stage as any).id);
-                                    setEditLabel(stage.label);
-                                }} className="text-[10px] font-black uppercase gap-2 cursor-pointer">
-                                    <Pencil className="h-3 w-3" /> Renomear
-                                </DropdownMenuItem>
-                                
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => {
+                                setEditingStage((stage as any).id || stage.value);
+                                setEditLabel(stage.label);
+                            }} className="text-[10px] font-black uppercase gap-2 cursor-pointer">
+                                <Pencil className="h-3 w-3" /> Renomear
+                            </DropdownMenuItem>
+                            
+                            {(stage as any).id && (
                                 <div className="p-2 flex gap-1 border-t border-b">
                                     {PRESET_COLORS.map(c => (
                                         <button 
@@ -138,16 +157,18 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                                         />
                                     ))}
                                 </div>
+                            )}
 
+                            {(stage as any).id && (
                                 <DropdownMenuItem 
-                                    onClick={() => handleDeleteStage(stage.value)} 
+                                    onClick={() => handleDeleteStage(stage.value, (stage as any).id)} 
                                     className="text-[10px] font-black uppercase gap-2 text-destructive focus:text-destructive cursor-pointer"
                                 >
                                     <Trash2 className="h-3 w-3" /> Excluir
                                 </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
               </div>
 
