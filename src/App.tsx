@@ -17,6 +17,7 @@ import Partners from "@/pages/Partners";
 import SettingsPage from "@/pages/SettingsPage";
 import PreAuctionKanban from "@/pages/PreAuctionKanban";
 import NotFound from "./pages/NotFound";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 console.log('App.tsx top-level executing');
 
@@ -28,31 +29,47 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route
-                element={
-                  <RequireAuth>
-                    <AppLayout />
-                  </RequireAuth>
-                }
-              >
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/pre-auction" element={<PreAuctionKanban />} />
-                <Route path="/properties" element={<Properties />} />
-                <Route path="/clients" element={<Clients />} />
-                <Route path="/matches" element={<Matches />} />
-                <Route path="/tasks" element={<Tasks />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/partners" element={<Partners />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Route >
-              <Route path="*" element={<NotFound />} />
-            </Routes >
-          </BrowserRouter >
+          <ErrorBoundary name="Global App">
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route
+                  element={
+                    <RequireAuth>
+                      <ErrorBoundary name="App Layout">
+                        <AppLayout />
+                      </ErrorBoundary>
+                    </RequireAuth>
+                  }
+                >
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/pre-auction" element={
+                    <ErrorBoundary name="Pré-Arremate">
+                      <PreAuctionKanban />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/properties" element={
+                    <ErrorBoundary name="Imóveis">
+                      <Properties />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/clients" element={
+                    <ErrorBoundary name="Clientes">
+                      <Clients />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/matches" element={<Matches />} />
+                  <Route path="/tasks" element={<Tasks />} />
+                  <Route path="/calendar" element={<Calendar />} />
+                  <Route path="/partners" element={<Partners />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route >
+                <Route path="*" element={<NotFound />} />
+              </Routes >
+            </BrowserRouter >
+          </ErrorBoundary>
         </TooltipProvider >
       </QueryClientProvider >
     </ThemeProvider >
