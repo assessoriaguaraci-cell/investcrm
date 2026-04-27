@@ -19,7 +19,7 @@ interface Props {
 export default function EditableColumnName({ stageId, stageValue, pipeline, initialLabel, funnelType, className }: Props) {
     const [isEditing, setIsEditing] = useState(false);
     const [label, setLabel] = useState(initialLabel);
-    const { updateStage } = useKanbanStages(funnelType);
+    const { updateStage, addStage } = useKanbanStages(funnelType as any);
     const { toast } = useToast();
     const inputRef = useRef<HTMLInputElement>(null);
 

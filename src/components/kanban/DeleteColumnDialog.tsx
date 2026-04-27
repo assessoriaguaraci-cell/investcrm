@@ -27,7 +27,7 @@ import { PROPERTY_STAGES } from "@/lib/property-constants";
 import { CLIENT_STAGES } from "@/lib/client-constants";
 
 interface Props {
-    funnelType: "property" | "client";
+    funnelType: "property" | "client" | "pre_auction";
     pipeline?: string;
     preSelectedStageValue?: string;
     triggerAsGhost?: boolean;
@@ -45,7 +45,7 @@ export default function DeleteColumnDialog({ funnelType, pipeline, preSelectedSt
     // Fallback to constants if kanban_stages is empty (e.g. before SQL migration)
     const actualStages = stages.length > 0
         ? stages
-        : (funnelType === "property" ? PROPERTY_STAGES : CLIENT_STAGES);
+        : (funnelType === "property" ? PROPERTY_STAGES : funnelType === "client" ? CLIENT_STAGES : []);
 
     const filteredStages = pipeline
         ? (actualStages as any[]).filter(s => s.pipeline === pipeline)
