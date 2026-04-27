@@ -47,7 +47,7 @@ type ViewMode = "kanban" | "table";
 
 export default function Clients() {
   const { data: clients, isLoading: isClientsLoading } = useClients();
-  const { stages: dynamicStages, isLoading: isStagesLoading } = useKanbanStages("client");
+  const { stages: dynamicStages, isLoading: isStagesLoading, updateStage, addStage } = useKanbanStages("client" as any);
   const updateClient = useUpdateClient();
   const qc = useQueryClient();
   const [filters, setFilters] = useState<ClientFilterValues>(EMPTY_CLIENT_FILTERS);
@@ -150,9 +150,34 @@ export default function Clients() {
     return map;
   }, [filtered, stagesForPipeline]);
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const { draggableId, destination } = result;
+  const onDragEnd = async (result: DropResult) => {
+    const { draggableId, destination, source, type } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    if (type === 'column') {
+        const newStages = Array.from(stagesForPipeline);
+        const [removed] = newStages.splice(source.index, 1);
+        newStages.splice(destination.index, 0, removed);
+        
+        for (let i = 0; i < newStages.length; i++) {
+            const s = newStages[i];
+            if ((s as any).id) {
+                await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
+            } else {
+                await addStage({
+                    funnel_type: "client",
+                    value: s.value,
+                    label: s.label,
+                    color: s.color,
+                    pipeline: activePipeline as any,
+                    sort_order: i * 10
+                } as any);
+            }
+        }
+        return;
+    }
+
     const newStage = destination.droppableId;
     updateClient.mutate({ id: draggableId, stage: newStage as any });
   };
@@ -534,22 +559,6 @@ export default function Clients() {
 
       {viewMode === "kanban" ? (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex-1 overflow-x-auto mt-4">
-            <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
-              {stagesForPipeline.map(stage => (
-                <ClientKanbanColumn
-                  key={stage.value}
-                  stageId={(stage as any).id}
-                  stageValue={stage.value}
-                  stageLabel={stage.label}
-                  stageColor={stage.color}
-                  pipeline={activePipeline}
-                  clients={grouped[stage.value] || []}
-                  selectable={selectionModeActive}
-                  selectedIds={selectedIds}
-                  onSelect={handleSelect}
-                  onSelectAll={handleSelectAll}
-                />
               ))}
             </div>
           </div>

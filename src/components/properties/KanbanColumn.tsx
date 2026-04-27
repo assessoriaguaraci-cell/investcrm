@@ -5,6 +5,7 @@ import EditableColumnName from "../kanban/EditableColumnName";
 import type { Property } from "@/hooks/useProperties";
 import { formatCurrency } from "@/lib/property-constants";
 import { CardSettings } from "@/pages/Properties";
+import { GripVertical } from "lucide-react";
 
 interface Props {
   stageId?: string;
@@ -13,9 +14,10 @@ interface Props {
   stageColor: string;
   properties: Property[];
   cardSettings: CardSettings;
+  dragHandleProps?: any;
 }
 
-export default function KanbanColumn({ stageId, stageValue, stageLabel, stageColor, properties, cardSettings }: Props) {
+export default function KanbanColumn({ stageId, stageValue, stageLabel, stageColor, properties, cardSettings, dragHandleProps }: Props) {
   // Sum final_sale_price for all properties in this stage
   const totalValue = properties.reduce((sum, p) => sum + (p.final_sale_price || 0), 0);
 
@@ -28,13 +30,15 @@ export default function KanbanColumn({ stageId, stageValue, stageLabel, stageCol
   return (
     <div className="flex flex-col min-w-[260px] max-w-[300px] w-[280px] shrink-0">
       <div
-        className="flex flex-col mb-3 px-3 py-2 rounded-t-lg border-b-2"
+        className="flex flex-col mb-3 px-3 py-2 rounded-t-lg border-b-2 group/header"
         style={{
           backgroundColor: headerBgColor,
           borderBottomColor: colorVar ? `hsl(var(${colorVar}))` : 'transparent'
         }}
+        {...dragHandleProps}
       >
         <div className="flex items-center gap-2">
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0 cursor-grab active:cursor-grabbing" />
           <ColumnColorPicker
             stageId={stageId}
             stageValue={stageValue}

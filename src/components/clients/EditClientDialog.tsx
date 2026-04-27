@@ -15,7 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import LinkedProperties from "./LinkedProperties";
 import type { Database } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, ExternalLink } from "lucide-react";
+import { Plus, X, ExternalLink, ClipboardList, CheckCircle2 } from "lucide-react";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
@@ -30,6 +31,11 @@ interface Props {
 export default function EditClientDialog({ client, open, onOpenChange }: Props) {
   const { toast } = useToast();
   const updateClient = useUpdateClient();
+  const { stages } = useKanbanStages("client" as any);
+
+  // Find current stage and checklist
+  const currentStage = stages.find(s => s.value === client.stage && s.pipeline === client.pipeline);
+  const checklist = currentStage?.checklist || [];
 
   const [pipeline, setPipeline] = useState<ClientPipeline>(client.pipeline);
   const [stage, setStage] = useState<ClientStage>(client.stage);
@@ -212,26 +218,20 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
-        <DialogHeader className="p-6 pb-2 border-b bg-muted/20 text-left">
-          <div className="space-y-1">
-            <Label className="text-xs font-black uppercase text-muted-foreground">Editar Lead</Label>
-            <Input
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              className="text-2xl font-black bg-transparent border-none shadow-none focus-visible:ring-0 px-0 h-auto uppercase tracking-tighter"
-            />
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary" />
+              Lead: {client.full_name}
+            </DialogTitle>
           </div>
+          <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Edição de informações e acompanhamento de jornada
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
-
-        <div className="mt-4">
-          <div className="bg-muted px-4 py-2 rounded-md mb-6">
-            <span className="text-sm font-semibold text-slate-700">Dados Cliente</span>
-          </div>
-
-          <div className="grid gap-2 mb-6">
             <Label>Tags do Cliente</Label>
             <div className="flex gap-2">
               <Input

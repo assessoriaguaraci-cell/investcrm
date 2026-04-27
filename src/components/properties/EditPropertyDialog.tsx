@@ -32,7 +32,8 @@ import { useCreateChecklistForStage } from "@/hooks/usePropertyChecklist";
 import { toast } from "sonner";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { SmartDatePicker } from "@/components/ui/smart-date-picker";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ClipboardList, CheckCircle2 } from "lucide-react";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 
 const schema = z.object({
   code: z.string().min(1, "Código obrigatório"),
@@ -102,7 +103,12 @@ interface Props {
 }
 
 export default function EditPropertyDialog({ property, open, onOpenChange }: Props) {
-  const updateProperty = useUpdateProperty();
+  const updateMutation = useUpdateProperty();
+  const { stages } = useKanbanStages("property", property.funnel_id || undefined);
+  
+  // Find current stage and its checklist
+  const currentStage = stages.find(s => s.value === property.stage);
+  const checklist = currentStage?.checklist || [];
   const createChecklist = useCreateChecklistForStage();
   const [photoUrl, setPhotoUrl] = useState<string | null>((property as any).photo_url ?? null);
 
@@ -171,7 +177,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await updateProperty.mutateAsync({
+      await updateMutation.mutateAsync({
         id: property.id,
         ...values,
         photo_url: photoUrl,
@@ -188,14 +194,41 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
-        <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
-          <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Editar Imóvel — {property.code}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+          <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                Imóvel: {property.code}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <PropertyReportGenerator property={property} />
+              </div>
+            </div>
+          </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
+            {/* Checklist da Etapa */}
+            {checklist.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3 mb-8">
+                <div className="flex items-center gap-2 text-primary">
+                  <ClipboardList className="h-4 w-4" />
+                  <h4 className="text-xs font-black uppercase tracking-widest">Checklist da Etapa: {currentStage?.label}</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {checklist.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-background/50 p-2 rounded-lg border border-primary/10">
+                      <div className="h-4 w-4 rounded border border-primary/30 flex items-center justify-center bg-background">
+                        <CheckCircle2 className="h-3 w-3 text-primary opacity-20" />
+                      </div>
+                      <span className="text-[10px] font-bold text-foreground/80 uppercase">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        <Tabs defaultValue="dados" className="w-full">
+            <Tabs defaultValue="dados" className="w-full">
           <TabsList className="w-full flex-wrap h-auto gap-1">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
             <TabsTrigger value="financeiro" className="flex-1">Financeiro</TabsTrigger>

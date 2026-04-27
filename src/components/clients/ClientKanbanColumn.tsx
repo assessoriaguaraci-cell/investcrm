@@ -6,6 +6,7 @@ import type { Client } from "@/hooks/useClients";
 import { formatCurrency } from "@/lib/property-constants";
 import { useClientPropertyLinks } from "@/hooks/useClientPropertyLinks";
 import { Checkbox } from "@/components/ui/checkbox";
+import { GripVertical } from "lucide-react";
 
 interface Props {
   stageId?: string;
@@ -18,9 +19,10 @@ interface Props {
   selectedIds?: string[];
   onSelect?: (id: string, selected: boolean) => void;
   onSelectAll?: (ids: string[], selected: boolean) => void;
+  dragHandleProps?: any;
 }
 
-export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, stageColor, pipeline, clients, selectable, selectedIds, onSelect, onSelectAll }: Props) {
+export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, stageColor, pipeline, clients, selectable, selectedIds, onSelect, onSelectAll, dragHandleProps }: Props) {
   const { data: links = [] } = useClientPropertyLinks();
 
   // Calculate total final_sale_price for all clients in this column
@@ -47,13 +49,15 @@ export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, st
   return (
     <div className="flex flex-col min-w-[260px] max-w-[300px] w-[280px] shrink-0">
       <div
-        className="flex flex-col mb-3 px-3 py-2 rounded-t-lg border-b-2"
+        className="flex flex-col mb-3 px-3 py-2 rounded-t-lg border-b-2 group/header"
         style={{
           backgroundColor: headerBgColor,
           borderBottomColor: colorVar ? `hsl(var(${colorVar}))` : 'transparent'
         }}
+        {...dragHandleProps}
       >
         <div className="flex items-center gap-1.5">
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0 cursor-grab active:cursor-grabbing" />
           {selectable && (
             <Checkbox
               checked={isAllSelected || (isSomeSelected ? "indeterminate" : false)}

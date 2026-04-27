@@ -164,9 +164,34 @@ export default function Properties() {
     return map;
   }, [filtered, stages]);
 
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const { draggableId, destination } = result;
+  const onDragEnd = async (result: DropResult) => {
+    const { draggableId, destination, source, type } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    if (type === 'column') {
+        const newStages = Array.from(stages);
+        const [removed] = newStages.splice(source.index, 1);
+        newStages.splice(destination.index, 0, removed);
+        
+        for (let i = 0; i < newStages.length; i++) {
+            const s = newStages[i];
+            if ((s as any).id) {
+                await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
+            } else {
+                await addStage({
+                    funnel_type: "property",
+                    value: s.value,
+                    label: s.label,
+                    color: s.color,
+                    funnel_id: selectedFunnelId as any,
+                    sort_order: i * 10
+                } as any);
+            }
+        }
+        return;
+    }
+
     const newStage = destination.droppableId;
     updateProperty.mutate({ id: draggableId, stage: newStage as any });
   };
@@ -266,25 +291,43 @@ export default function Properties() {
 
       {viewMode === "kanban" ? (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="flex-1 overflow-x-auto mt-4">
-            <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
-              {stages.map(stage => (
-                <KanbanColumn
-                  key={stage.value}
-                  stageId={(stage as any).id}
-                  stageValue={stage.value}
-                  stageLabel={stage.label}
-                  stageColor={stage.color}
-                  properties={grouped[stage.value] || []}
-                  cardSettings={cardSettings}
-                />
-              ))}
-              <div className="flex flex-col min-w-[100px] shrink-0 items-center justify-start pt-4">
-                <AddColumnDialog funnelType="property" funnelId={selectedFunnelId} />
-                <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-wider">Nova Coluna</p>
+          <Droppable droppableId="board" type="column" direction="horizontal">
+            {(provided) => (
+              <div 
+                className="flex-1 overflow-x-auto mt-4"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
+                  {stages.map((stage, index) => (
+                    <Draggable key={stage.value} draggableId={stage.value} index={index}>
+                        {(draggableProvided) => (
+                            <div 
+                                ref={draggableProvided.innerRef}
+                                {...draggableProvided.draggableProps}
+                            >
+                                <KanbanColumn
+                                    stageId={(stage as any).id}
+                                    stageValue={stage.value}
+                                    stageLabel={stage.label}
+                                    stageColor={stage.color}
+                                    properties={grouped[stage.value] || []}
+                                    cardSettings={cardSettings}
+                                    dragHandleProps={draggableProvided.dragHandleProps}
+                                />
+                            </div>
+                        )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                  <div className="flex flex-col min-w-[100px] shrink-0 items-center justify-start pt-4">
+                    <AddColumnDialog funnelType="property" funnelId={selectedFunnelId} />
+                    <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-wider">Nova Coluna</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </Droppable>
         </DragDropContext>
       ) : (
         <div className="flex-1 overflow-auto mt-4">
