@@ -9,6 +9,7 @@ export interface KanbanStage {
     color: string;
     sort_order: number;
     pipeline?: string;
+    checklist?: string[];
 }
 
 export const PRESET_COLORS = [

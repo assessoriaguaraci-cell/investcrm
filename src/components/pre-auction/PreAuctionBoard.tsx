@@ -36,11 +36,26 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
     { value: 'cancelado', label: 'Cancelado', color: 'bg-gray-500' },
     { value: 'arrematado', label: 'Arrematado', color: 'bg-purple-600' },
   ];
-  const onDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId, type } = result;
 
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    if (type === 'column') {
+        const newStages = Array.from(STAGES);
+        const [removed] = newStages.splice(source.index, 1);
+        newStages.splice(destination.index, 0, removed);
+        
+        // Update sort order in DB for all dynamic stages
+        for (let i = 0; i < newStages.length; i++) {
+            const s = newStages[i];
+            if ((s as any).id) {
+                updateStage.mutate({ id: (s as any).id, sort_order: i * 10 });
+            }
+        }
+        return;
+    }
 
     onMoveProperty(draggableId, destination.droppableId as PreAuctionStage);
   };
@@ -93,16 +108,36 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-6 h-full min-h-[calc(100vh-200px)]">
-        {STAGES.map((stage) => {
-          const stageProperties = properties.filter((p) => p.stage === stage.value);
+      <Droppable droppableId="board" type="column" direction="horizontal">
+        {(provided) => (
+          <div 
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            className="flex gap-4 overflow-x-auto pb-6 h-full min-h-[calc(100vh-200px)]"
+          >
+            {STAGES.map((stage, index) => {
+              const stageProperties = properties.filter((p) => p.stage === stage.value);
 
-          return (
-            <div key={stage.value} className="flex flex-col min-w-[300px] w-[300px] bg-muted/30 rounded-lg border border-border/50">
-              <div className={cn(
-                "p-3 rounded-t-lg border-b-2 flex items-center justify-between group/header",
-                stage.value === 'cancelado' || stage.value === 'cancelados' ? "bg-gray-100 border-gray-300" : "bg-background border-primary/20"
-              )}>
+              return (
+                <Draggable 
+                    key={stage.value} 
+                    draggableId={stage.value} 
+                    index={index}
+                    isDragDisabled={!(stage as any).id} // Disable dragging for default stages
+                >
+                    {(draggableProvided) => (
+                        <div 
+                            ref={draggableProvided.innerRef}
+                            {...draggableProvided.draggableProps}
+                            className="flex flex-col min-w-[300px] w-[300px] bg-muted/30 rounded-lg border border-border/50"
+                        >
+                            <div 
+                                {...draggableProvided.dragHandleProps}
+                                className={cn(
+                                    "p-3 rounded-t-lg border-b-2 flex items-center justify-between group/header cursor-grab active:cursor-grabbing",
+                                    stage.value === 'cancelado' || stage.value === 'cancelados' ? "bg-gray-100 border-gray-300" : "bg-background border-primary/20"
+                                )}
+                            >
                 <div className="flex items-center gap-2 flex-1 mr-2 overflow-hidden">
                     <div className={cn("h-2 w-2 rounded-full shrink-0", stage.color)} />
                     {editingStage === (stage as any).id || editingStage === stage.value ? (
@@ -198,14 +233,18 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                         )}
                       </Draggable>
                     ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-          );
-        })}
-      </div>
+                        </div>
+                    )}
+                </Droppable>
+              </div>
+            )}
+          </Draggable>
+        );
+      })}
+      {provided.placeholder}
+    </div>
+  )}
+</Droppable>
       
       <div className="flex flex-col min-w-[300px] w-[300px] border-2 border-dashed border-primary/20 rounded-lg items-center justify-center bg-muted/5 p-4 group/add">
           <Button 

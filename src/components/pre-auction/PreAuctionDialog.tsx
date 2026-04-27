@@ -20,6 +20,9 @@ import ResponsibleSelect from "@/components/properties/ResponsibleSelect";
 import PartnerSelect from "@/components/partners/PartnerSelect";
 import CityCombobox from "@/components/properties/CityCombobox";
 import { toast } from "sonner";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
+import { CheckCircle2, ClipboardList } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const schema = z.object({
   code: z.string().min(1, "Código obrigatório"),
@@ -92,6 +95,12 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
   const updateMutation = useUpdatePreAuctionProperty();
   const createMutation = useCreatePreAuctionProperty();
   const { data: funnels } = usePreAuctionFunnels();
+  const currentFunnelId = property?.funnel_id || funnelId;
+  const { stages } = useKanbanStages("pre_auction", currentFunnelId || undefined);
+
+  // Find the current stage and its checklist
+  const currentStage = stages.find(s => s.value === property?.stage);
+  const checklist = currentStage?.checklist || [];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -162,6 +171,25 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  {/* Checklist da Etapa */}
+                  {checklist.length > 0 && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3 mb-6">
+                      <div className="flex items-center gap-2 text-primary">
+                        <ClipboardList className="h-4 w-4" />
+                        <h4 className="text-xs font-black uppercase tracking-widest">Checklist da Etapa: {currentStage?.label}</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {checklist.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-background/50 p-2 rounded-lg border border-primary/10">
+                            <div className="h-4 w-4 rounded border border-primary/30 flex items-center justify-center bg-background">
+                              <CheckCircle2 className="h-3 w-3 text-primary opacity-20" />
+                            </div>
+                            <span className="text-[10px] font-bold text-foreground/80 uppercase">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
               
               {/* SEÇÃO 1: IDENTIFICAÇÃO E FOTO */}
               <div className="space-y-4">

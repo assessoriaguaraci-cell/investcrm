@@ -17,7 +17,7 @@ import { useKanbanStages, PRESET_COLORS } from "@/hooks/useKanbanStages";
 import { cn } from "@/lib/utils";
 
 interface Props {
-    funnelType: "property" | "client";
+    funnelType: "property" | "client" | "pre_auction";
     funnelId?: string;
     pipeline?: string;
     showLabel?: boolean;
@@ -27,6 +27,7 @@ export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLa
     const [open, setOpen] = useState(false);
     const [label, setLabel] = useState("");
     const [color, setColor] = useState("bg-blue-500");
+    const [checklistText, setChecklistText] = useState("");
     const { addStage, isAdding } = useKanbanStages(funnelType, funnelId);
     const { toast } = useToast();
 
@@ -51,7 +52,8 @@ export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLa
                 label,
                 color,
                 pipeline: pipeline || null,
-                funnel_id: funnelId as any
+                funnel_id: funnelId as any,
+                checklist: checklistText.split('\n').filter(line => line.trim() !== '')
             });
 
             toast({ title: "Coluna adicionada com sucesso!" });
@@ -111,6 +113,17 @@ export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLa
                                 />
                             ))}
                         </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="checklist">Checklist da Etapa (um item por linha)</Label>
+                        <textarea
+                            id="checklist"
+                            className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="Ex: Enviar laudo&#10;Consultar IPTU&#10;Verificar ocupação"
+                            value={checklistText}
+                            onChange={(e) => setChecklistText(e.target.value)}
+                        />
                     </div>
                 </div>
                 <DialogFooter>
