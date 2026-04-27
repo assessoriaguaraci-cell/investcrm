@@ -2,22 +2,40 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { PreAuctionProperty, PreAuctionStage } from "@/types/pre-auction";
 import { PreAuctionCard } from "./PreAuctionCard";
 import { cn } from "@/lib/utils";
+import { useKanbanStages, PRESET_COLORS } from "@/hooks/useKanbanStages";
+import { MoreHorizontal, Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import AddColumnDialog from "@/components/kanban/AddColumnDialog";
 
 interface PreAuctionBoardProps {
   properties: PreAuctionProperty[];
   onMoveProperty: (id: string, newStage: PreAuctionStage) => void;
   onCardClick: (property: PreAuctionProperty) => void;
+  funnelId?: string;
 }
 
-const STAGES: { value: PreAuctionStage; label: string; color: string }[] = [
-  { value: 'inicial', label: 'Fase Inicial', color: 'bg-blue-500' },
-  { value: 'em_andamento', label: 'Em Andamento', color: 'bg-yellow-500' },
-  { value: 'concluido', label: 'Concluído', color: 'bg-green-500' },
-  { value: 'cancelado', label: 'Cancelado', color: 'bg-gray-500' },
-  { value: 'arrematado', label: 'Arrematado', color: 'bg-purple-600' },
-];
+export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funnelId }: PreAuctionBoardProps) {
+  const { stages: dynamicStages, updateStage, deleteStage, addStage } = useKanbanStages("pre_auction", funnelId);
+  const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
-export function PreAuctionBoard({ properties, onMoveProperty, onCardClick }: PreAuctionBoardProps) {
+  const STAGES = dynamicStages.length > 0 ? dynamicStages : [
+    { value: 'inicial', label: 'Fase Inicial', color: 'bg-blue-500' },
+    { value: 'em_andamento', label: 'Em Andamento', color: 'bg-yellow-500' },
+    { value: 'concluido', label: 'Concluído', color: 'bg-green-500' },
+    { value: 'cancelado', label: 'Cancelado', color: 'bg-gray-500' },
+    { value: 'arrematado', label: 'Arrematado', color: 'bg-purple-600' },
+  ];
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
@@ -25,6 +43,33 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick }: Pre
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
     onMoveProperty(draggableId, destination.droppableId as PreAuctionStage);
+  };
+
+  const handleUpdateStage = async (id: string, label: string) => {
+    try {
+      await updateStage.mutateAsync({ id, label });
+      setEditingStage(null);
+      toast.success("Coluna atualizada!");
+    } catch (error) {
+      toast.error("Erro ao atualizar nome");
+    }
+  };
+
+  const handleDeleteStage = async (stageValue: string) => {
+      const destination = STAGES.find(s => s.value !== stageValue)?.value || "";
+      if (!destination) {
+          toast.error("Não é possível excluir a única coluna");
+          return;
+      }
+      
+      if (confirm("Tem certeza que deseja excluir esta coluna? Os itens serão movidos para a primeira coluna disponível.")) {
+          try {
+              await deleteStage.mutateAsync({ stageValue, destinationStageValue: destination });
+              toast.success("Coluna excluída!");
+          } catch (error) {
+              toast.error("Erro ao excluir coluna");
+          }
+      }
   };
 
   return (
@@ -36,18 +81,74 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick }: Pre
           return (
             <div key={stage.value} className="flex flex-col min-w-[300px] w-[300px] bg-muted/30 rounded-lg border border-border/50">
               <div className={cn(
-                "p-3 rounded-t-lg border-b-2 flex items-center justify-between",
-                stage.value === 'cancelado' ? "bg-gray-100 border-gray-300" : "bg-background border-primary/20"
+                "p-3 rounded-t-lg border-b-2 flex items-center justify-between group/header",
+                stage.value === 'cancelado' || stage.value === 'cancelados' ? "bg-gray-100 border-gray-300" : "bg-background border-primary/20"
               )}>
-                <div className="flex items-center gap-2">
-                    <div className={cn("h-2 w-2 rounded-full", stage.color)} />
-                    <h3 className="font-black text-xs uppercase tracking-tighter text-foreground">
-                        {stage.label}
-                    </h3>
+                <div className="flex items-center gap-2 flex-1 mr-2 overflow-hidden">
+                    <div className={cn("h-2 w-2 rounded-full shrink-0", stage.color)} />
+                    {editingStage === (stage as any).id ? (
+                        <div className="flex items-center gap-1 w-full">
+                            <Input 
+                                value={editLabel} 
+                                onChange={e => setEditLabel(e.target.value)}
+                                className="h-6 text-[10px] font-black uppercase py-0 px-2"
+                                autoFocus
+                                onKeyDown={e => e.key === 'Enter' && handleUpdateStage((stage as any).id, editLabel)}
+                            />
+                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => handleUpdateStage((stage as any).id, editLabel)}>
+                                <Check className="h-3 w-3 text-green-600" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditingStage(null)}>
+                                <X className="h-3 w-3 text-red-600" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <h3 className="font-black text-xs uppercase tracking-tighter text-foreground truncate">
+                            {stage.label}
+                        </h3>
+                    )}
                 </div>
-                <span className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-                    {stageProperties.length}
-                </span>
+                
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                        {stageProperties.length}
+                    </span>
+
+                    {(stage as any).id && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                                    <MoreHorizontal className="h-3.5 w-3.5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => {
+                                    setEditingStage((stage as any).id);
+                                    setEditLabel(stage.label);
+                                }} className="text-[10px] font-black uppercase gap-2 cursor-pointer">
+                                    <Pencil className="h-3 w-3" /> Renomear
+                                </DropdownMenuItem>
+                                
+                                <div className="p-2 flex gap-1 border-t border-b">
+                                    {PRESET_COLORS.map(c => (
+                                        <button 
+                                            key={c.class} 
+                                            className={cn("h-3 w-3 rounded-full hover:scale-125 transition-transform", c.class)}
+                                            onClick={() => updateStage.mutate({ id: (stage as any).id, color: c.class })}
+                                        />
+                                    ))}
+                                </div>
+
+                                <DropdownMenuItem 
+                                    onClick={() => handleDeleteStage(stage.value)} 
+                                    className="text-[10px] font-black uppercase gap-2 text-destructive focus:text-destructive cursor-pointer"
+                                >
+                                    <Trash2 className="h-3 w-3" /> Excluir
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
               </div>
 
               <Droppable droppableId={stage.value}>
@@ -84,6 +185,26 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick }: Pre
           );
         })}
       </div>
+      
+      <div className="flex flex-col min-w-[300px] w-[300px] border-2 border-dashed border-primary/20 rounded-lg items-center justify-center bg-muted/5 p-4 group/add">
+          <Button 
+            variant="ghost" 
+            className="w-full h-full flex flex-col gap-3 hover:bg-primary/5 transition-colors"
+            onClick={() => setIsAddColumnOpen(true)}
+          >
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover/add:scale-110 transition-transform">
+                  <Plus className="h-6 w-6" />
+              </div>
+              <span className="font-black text-xs uppercase tracking-widest text-primary/60">Nova Coluna</span>
+          </Button>
+      </div>
+
+      <AddColumnDialog 
+        open={isAddColumnOpen}
+        onOpenChange={setIsAddColumnOpen}
+        funnelType="pre_auction"
+        funnelId={funnelId}
+      />
     </DragDropContext>
   );
 }

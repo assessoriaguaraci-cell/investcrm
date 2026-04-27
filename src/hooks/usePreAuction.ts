@@ -34,7 +34,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
       }
 
       if (diligenteId) {
-        query = query.eq("diligente_id", diligenteId);
+        query = query.eq("diligence_professional_id", diligenteId);
       }
 
       const { data, error } = await query;

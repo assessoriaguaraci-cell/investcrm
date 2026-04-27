@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface KanbanStage {
     id: string;
-    funnel_type: "property" | "client";
+    funnel_type: "property" | "client" | "pre_auction";
     value: string;
     label: string;
     color: string;
@@ -22,7 +22,7 @@ export const PRESET_COLORS = [
     { name: "Cinza", class: "bg-slate-500" },
 ];
 
-export function useKanbanStages(funnelType: "property" | "client", funnelId?: string) {
+export function useKanbanStages(funnelType: "property" | "client" | "pre_auction", funnelId?: string) {
     const queryClient = useQueryClient();
 
     const { data: stages = [], isLoading } = useQuery({
@@ -37,8 +37,8 @@ export function useKanbanStages(funnelType: "property" | "client", funnelId?: st
 
                 if (funnelId) {
                     query = query.eq("funnel_id", funnelId);
-                } else if (funnelType === 'property') {
-                    // For main property funnel, we might want stages with NULL funnel_id
+                } else if (funnelType === 'property' || funnelType === 'pre_auction') {
+                    // For main property/pre_auction funnel, we might want stages with NULL funnel_id
                     query = query.is("funnel_id", null);
                 }
 
@@ -92,7 +92,12 @@ export function useKanbanStages(funnelType: "property" | "client", funnelId?: st
     const deleteStageMutation = useMutation({
         mutationFn: async ({ stageValue, destinationStageValue }: { stageValue: string; destinationStageValue: string }) => {
             // 1. Move all items from this stage to the destination stage
-            const table = funnelType === "property" ? "properties" : "clients";
+            const tableMap = {
+                "property": "properties",
+                "client": "clients",
+                "pre_auction": "pre_auction_properties"
+            };
+            const table = tableMap[funnelType];
             const { error: moveError } = await (supabase as any)
                 .from(table)
                 .update({ stage: destinationStageValue })
