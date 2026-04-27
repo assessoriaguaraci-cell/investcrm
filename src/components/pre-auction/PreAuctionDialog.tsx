@@ -84,9 +84,10 @@ interface PreAuctionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   funnelId?: string;
+  initialDiligenteId?: string;
 }
 
-export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: PreAuctionDialogProps) {
+export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initialDiligenteId }: PreAuctionDialogProps) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(property?.photo_url ?? null);
   const updateMutation = useUpdatePreAuctionProperty();
   const createMutation = useCreatePreAuctionProperty();
@@ -120,13 +121,13 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
           status_market_analysis: "Não Iniciado",
           status_debts: "Não Iniciado",
           group_created: false,
-          funnel_id: funnelId,
-        } as any);
+          diligence_professional_id: initialDiligenteId || null,
+          funnel_id: funnelId || null,
+        });
         setPhotoUrl(null);
       }
     }
-  }, [property, open, funnelId, form]);
-
+  }, [open, property, initialDiligenteId, funnelId]);
   const onSubmit = async (values: FormValues) => {
     try {
       const data = {
@@ -148,7 +149,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
         <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
@@ -158,7 +159,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-6">
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               
@@ -524,7 +525,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId }: Pre
                 <div className="h-px bg-transparent" /> {/* Spacer */}
               </form>
             </Form>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="p-6 border-t bg-muted/20">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="font-black uppercase tracking-tight">Cancelar</Button>

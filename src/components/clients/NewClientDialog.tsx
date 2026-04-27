@@ -166,23 +166,25 @@ export default function NewClientDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5 font-black uppercase tracking-tight shadow-md">
           <Plus className="h-4 w-4" /> Novo Cliente
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="space-y-1 content-start text-left">
-            <Label className="text-sm font-medium text-muted-foreground">Nome Lead</Label>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
+        <DialogHeader className="p-6 pb-2 border-b bg-muted/20 text-left">
+          <div className="space-y-1">
+            <Label className="text-xs font-black uppercase text-muted-foreground">Cadastrar Novo Lead</Label>
             <Input
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              placeholder="Nome do cliente"
-              className="text-xl font-bold bg-muted/30 border-primary/20 focus-visible:ring-primary/20 px-3 h-12"
+              placeholder="NOME COMPLETO"
+              className="text-2xl font-black bg-transparent border-none shadow-none focus-visible:ring-0 px-0 h-auto uppercase tracking-tighter"
               autoFocus
             />
           </div>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
 
         <div className="mt-4">
           <div className="bg-muted px-4 py-2 rounded-md mb-6">
@@ -443,12 +445,14 @@ export default function NewClientDialog() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={createClient.isPending}>
-              {createClient.isPending ? "Salvando..." : "Cadastrar"}
-            </Button>
           </div>
+        </div>
+
+        <div className="flex justify-end gap-2 p-6 border-t bg-muted/20 shrink-0">
+          <Button variant="outline" onClick={() => setOpen(false)} className="font-black uppercase tracking-tight">Cancelar</Button>
+          <Button onClick={handleSubmit} disabled={createClient.isPending} className="font-black uppercase tracking-tight shadow-lg">
+            {createClient.isPending ? "Salvando..." : "Cadastrar Lead"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -212,17 +212,19 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="space-y-1 content-start text-left">
-            <Label className="text-sm font-medium text-muted-foreground">Nome Lead</Label>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
+        <DialogHeader className="p-6 pb-2 border-b bg-muted/20 text-left">
+          <div className="space-y-1">
+            <Label className="text-xs font-black uppercase text-muted-foreground">Editar Lead</Label>
             <Input
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              className="text-xl font-bold bg-blue-50/50 border-blue-100 focus-visible:ring-blue-200 px-3 h-12"
+              className="text-2xl font-black bg-transparent border-none shadow-none focus-visible:ring-0 px-0 h-auto uppercase tracking-tighter"
             />
           </div>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
 
         <div className="mt-4">
           <div className="bg-muted px-4 py-2 rounded-md mb-6">
@@ -453,12 +455,14 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-6 border-t pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={updateClient.isPending}>
-              {updateClient.isPending ? "Salvando..." : "Salvar"}
-            </Button>
           </div>
+        </div>
+        
+        <div className="flex justify-end gap-2 p-6 border-t bg-muted/20 shrink-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="font-black uppercase tracking-tight">Cancelar</Button>
+          <Button onClick={handleSave} disabled={updateClient.isPending} className="font-black uppercase tracking-tight shadow-lg">
+            {updateClient.isPending ? "Salvando..." : "Salvar Alterações"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -188,10 +188,12 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Imóvel — {property.code}</DialogTitle>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
+        <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
+          <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Editar Imóvel — {property.code}</DialogTitle>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
 
         <Tabs defaultValue="dados" className="w-full">
           <TabsList className="w-full flex-wrap h-auto gap-1">
@@ -793,6 +795,7 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
             </Form>
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

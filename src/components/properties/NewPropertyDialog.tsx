@@ -116,15 +116,16 @@ export default function NewPropertyDialog({ defaultFunnelId }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Novo Imóvel
+        <Button size="sm" className="gap-2 font-black shadow-lg bg-primary hover:bg-primary/90 text-white h-10 px-6 uppercase text-xs shadow-primary/20">
+          <Plus className="h-4 w-4" /> Novo Imóvel
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Cadastrar Novo Imóvel</DialogTitle>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
+        <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
+          <DialogTitle className="text-2xl font-black uppercase tracking-tighter">Cadastrar Novo Imóvel</DialogTitle>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
@@ -445,6 +446,7 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
 
           </form>
         </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

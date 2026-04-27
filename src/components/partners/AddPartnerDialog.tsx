@@ -144,7 +144,7 @@ export default function AddPartnerDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
         <div className="bg-primary p-6 text-white shrink-0">
           <DialogTitle className="text-2xl font-black tracking-tight uppercase flex items-center gap-2">
             <ClipboardCheck className="h-6 w-6" />
@@ -155,7 +155,7 @@ export default function AddPartnerDialog({
           </p>
         </div>
 
-        <ScrollArea className="flex-1 p-6">
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
           <div className="space-y-8 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
@@ -237,14 +237,26 @@ export default function AddPartnerDialog({
               </div>
             </div>
 
-            {newContact.has_served && (
               <div className="space-y-4 pt-6 border-t animate-in fade-in slide-in-from-top-4 duration-300">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-black uppercase text-primary tracking-widest flex items-center gap-2">
                       <History className="h-4 w-4" />
                       Histórico de Serviços / Diligências
                     </h3>
-                    <Badge variant="secondary" className="font-black">{services.length} SERVIÇOS</Badge>
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-[10px] font-black uppercase tracking-tighter gap-1 border-primary/30 text-primary hover:bg-primary/5"
+                            onClick={() => {
+                                setSelectedDiligence(null);
+                                setIsDiligenceDialogOpen(true);
+                            }}
+                        >
+                            <Plus className="h-3 w-3" /> Adicionar Manual
+                        </Button>
+                        <Badge variant="secondary" className="font-black">{services.length} SERVIÇOS</Badge>
+                    </div>
                 </div>
                 
                 {services.length === 0 ? (
@@ -283,7 +295,7 @@ export default function AddPartnerDialog({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="p-6 border-t bg-muted/10 shrink-0 flex flex-col sm:flex-row sm:justify-end">
           <div className="flex gap-3">
@@ -306,11 +318,12 @@ export default function AddPartnerDialog({
       </DialogContent>
     </Dialog>
 
-    {selectedDiligence && (
+    {isDiligenceDialogOpen && (
         <PreAuctionDialog
             open={isDiligenceDialogOpen}
             onOpenChange={setIsDiligenceDialogOpen}
             property={selectedDiligence}
+            initialDiligenteId={editingContact?.id}
         />
     )}
     </>
