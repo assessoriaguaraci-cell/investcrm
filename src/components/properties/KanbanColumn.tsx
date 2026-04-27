@@ -62,7 +62,7 @@ export default function KanbanColumn({ stageId, stageValue, stageLabel, stageCol
         </div>
       </div>
 
-      <Droppable droppableId={stageValue}>
+      <Droppable droppableId={`${stageValue}---${stageId || 'default'}`}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}

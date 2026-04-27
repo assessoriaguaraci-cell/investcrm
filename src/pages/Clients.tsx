@@ -179,7 +179,8 @@ export default function Clients() {
         return;
     }
 
-    const newStage = destination.droppableId;
+    const newStageId = destination.droppableId;
+    const newStage = newStageId.includes("---") ? newStageId.split("---")[0] : newStageId;
     updateClient.mutate({ id: draggableId, stage: newStage as any });
   };
 

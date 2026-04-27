@@ -194,7 +194,9 @@ export default function Properties() {
         return;
     }
 
-    const newStage = destination.droppableId;
+    const newStageId = destination.droppableId;
+    // Extract actual stage value if it's a composite ID (val-id-idx)
+    const newStage = newStageId.includes("---") ? newStageId.split("---")[0] : newStageId;
     updateProperty.mutate({ id: draggableId, stage: newStage as any });
   };
 
