@@ -25,10 +25,10 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { SmartDatePicker } from "@/components/ui/smart-date-picker";
 
 const schema = z.object({
-  code: z.string().optional(),
+  code: z.string().min(1, "O código é obrigatório"),
   property_type: z.enum(["casa", "casa_condominio", "apartamento", "apartamento_condominio", "terreno", "comercial"]),
-  state: z.string().min(2, "Obrigatório"),
-  city: z.string().optional(),
+  state: z.string().min(2, "O estado é obrigatório"),
+  city: z.string().min(1, "A cidade é obrigatória"),
   neighborhood: z.string().optional(),
   address: z.string().optional(),
   zip_code: z.string().optional(),
@@ -134,7 +134,7 @@ export default function NewPropertyDialog({ defaultFunnelId }: Props) {
               
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="code" render={({ field }) => (
-                  <FormItem><FormLabel>Código (opcional)</FormLabel><FormControl><Input {...field} placeholder="IL-2026-XXXX" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Código</FormLabel><FormControl><Input {...field} placeholder="Ex: IL-2026-XXXX" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="registration_number" render={({ field }) => (
                   <FormItem><FormLabel>Matrícula</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>

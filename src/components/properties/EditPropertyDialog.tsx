@@ -36,10 +36,10 @@ import { Plus, Trash2, ClipboardList, CheckCircle2 } from "lucide-react";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 
 const schema = z.object({
-  code: z.string().min(1, "Código obrigatório"),
+  code: z.string().min(1, "O código é obrigatório"),
   property_type: z.enum(["casa", "casa_condominio", "apartamento", "apartamento_condominio", "terreno", "comercial"]),
-  state: z.string().min(2, "Obrigatório"),
-  city: z.string().optional(),
+  state: z.string().min(2, "O estado é obrigatório"),
+  city: z.string().min(1, "A cidade é obrigatória"),
   neighborhood: z.string().optional(),
   address: z.string().optional(),
   zip_code: z.string().optional(),
