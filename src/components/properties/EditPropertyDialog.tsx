@@ -103,7 +103,7 @@ interface Props {
 }
 
 export default function EditPropertyDialog({ property, open, onOpenChange }: Props) {
-  const updateMutation = useUpdateProperty();
+  const updateProperty = useUpdateProperty();
   const { stages } = useKanbanStages("property", property.funnel_id || undefined);
   
   // Find current stage and its checklist
@@ -177,7 +177,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await updateMutation.mutateAsync({
+      await updateProperty.mutateAsync({
         id: property.id,
         ...values,
         photo_url: photoUrl,

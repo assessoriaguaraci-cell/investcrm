@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Building2, Loader2, ArrowLeft, ChevronRight, LayoutGrid, TableIcon, MoreHorizontal, Search, Download, Eye, Settings2, CheckSquare, Plus } from "lucide-react";
 import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
 import { PROPERTY_STAGES, totalInvestment, formatCurrency } from "@/lib/property-constants";

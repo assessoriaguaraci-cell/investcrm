@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Users, Loader2, ArrowLeft, LayoutGrid, TableIcon, MoreHorizontal, ChevronDown, Search, CheckSquare, Download } from "lucide-react";
 import { useClients, useUpdateClient } from "@/hooks/useClients";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, formatPhone } from "@/lib/client-constants";
 import { formatCurrency } from "@/lib/property-constants";
+import AddColumnDialog from "@/components/kanban/AddColumnDialog";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import ClientKanbanColumn from "@/components/clients/ClientKanbanColumn";
 import ClientTable from "@/components/clients/ClientTable";
