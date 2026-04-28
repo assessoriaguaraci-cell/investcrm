@@ -81,6 +81,16 @@
     --priority-low: 220 10% 60%;
     --priority-medium: 38 92% 50%;
     --priority-high: 0 72% 51%;
+
+    /* Preset Kanban Column Colors */
+    --preset-blue: 221 83% 53%;
+    --preset-green: 142 71% 45%;
+    --preset-yellow: 45 93% 47%;
+    --preset-orange: 24 94% 50%;
+    --preset-red: 0 84% 60%;
+    --preset-purple: 285 73% 52%;
+    --preset-pink: 330 81% 60%;
+    --preset-slate: 215 16% 47%;
   }
 
   .dark {

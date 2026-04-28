@@ -37,7 +37,20 @@ export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, st
   }, 0);
 
   // Extracting the CSS variable name from the stageColor string (e.g., "bg-[hsl(var(--stage-new-lead))]")
-  const colorVar = stageColor.match(/var\(([^)]+)\)/)?.[1];
+  let colorVar = stageColor.match(/var\(([^)]+)\)/)?.[1];
+  
+  // Fallback for standard preset tailwind classes stored in DB
+  if (!colorVar) {
+      if (stageColor.includes('blue')) colorVar = '--preset-blue';
+      else if (stageColor.includes('green')) colorVar = '--preset-green';
+      else if (stageColor.includes('yellow')) colorVar = '--preset-yellow';
+      else if (stageColor.includes('orange')) colorVar = '--preset-orange';
+      else if (stageColor.includes('red')) colorVar = '--preset-red';
+      else if (stageColor.includes('purple')) colorVar = '--preset-purple';
+      else if (stageColor.includes('pink')) colorVar = '--preset-pink';
+      else if (stageColor.includes('slate') || stageColor.includes('gray')) colorVar = '--preset-slate';
+  }
+
   const bgColor = colorVar ? `hsl(var(${colorVar}) / 0.1)` : undefined;
   const borderColor = colorVar ? `hsl(var(${colorVar}) / 0.2)` : undefined;
   const headerBgColor = colorVar ? `hsl(var(${colorVar}) / 0.15)` : undefined;

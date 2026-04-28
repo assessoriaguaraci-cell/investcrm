@@ -13,14 +13,14 @@ export interface KanbanStage {
 }
 
 export const PRESET_COLORS = [
-    { name: "Azul", class: "bg-blue-500" },
-    { name: "Verde", class: "bg-green-500" },
-    { name: "Amarelo", class: "bg-yellow-500" },
-    { name: "Laranja", class: "bg-orange-500" },
-    { name: "Vermelho", class: "bg-red-500" },
-    { name: "Roxo", class: "bg-purple-500" },
-    { name: "Rosa", class: "bg-pink-500" },
-    { name: "Cinza", class: "bg-slate-500" },
+    { name: "Azul", class: "bg-[hsl(var(--preset-blue))]" },
+    { name: "Verde", class: "bg-[hsl(var(--preset-green))]" },
+    { name: "Amarelo", class: "bg-[hsl(var(--preset-yellow))]" },
+    { name: "Laranja", class: "bg-[hsl(var(--preset-orange))]" },
+    { name: "Vermelho", class: "bg-[hsl(var(--preset-red))]" },
+    { name: "Roxo", class: "bg-[hsl(var(--preset-purple))]" },
+    { name: "Rosa", class: "bg-[hsl(var(--preset-pink))]" },
+    { name: "Cinza", class: "bg-[hsl(var(--preset-slate))]" },
 ];
 
 export function useKanbanStages(funnelType: "property" | "client" | "pre_auction", funnelId?: string) {
