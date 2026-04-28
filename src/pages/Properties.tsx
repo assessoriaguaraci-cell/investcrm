@@ -92,10 +92,6 @@ export default function Properties() {
         return []; // Funnel exists but has no columns
     }
 
-    const hasCancelados = base.some(s => s.value === "cancelados");
-    if (!hasCancelados && base.length > 0) {
-      return [...base, { value: "cancelados", label: "Cancelados", color: "bg-red-500" } as any];
-    }
     return base;
   }, [dynamicStages, selectedFunnelId]);
 
