@@ -25,7 +25,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { SmartDatePicker } from "@/components/ui/smart-date-picker";
 
 const schema = z.object({
-  code: z.string().min(1, "O código é obrigatório"),
+  code: z.string().trim().min(1, "O código é obrigatório"),
   property_type: z.enum(["casa", "casa_condominio", "apartamento", "apartamento_condominio", "terreno", "comercial"]),
   state: z.string().min(2, "O estado é obrigatório"),
   city: z.string().min(1, "A cidade é obrigatória"),
@@ -109,7 +109,11 @@ export default function NewPropertyDialog({ defaultFunnelId }: Props) {
       form.reset();
       setOpen(false);
     } catch (e: any) {
-      toast.error(e.message || "Erro ao cadastrar imóvel");
+      if (e.message?.includes("properties_code_key")) {
+        toast.error("Este código de imóvel já está em uso. Por favor, escolha outro.");
+      } else {
+        toast.error(e.message || "Erro ao cadastrar imóvel");
+      }
     }
   };
 
