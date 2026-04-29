@@ -83,8 +83,8 @@ export default function ImportPropertiesDialog() {
         if (s.includes("pós") || s.includes("pos")) return "pos_venda";
         if (s.includes("ir") || s.includes("imposto")) return "ir";
         if (s.includes("finalizado") || s.includes("cancelado")) return "finalizado";
-        if (s.includes("pré") || s.includes("pre")) return "pre_arrematacao";
-        return "pre_arrematacao";
+        if (s.includes("pré") || s.includes("pre") || s.includes("pós") || s.includes("pos")) return "pos_arrematacao";
+        return "pos_arrematacao";
       };
 
       const mapType = (v: string): any => {
