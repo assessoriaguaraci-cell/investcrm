@@ -8,14 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateClient, type Client } from "@/hooks/useClients";
+import { useUpdateClient, useDeleteClient, type Client } from "@/hooks/useClients";
 import { CLIENT_PIPELINES, CLIENT_STAGES, TEMPERATURE_OPTIONS, WORK_REGIMES, MARITAL_STATUSES } from "@/lib/client-constants";
 import { BRAZILIAN_STATES, formatCurrency } from "@/lib/property-constants";
 import { supabase } from "@/integrations/supabase/client";
 import LinkedProperties from "./LinkedProperties";
 import type { Database } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, ExternalLink, ClipboardList, CheckCircle2 } from "lucide-react";
+import { Plus, X, ExternalLink, ClipboardList, CheckCircle2, Trash2 } from "lucide-react";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
@@ -165,6 +165,24 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
     }
   };
 
+  };
+
+  const deleteMutation = useDeleteClient();
+
+  const handleDelete = () => {
+    if (window.confirm("ATENÇÃO: Tem certeza que deseja excluir este cliente? Esta ação é permanente e não pode ser desfeita.")) {
+      deleteMutation.mutate(client.id, {
+        onSuccess: () => {
+          toast({ title: "Cliente excluído com sucesso!" });
+          onOpenChange(false);
+        },
+        onError: (err: any) => {
+          toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
+        }
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
@@ -174,6 +192,11 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
               <div className="h-2 w-2 rounded-full bg-primary" />
               Lead: {fullName}
             </DialogTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="destructive" size="sm" className="h-8 px-3 gap-2" onClick={handleDelete} title="Excluir Cliente">
+                <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir</span>
+              </Button>
+            </div>
           </div>
           <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Edição de informações e acompanhamento de jornada

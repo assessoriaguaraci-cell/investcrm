@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useUpdateProperty, type Property } from "@/hooks/useProperties";
+import { useUpdateProperty, useDeleteProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
 import ResponsibleSelect from "./ResponsibleSelect";
@@ -193,6 +193,20 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
     }
   };
 
+  const deleteMutation = useDeleteProperty();
+
+  const handleDelete = () => {
+    if (window.confirm("ATENÇÃO: Tem certeza que deseja excluir este imóvel? Esta ação é permanente e não pode ser desfeita.")) {
+      deleteMutation.mutate(property.id, {
+        onSuccess: () => {
+          toast.success("Imóvel excluído com sucesso!");
+          onOpenChange(false);
+        },
+        onError: (e) => toast.error("Erro ao excluir imóvel"),
+      });
+    }
+  };
+
   const auctionDateValue = form.watch("auction_date");
   const appraisalExpiryValue = form.watch("appraisal_expiry");
 
@@ -206,6 +220,9 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
                 Imóvel: {property.code}
               </DialogTitle>
               <div className="flex items-center gap-2">
+                <Button variant="destructive" size="sm" className="h-8 px-3 gap-2" onClick={handleDelete} title="Excluir Imóvel">
+                  <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir</span>
+                </Button>
                 <PropertyReportGenerator property={property} />
               </div>
             </div>
