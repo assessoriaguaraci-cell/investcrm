@@ -165,8 +165,6 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
     }
   };
 
-  };
-
   const deleteMutation = useDeleteClient();
 
   const handleDelete = () => {
