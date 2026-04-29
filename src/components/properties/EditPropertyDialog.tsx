@@ -223,7 +223,6 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
                 <Button variant="destructive" size="sm" className="h-8 px-3 gap-2" onClick={handleDelete} title="Excluir Imóvel">
                   <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir</span>
                 </Button>
-                <PropertyReportGenerator property={property} />
               </div>
             </div>
           </DialogHeader>
