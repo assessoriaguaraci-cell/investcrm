@@ -113,23 +113,27 @@ export default function PropertyReportGenerator({ property }: Props) {
 
     lines.push("");
 
-    // Checklist grouped by group for current stage only
-    const currentStageItems = (allItems || []).filter(item => item.stage === property.stage);
-    
-    if (currentStageItems.length > 0) {
-      const done = currentStageItems.filter(i => i.completed).length;
-      const total = currentStageItems.length;
+    // Checklist grouped by stage and then by group
+    const stageOrder = PROPERTY_STAGES.map(s => s.value);
+    const stagesWithItems = stageOrder.filter(s => (allItems || []).some(item => item.stage === s));
 
-      // Determine stage emoji
-      let stageEmoji = "🔴";
-      if (done === total) stageEmoji = "🟢";
+    for (const stageValue of stagesWithItems) {
+      const stageItems = (allItems || []).filter(item => item.stage === stageValue);
+      const stageLabel = PROPERTY_STAGES.find(s => s.value === stageValue)?.label ?? stageValue;
+      
+      const done = stageItems.filter(i => i.completed).length;
+      const total = stageItems.length;
+
+      let stageEmoji = "⚪";
+      if (done === total && total > 0) stageEmoji = "🟢";
       else if (done > 0) stageEmoji = "🟡";
+      else if (stageValue === property.stage) stageEmoji = "🔴";
 
       lines.push(`${stageEmoji} *Checklist — ${stageLabel}* (${done}/${total})`);
 
       // Group by group_name
-      const byGroup = new Map<string, typeof currentStageItems>();
-      currentStageItems.forEach(item => {
+      const byGroup = new Map<string, typeof stageItems>();
+      stageItems.forEach(item => {
         const list = byGroup.get(item.group_name) || [];
         list.push(item);
         byGroup.set(item.group_name, list);
@@ -142,12 +146,10 @@ export default function PropertyReportGenerator({ property }: Props) {
           const datePart = item.completed && item.completed_at
             ? ` (${format(new Date(item.completed_at), "dd/MM")})`
             : "";
-          lines.push(`    ${emoji} ${item.task_name}${datePart}`);
+          const notePart = item.notes ? `\n      💬 _Obs: ${item.notes}_` : "";
+          lines.push(`    ${emoji} ${item.task_name}${datePart}${notePart}`);
         });
       }
-      lines.push("");
-    } else {
-      lines.push("_Nenhum checklist registrado para esta etapa._");
       lines.push("");
     }
 

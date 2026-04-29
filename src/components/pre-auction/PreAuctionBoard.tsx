@@ -127,6 +127,26 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
           >
             {STAGES.map((stage, index) => {
               const stageProperties = properties.filter((p) => p.stage === stage.value);
+              
+              // Extracting the CSS variable name from the stageColor string
+              let colorVar = stage.color.match(/var\(([^)]+)\)/)?.[1];
+              
+              // Fallback for standard preset tailwind classes
+              if (!colorVar) {
+                  if (stage.color.includes('blue')) colorVar = '--preset-blue';
+                  else if (stage.color.includes('green')) colorVar = '--preset-green';
+                  else if (stage.color.includes('yellow')) colorVar = '--preset-yellow';
+                  else if (stage.color.includes('orange')) colorVar = '--preset-orange';
+                  else if (stage.color.includes('red')) colorVar = '--preset-red';
+                  else if (stage.color.includes('purple')) colorVar = '--preset-purple';
+                  else if (stage.color.includes('pink')) colorVar = '--preset-pink';
+                  else if (stage.color.includes('slate') || stage.color.includes('gray')) colorVar = '--preset-slate';
+              }
+
+              const bgColor = colorVar ? `hsl(var(${colorVar}) / 0.1)` : undefined;
+              const borderColor = colorVar ? `hsl(var(${colorVar}) / 0.2)` : undefined;
+              const headerBgColor = colorVar ? `hsl(var(${colorVar}) / 0.15)` : undefined;
+              const borderBottomColor = colorVar ? `hsl(var(${colorVar}))` : undefined;
 
               return (
                 <Draggable 
@@ -139,15 +159,17 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                         <div 
                             ref={draggableProvided.innerRef}
                             {...draggableProvided.draggableProps}
-                            className="flex flex-col min-w-[300px] w-[300px] bg-muted/30 rounded-lg border border-border/50"
+                            className="flex flex-col min-w-[260px] max-w-[300px] w-[280px] shrink-0"
                         >
                             <div 
                                 {...draggableProvided.dragHandleProps}
-                                className={cn(
-                                    "p-3 rounded-t-lg border-b-2 flex items-center justify-between group/header cursor-grab active:cursor-grabbing",
-                                    stage.value === 'cancelado' || stage.value === 'cancelados' ? "bg-gray-100 border-gray-300" : "bg-background border-primary/20"
-                                )}
+                                className="flex flex-col mb-3 px-3 py-2 rounded-t-lg border-b-2 group/header cursor-grab active:cursor-grabbing"
+                                style={{
+                                    backgroundColor: headerBgColor,
+                                    borderBottomColor: borderBottomColor || 'transparent'
+                                }}
                             >
+                                <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 flex-1 mr-2 overflow-hidden">
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0" />
                     <div className={cn("h-2 w-2 rounded-full shrink-0", stage.color)} />
@@ -168,14 +190,14 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                             </Button>
                         </div>
                     ) : (
-                        <h3 className="font-black text-xs uppercase tracking-tighter text-foreground truncate">
+                        <h3 className="font-black text-xs uppercase tracking-tighter text-foreground truncate flex-1">
                             {stage.label}
                         </h3>
                     )}
                 </div>
                 
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    <span className="text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
                         {stageProperties.length}
                     </span>
 
@@ -223,10 +245,13 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={cn(
-                      "flex-1 p-2 space-y-3 transition-colors",
-                      snapshot.isDraggingOver ? "bg-primary/5" : "bg-transparent"
-                    )}
+                    className={`flex-1 min-h-[120px] rounded-b-lg p-2 transition-all duration-200 ${snapshot.isDraggingOver ? "ring-2 ring-primary/20 ring-inset" : ""
+                      }`}
+                    style={{
+                      backgroundColor: snapshot.isDraggingOver ? undefined : bgColor,
+                      border: snapshot.isDraggingOver ? "1px dashed hsl(var(--primary))" : `1px solid ${borderColor || 'transparent'}`,
+                      borderTop: 'none'
+                    }}
                   >
                     {stageProperties.map((property, index) => (
                       <Draggable key={property.id} draggableId={property.id} index={index}>

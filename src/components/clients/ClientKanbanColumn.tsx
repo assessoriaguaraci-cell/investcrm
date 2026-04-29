@@ -91,15 +91,14 @@ export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, st
             pipeline={pipeline}
             initialLabel={stageLabel}
             funnelType="client"
-            className="text-[11px] font-black text-foreground uppercase tracking-tight"
           />
-          <span className="ml-auto text-[10px] font-bold text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded-full border border-border/50">
+          <span className="ml-auto text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
             {clients.length}
           </span>
         </div>
-        <div className="mt-1 pb-1 flex justify-between items-center text-[9px] font-bold tracking-tight text-muted-foreground">
-          <span className="uppercase opacity-70">VALOR DE VENDA</span>
-          <span className="text-primary font-black">{formatCurrency(totalValue)}</span>
+        <div className="mt-1 text-[11px] font-bold text-foreground/70 flex justify-between items-center">
+          <span className="opacity-80 uppercase tracking-tight">VALOR DE VENDA</span>
+          <span className="text-primary font-extrabold">{formatCurrency(totalValue)}</span>
         </div>
       </div>
 

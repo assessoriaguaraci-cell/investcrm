@@ -45,16 +45,48 @@ export function useCreateChecklistForStage() {
 
       if (existing && existing.length > 0) return existing;
 
-      const templates = getTemplatesForStage(stage);
-      if (templates.length === 0) return [];
+      // 1. Try hardcoded templates
+      let templates = getTemplatesForStage(stage);
+      let rows: TablesInsert<"property_checklist_items">[] = [];
 
-      const rows: TablesInsert<"property_checklist_items">[] = templates.map(t => ({
-        property_id: propertyId,
-        stage: t.stage,
-        group_name: t.group,
-        task_name: t.task,
-        sort_order: t.sort,
-      }));
+      if (templates.length > 0) {
+        rows = templates.map(t => ({
+          property_id: propertyId,
+          stage: t.stage,
+          group_name: t.group,
+          task_name: t.task,
+          sort_order: t.sort,
+        }));
+      } else {
+        // 2. Try dynamic templates from kanban_stages
+        const { data: stageData } = await supabase
+          .from("kanban_stages")
+          .select("checklist")
+          .eq("value", stage)
+          .limit(1)
+          .maybeSingle();
+
+        if (stageData?.checklist && Array.isArray(stageData.checklist)) {
+          // Handle both structured and flat formats
+          stageData.checklist.forEach((section: any, sIdx: number) => {
+            const isSection = typeof section === 'object' && section !== null && 'title' in section;
+            const title = isSection ? section.title : "Checklist";
+            const items = isSection ? section.items : [section];
+
+            items.forEach((task: string, iIdx: number) => {
+              rows.push({
+                property_id: propertyId,
+                stage: stage,
+                group_name: title,
+                task_name: task,
+                sort_order: (sIdx * 100) + iIdx,
+              });
+            });
+          });
+        }
+      }
+
+      if (rows.length === 0) return [];
 
       const { data, error } = await supabase
         .from("property_checklist_items")
@@ -176,6 +208,50 @@ export function useUpdateChecklistDate() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["property-checklist", vars.propertyId] });
+    },
+  });
+}
+
+/** Add a specific strategy checklist to a property stage */
+export function useAddChecklistStrategy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ 
+      propertyId, 
+      stage, 
+      strategyName,
+      tasks 
+    }: { 
+      propertyId: string; 
+      stage: PropertyStage; 
+      strategyName: string;
+      tasks: string[];
+    }) => {
+      // Find max sort_order to append
+      const { data: items } = await supabase
+        .from("property_checklist_items")
+        .select("sort_order")
+        .eq("property_id", propertyId)
+        .eq("stage", stage)
+        .order("sort_order", { ascending: false })
+        .limit(1);
+      
+      const maxSort = items?.[0]?.sort_order ?? 0;
+
+      const rows: TablesInsert<"property_checklist_items">[] = tasks.map((task, idx) => ({
+        property_id: propertyId,
+        stage: stage,
+        group_name: strategyName,
+        task_name: task,
+        sort_order: maxSort + 1 + idx,
+      }));
+
+      const { error } = await supabase.from("property_checklist_items").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["property-checklist", vars.propertyId] });
+      toast.success(`Estratégia "${vars.strategyName}" adicionada ao checklist.`);
     },
   });
 }

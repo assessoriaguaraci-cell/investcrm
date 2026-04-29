@@ -14,22 +14,22 @@ import {
   useToggleChecklistItem,
   useUpdateChecklistNotes,
   useUpdateChecklistDate,
+  useAddChecklistStrategy,
   type ChecklistItem,
 } from "@/hooks/usePropertyChecklist";
+import { STRATEGY_TEMPLATES } from "@/lib/checklist-templates";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
-
-const CCV_TASK_NAME = "CCV assinado (venda para morador)";
-const EXECUTION_GROUP = "Execução";
-// Tasks in Execução that are mutually exclusive with CCV
-const CCV_EXCLUSIVE_TASKS = [
-  "Contrato de acordo (desocupação amigável)",
-  "Prazo de saída definido",
-  "Chaves entregues",
-  "Fotos pós-desocupação",
-];
 
 interface Props {
   propertyId: string;
@@ -41,10 +41,8 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
   const toggleItem = useToggleChecklistItem();
   const updateNotes = useUpdateChecklistNotes();
   const updateDate = useUpdateChecklistDate();
+  const addStrategy = useAddChecklistStrategy();
   const { user } = useAuth();
-
-  const ccvItem = useMemo(() => items.find(i => i.task_name === CCV_TASK_NAME), [items]);
-  const isCcvChecked = ccvItem?.completed ?? false;
 
   const grouped = useMemo(() => {
     const map = new Map<string, ChecklistItem[]>();
@@ -80,8 +78,6 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
     const targetState = !allDone;
     groupItems.forEach(item => {
       if (item.completed !== targetState) {
-        // Skip locked items
-        if (isCcvChecked && item.group_name === EXECUTION_GROUP && CCV_EXCLUSIVE_TASKS.includes(item.task_name)) return;
         toggleItem.mutate({ item, userId: user?.id ?? "" });
       }
     });
@@ -110,13 +106,30 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
           items={groupItems}
           userId={user?.id ?? ""}
           propertyId={propertyId}
-          isCcvChecked={isCcvChecked}
           onToggle={(item) => toggleItem.mutate({ item, userId: user?.id ?? "" })}
           onToggleGroup={handleToggleGroup}
           onUpdateNotes={(id, notes) => updateNotes.mutate({ id, notes, propertyId })}
           onUpdateDate={(id, date) => updateDate.mutate({ id, completedAt: date, propertyId })}
         />
       ))}
+
+      {stage === "desocupacao" && (
+        <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Adicionar Estratégia de Desocupação</p>
+          <div className="flex gap-2">
+            <Select onValueChange={(val) => addStrategy.mutate({ propertyId, stage, strategyName: val, tasks: STRATEGY_TEMPLATES[val] })}>
+              <SelectTrigger className="flex-1 h-9 text-xs font-bold uppercase">
+                <SelectValue placeholder="SELECIONE A ESTRATÉGIA" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(STRATEGY_TEMPLATES).map(strat => (
+                  <SelectItem key={strat} value={strat} className="text-xs font-bold uppercase">{strat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -126,7 +139,6 @@ function ChecklistGroup({
   items,
   userId,
   propertyId,
-  isCcvChecked,
   onToggle,
   onToggleGroup,
   onUpdateNotes,
@@ -136,7 +148,6 @@ function ChecklistGroup({
   items: ChecklistItem[];
   userId: string;
   propertyId: string;
-  isCcvChecked: boolean;
   onToggle: (item: ChecklistItem) => void;
   onToggleGroup: (items: ChecklistItem[], allDone: boolean) => void;
   onUpdateNotes: (id: string, notes: string) => void;
@@ -162,12 +173,10 @@ function ChecklistGroup({
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-4 space-y-1 mt-1">
             {items.map(item => {
-              const isLockedByCcv = isCcvChecked && groupName === EXECUTION_GROUP && CCV_EXCLUSIVE_TASKS.includes(item.task_name);
               return (
                 <ChecklistItemRow
                   key={item.id}
                   item={item}
-                  disabled={isLockedByCcv}
                   onToggle={() => onToggle(item)}
                   onUpdateNotes={(notes) => onUpdateNotes(item.id, notes)}
                   onUpdateDate={(date) => onUpdateDate(item.id, date)}

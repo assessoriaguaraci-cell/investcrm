@@ -170,14 +170,12 @@ export default function Properties() {
         const [removed] = newStages.splice(source.index, 1);
         newStages.splice(destination.index, 0, removed);
         
-        // Use a flag to ensure we handle the first move by promoting all stages
-        for (let i = 0; i < newStages.length; i++) {
-            const s = newStages[i];
+        // Update all stages sort orders concurrently
+        const updatePromises = newStages.map((s, i) => {
             if ((s as any).id) {
-                await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
+                return updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
             } else {
-                // Promote to dynamic to lock the order and exclude deleted ones
-                await addStage({
+                return addStage({
                     funnel_type: "property",
                     value: s.value,
                     label: s.label,
@@ -186,6 +184,13 @@ export default function Properties() {
                     sort_order: i * 10
                 } as any);
             }
+        });
+
+        try {
+            await Promise.all(updatePromises);
+            toast.success("Ordem das colunas atualizada");
+        } catch (error) {
+            toast.error("Erro ao salvar nova ordem");
         }
         return;
     }

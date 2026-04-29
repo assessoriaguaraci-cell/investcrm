@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ChecklistSection {
+    title: string;
+    items: string[];
+}
+
 export interface KanbanStage {
     id: string;
     funnel_type: "property" | "client" | "pre_auction";
@@ -9,7 +14,7 @@ export interface KanbanStage {
     color: string;
     sort_order: number;
     pipeline?: string;
-    checklist?: string[];
+    checklist?: ChecklistSection[];
 }
 
 export const PRESET_COLORS = [

@@ -16,6 +16,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { SmartDatePicker } from "@/components/ui/smart-date-picker";
 import { Save, Gavel, ExternalLink } from "lucide-react";
 import PropertyPhotoUpload from "@/components/properties/PropertyPhotoUpload";
+import PropertyChecklist from "@/components/properties/PropertyChecklist";
 import ResponsibleSelect from "@/components/properties/ResponsibleSelect";
 import PartnerSelect from "@/components/partners/PartnerSelect";
 import CityCombobox from "@/components/properties/CityCombobox";
@@ -169,27 +170,19 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
-            <Form {...form}>
+          <Tabs defaultValue="dados" className="w-full">
+            <TabsList className="w-full mb-6">
+              <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+              <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="checklist" className="mt-0">
+               <PropertyChecklist propertyId={property?.id || ""} stage={(property as any)?.stage || "pre_arrematacao"} />
+            </TabsContent>
+
+            <TabsContent value="dados" className="mt-0">
+              <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  {/* Checklist da Etapa */}
-                  {checklist.length > 0 && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3 mb-6">
-                      <div className="flex items-center gap-2 text-primary">
-                        <ClipboardList className="h-4 w-4" />
-                        <h4 className="text-xs font-black uppercase tracking-widest">Checklist da Etapa: {currentStage?.label}</h4>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {checklist.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-background/50 p-2 rounded-lg border border-primary/10">
-                            <div className="h-4 w-4 rounded border border-primary/30 flex items-center justify-center bg-background">
-                              <CheckCircle2 className="h-3 w-3 text-primary opacity-20" />
-                            </div>
-                            <span className="text-[10px] font-bold text-foreground/80 uppercase">{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
               
               {/* SEÇÃO 1: IDENTIFICAÇÃO E FOTO */}
               <div className="space-y-4">
@@ -553,6 +546,8 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                 <div className="h-px bg-transparent" /> {/* Spacer */}
               </form>
             </Form>
+          </TabsContent>
+        </Tabs>
         </div>
 
         <DialogFooter className="p-6 border-t bg-muted/20">

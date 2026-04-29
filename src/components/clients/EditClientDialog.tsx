@@ -185,16 +185,20 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary" />
               Lead: {fullName}
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="destructive" size="sm" className="h-8 px-3 gap-2" onClick={handleDelete} title="Excluir Cliente">
-                <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">Excluir</span>
-              </Button>
-            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" 
+              onClick={handleDelete} 
+              title="Excluir Cliente"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
           <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Edição de informações e acompanhamento de jornada
@@ -202,31 +206,38 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
-            {/* Checklist da Etapa */}
-            {checklist.length > 0 && (
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3 mb-8">
-                <div className="flex items-center gap-2 text-primary">
-                  <ClipboardList className="h-4 w-4" />
-                  <h4 className="text-xs font-black uppercase tracking-widest">Checklist da Etapa: {currentStage?.label}</h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {checklist.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-background/50 p-2 rounded-lg border border-primary/10">
-                      <div className="h-4 w-4 rounded border border-primary/30 flex items-center justify-center bg-background">
-                        <CheckCircle2 className="h-3 w-3 text-primary opacity-20" />
-                      </div>
-                      <span className="text-[10px] font-bold text-foreground/80 uppercase">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
                 <TabsTrigger value="info" className="font-black uppercase text-[10px]">Informações</TabsTrigger>
+                <TabsTrigger value="checklist" className="font-black uppercase text-[10px]">Checklist</TabsTrigger>
                 <TabsTrigger value="properties" className="font-black uppercase text-[10px]">Imóveis Vinculados</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="checklist" className="mt-0">
+                {checklist.length > 0 ? (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-4">
+                    <div className="flex items-center gap-2 text-primary border-b border-primary/10 pb-3">
+                      <ClipboardList className="h-5 w-5" />
+                      <h4 className="text-sm font-black uppercase tracking-widest">Checklist da Etapa: {currentStage?.label}</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      {checklist.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 bg-background/50 p-3 rounded-xl border border-primary/10 hover:border-primary/30 transition-colors">
+                          <div className="h-5 w-5 rounded border border-primary/30 flex items-center justify-center bg-background shrink-0">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary opacity-20" />
+                          </div>
+                          <span className="text-[11px] font-bold text-foreground/80 uppercase leading-tight">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-muted/10 rounded-xl border border-dashed border-muted-foreground/20">
+                    <ClipboardList className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground font-medium">Nenhuma tarefa configurada para esta etapa.</p>
+                  </div>
+                )}
+              </TabsContent>
 
               <TabsContent value="info" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

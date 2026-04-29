@@ -56,21 +56,8 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
 
   // ── DESOCUPAÇÃO ───────────────────────────────────────────────
   // Grupo 1: Diagnóstico
-  { stage: "desocupacao", group: "Diagnóstico", task: "Imóvel ocupado ou vazio", sort: 1 },
-  { stage: "desocupacao", group: "Diagnóstico", task: "Perfil do ocupante identificado", sort: 2 },
-  { stage: "desocupacao", group: "Diagnóstico", task: "Histórico de pagamento conhecido", sort: 3 },
-  { stage: "desocupacao", group: "Diagnóstico", task: "Risco jurídico avaliado", sort: 4 },
-  // Grupo 2: Estratégia Definida
-  { stage: "desocupacao", group: "Estratégia Definida", task: "Tentativa de acordo", sort: 5 },
-  { stage: "desocupacao", group: "Estratégia Definida", task: "Proposta formal enviada", sort: 6 },
-  { stage: "desocupacao", group: "Estratégia Definida", task: "Valor de eventual indenização definido", sort: 7 },
-  { stage: "desocupacao", group: "Estratégia Definida", task: "Decisão jurídica registrada", sort: 8 },
-  // Grupo 3: Execução
-  { stage: "desocupacao", group: "Execução", task: "CCV assinado (venda para morador)", sort: 9 },
-  { stage: "desocupacao", group: "Execução", task: "Contrato de acordo (desocupação amigável)", sort: 10 },
-  { stage: "desocupacao", group: "Execução", task: "Prazo de saída definido", sort: 11 },
-  { stage: "desocupacao", group: "Execução", task: "Chaves entregues", sort: 12 },
-  { stage: "desocupacao", group: "Execução", task: "Fotos pós-desocupação", sort: 13 },
+  { stage: "desocupacao", group: "Diagnóstico", task: "Ocupação do imovel", sort: 1 },
+  { stage: "desocupacao", group: "Diagnóstico", task: "Informações do ocupante", sort: 2 },
 
   // ── REFORMA ───────────────────────────────────────────────────
   // Grupo 1: Planejamento e Orçamento
@@ -134,3 +121,27 @@ export function getNextStage(current: PropertyStage): PropertyStage | null {
 export function getTemplatesForStage(stage: PropertyStage): ChecklistTemplate[] {
   return CHECKLIST_TEMPLATES.filter(t => t.stage === stage);
 }
+
+export const STRATEGY_TEMPLATES: Record<string, string[]> = {
+  "TENTATIVA VENDA PRO OCUPANTE": [
+    "FOTOS DO IMOVEL",
+    "FORMA DE VENDA",
+    "CCV"
+  ],
+  "DESOCUPAÇÃO EXTRAJUDICIAL": [
+    "AJUDA DE CUSTO",
+    "NOTIFICAÇÃO EXTRAJUDICIAL INICIAL",
+    "PRAZO DE SAIDA ESTIPULADO",
+    "ENTREGA DE CHAVES",
+    "FOTOS PÓS DESOCUPAÇÃO"
+  ],
+  "IMISSÃO": [
+    "ULTIMA TENTATIVA DE ACORDO",
+    "NOTIFICAÇÃO EXTRAJUDICIAL FINAL",
+    "DILIGENCIA NOTIFICAÇÃO",
+    "IMISSÃO AJUIZADA",
+    "AÇÃO DISTRIBUIDA",
+    "TENTATIVA DE ACORDO NO PROCESSO",
+    "ACORDO OU DECISÃO JUDICIAL"
+  ]
+};
