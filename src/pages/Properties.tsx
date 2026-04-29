@@ -38,6 +38,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Property } from "@/hooks/useProperties";
 import { usePropertyFunnels, useCreatePropertyFunnel } from "@/hooks/usePropertyFunnels";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
 type DashboardFilter = "active" | "sales_this_month" | "custom_ids" | null;
@@ -65,6 +66,22 @@ export default function Properties() {
       cardSettings.loadFromCloud(user.id);
     }
   }, [user]);
+
+  // One-time cleanup for old "Execução" tasks
+  useEffect(() => {
+    const cleanupOldTasks = async () => {
+      const { error } = await supabase
+        .from("property_checklist_items")
+        .delete()
+        .eq("group_name", "Execução")
+        .eq("stage", "desocupacao");
+      
+      if (!error) {
+        console.log("Old 'Execução' tasks cleaned up successfully.");
+      }
+    };
+    cleanupOldTasks();
+  }, []);
 
   const location = useLocation();
   const navigate = useNavigate();
