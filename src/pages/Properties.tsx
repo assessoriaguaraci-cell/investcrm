@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +34,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation, useNavigate } from "react-router-dom";
-import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
+import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 import type { Property } from "@/hooks/useProperties";
 import { usePropertyFunnels, useCreatePropertyFunnel } from "@/hooks/usePropertyFunnels";
@@ -67,22 +69,6 @@ export default function Properties() {
     }
   }, [user]);
 
-  // One-time cleanup for old "Execução" and "Estratégia Definida" tasks
-  useEffect(() => {
-    const cleanupOldTasks = async () => {
-      const { error } = await supabase
-        .from("property_checklist_items")
-        .delete()
-        .in("group_name", ["Execução", "Estratégia Definida"])
-        .eq("stage", "desocupacao");
-      
-      if (!error) {
-        console.log("Old tasks cleaned up successfully.");
-      }
-    };
-    cleanupOldTasks();
-  }, []);
-
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -101,12 +87,10 @@ export default function Properties() {
   const monthEnd = endOfMonth(now);
 
   const stages = useMemo(() => {
-    // If we have dynamic stages for this funnel, use them. 
-    // Otherwise use default PROPERTY_STAGES for the main funnel (undefined funnelId)
     const base = dynamicStages.length > 0 ? dynamicStages : (!selectedFunnelId ? PROPERTY_STAGES : []);
     
     if (base.length === 0 && selectedFunnelId) {
-        return []; // Funnel exists but has no columns
+        return []; 
     }
 
     return base;
@@ -140,7 +124,7 @@ export default function Properties() {
   }, [properties, activeListView, stageOrder, location.state]);
 
   const matchesMultiSelect = (value: string, selected: string[]) => {
-    if (selected.length === 0) return true; // "all"
+    if (selected.length === 0) return true; 
     if (selected.length === 1 && selected[0] === "__none__") return false;
     return selected.includes(value);
   };
@@ -187,7 +171,6 @@ export default function Properties() {
         const [removed] = newStages.splice(source.index, 1);
         newStages.splice(destination.index, 0, removed);
         
-        // Update all stages sort orders concurrently
         const updatePromises = newStages.map((s, i) => {
             if ((s as any).id) {
                 return updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
@@ -213,7 +196,6 @@ export default function Properties() {
     }
 
     const newStageId = destination.droppableId;
-    // Extract actual stage value if it's a composite ID (val-id-idx)
     const newStage = newStageId.includes("---") ? newStageId.split("---")[0] : newStageId;
     updateProperty.mutate({ id: draggableId, stage: newStage as any });
   };
@@ -239,9 +221,15 @@ export default function Properties() {
     );
   }
 
-  // Dashboard drill-down list view
   if (activeListView) {
-    // ... (Keep existing drill-down view code, it's mostly the same)
+    return (
+      <div className="p-4 md:p-6">
+        <Button variant="ghost" className="mb-4 gap-2" onClick={() => setActiveListView(null)}>
+          <ArrowLeft className="h-4 w-4" /> Voltar ao Kanban
+        </Button>
+        <PropertyTable properties={listItems} />
+      </div>
+    );
   }
 
   const totalPortfolioValue = filtered.reduce((sum, p) => sum + (p.purchase_price || 0), 0);
@@ -260,31 +248,6 @@ export default function Properties() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 border-l pl-4">
-             <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
-                <Select value={selectedFunnelId || "default"} onValueChange={(v) => setSelectedFunnelId(v === "default" ? undefined : v)}>
-                    <SelectTrigger className="w-[180px] h-8 text-[10px] font-black uppercase tracking-widest border-none bg-transparent">
-                        <SelectValue placeholder="Funil Padrão" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="default" className="text-[10px] font-black uppercase">Funil Padrão</SelectItem>
-                        {funnels?.map(f => (
-                            <SelectItem key={f.id} value={f.id} className="text-[10px] font-black uppercase">{f.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setIsNewFunnelOpen(true)}>
-                    <Plus className="h-4 w-4" />
-                </Button>
-            </div>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-4 border-l pl-6">
-            <div className="text-center">
-              <p className="text-[10px] font-black text-muted-foreground uppercase">Imóveis</p>
-              <p className="text-sm font-black text-foreground">{filtered.length}</p>
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -293,6 +256,18 @@ export default function Properties() {
 
           <div className="h-6 w-px bg-border/50 mx-1" />
 
+          <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                if (viewMode === "table") exportToCSV("imoveis", filtered);
+                else exportToExcel("imoveis", filtered);
+              }} 
+              className="font-black uppercase tracking-tight gap-2 h-9 border-primary/20 hover:bg-primary/5 shadow-sm"
+          >
+            <Download className="h-4 w-4" /> Exportar
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground hover:bg-muted border border-border/20 shadow-sm" title="Mais opções (Visualização e Filtros)">
@@ -300,7 +275,89 @@ export default function Properties() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 p-2">
-              {/* ... (Keep existing dropdown content) */}
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1">Visualização</DropdownMenuLabel>
+                <div className="p-1">
+                    <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)} className="justify-start gap-1">
+                        <ToggleGroupItem value="kanban" className="flex-1 text-[10px] font-bold uppercase gap-2 h-8">
+                            <LayoutGrid className="h-3 w-3" /> Kanban
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="table" className="flex-1 text-[10px] font-bold uppercase gap-2 h-8">
+                            <TableIcon className="h-3 w-3" /> Tabela
+                        </ToggleGroupItem>
+                    </ToggleGroup>
+                </div>
+
+                <DropdownMenuSeparator className="my-1 opacity-50" />
+
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1">Funis de Imóveis</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={selectedFunnelId} onValueChange={setSelectedFunnelId}>
+                    <DropdownMenuRadioItem value={undefined as any} className="text-[10px] font-black uppercase py-2 cursor-pointer">
+                        Funil Padrão
+                    </DropdownMenuRadioItem>
+                    {funnels?.map(funnel => (
+                        <DropdownMenuRadioItem key={funnel.id} value={funnel.id} className="text-[10px] font-black uppercase py-2 cursor-pointer">
+                            {funnel.name}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+
+                <DropdownMenuSeparator className="my-1 opacity-50" />
+                
+                <div className="p-1">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full justify-start text-[10px] font-black uppercase gap-2 h-8 text-primary hover:text-primary hover:bg-primary/5"
+                        onClick={() => setIsNewFunnelOpen(true)}
+                    >
+                        <Plus className="h-3 w-3" /> Novo Funil
+                    </Button>
+                </div>
+
+                <DropdownMenuSeparator className="my-1 opacity-50" />
+
+                <div className="p-2 space-y-3">
+                    <div className="space-y-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Tamanho do Card</p>
+                        <div className="flex bg-muted/50 p-0.5 rounded-md">
+                            {(['small', 'medium', 'large'] as const).map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => cardSettings.setCardSize(s)}
+                                    className={cn(
+                                        "flex-1 text-[8px] font-black uppercase py-1 rounded transition-all",
+                                        cardSettings.size === s ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    {s === 'small' ? 'P' : s === 'medium' ? 'M' : 'G'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Campos Visíveis</p>
+                        <div className="grid grid-cols-2 gap-1">
+                            {[
+                                { id: 'showPhoto', label: 'Foto' },
+                                { id: 'showPriority', label: 'Prio' },
+                                { id: 'showLocation', label: 'Loc' },
+                                { id: 'showStatus', label: 'Status' },
+                                { id: 'showAuctionDate', label: 'Data' },
+                                { id: 'showFinancial', label: 'Fin' },
+                                { id: 'showResponsible', label: 'Resp' }
+                            ].map((field) => (
+                                <label key={field.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer transition-colors">
+                                    <Checkbox
+                                        checked={(cardSettings as any)[field.id]}
+                                        onCheckedChange={() => cardSettings.toggleField(field.id as any)}
+                                    />
+                                    <span className="text-[9px] font-bold uppercase tracking-tighter">{field.label}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
