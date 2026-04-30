@@ -98,6 +98,10 @@ export function useCreateChecklistForStage() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["property-checklist", vars.propertyId] });
     },
+    onError: (error: any) => {
+      console.error("Error creating checklist:", error);
+      toast.error("Erro ao inicializar checklist: " + (error.message || "Erro desconhecido"));
+    }
   });
 }
 
@@ -175,6 +179,10 @@ export function useToggleChecklistItem() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["property-checklist", vars.item.property_id] });
     },
+    onError: (error: any) => {
+      console.error("Error toggling checklist item:", error);
+      toast.error("Erro ao atualizar item: " + (error.message || "Erro desconhecido"));
+    }
   });
 }
 
@@ -276,5 +284,9 @@ export function useAddChecklistStrategy() {
       qc.invalidateQueries({ queryKey: ["property-checklist", vars.propertyId] });
       toast.success(`Estratégia "${vars.strategyName}" adicionada ao checklist.`);
     },
+    onError: (error: any) => {
+      console.error("Error adding strategy:", error);
+      toast.error("Erro ao adicionar estratégia: " + (error.message || "Erro desconhecido"));
+    }
   });
 }
