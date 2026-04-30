@@ -234,47 +234,36 @@ export function useDeleteChecklistGroup() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ propertyId, groupName }: { propertyId: string; groupName: string }) => {
-      const trimmedName = groupName.trim();
-      console.log(`Deleting checklist group "${trimmedName}" for property ${propertyId}`);
+    mutationFn: async ({ propertyId, itemIds }: { propertyId: string; itemIds: string[] }) => {
+      console.log(`Deleting ${itemIds.length} checklist items for property ${propertyId}`);
       
       const { error } = await supabase
         .from("property_checklist_items")
         .delete()
-        .eq("property_id", propertyId)
-        .ilike("group_name", trimmedName);
+        .in("id", itemIds);
 
       if (error) throw error;
       
-      // Small delay to ensure DB consistency before refetch
+      // Small delay for DB consistency
       await new Promise(resolve => setTimeout(resolve, 300));
     },
-    onMutate: async ({ propertyId, groupName }) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+    onMutate: async ({ propertyId, itemIds }) => {
       await queryClient.cancelQueries({ queryKey: ["property-checklist", propertyId] });
-
-      // Snapshot the previous value
       const previousItems = queryClient.getQueryData<ChecklistItem[]>(["property-checklist", propertyId]);
 
-      // Optimistically update to the new value
       if (previousItems) {
         queryClient.setQueryData<ChecklistItem[]>(["property-checklist", propertyId], 
-          previousItems.filter(item => item.group_name !== groupName)
+          previousItems.filter(item => !itemIds.includes(item.id))
         );
       }
 
       return { previousItems };
     },
-    onSuccess: async (_, { propertyId, groupName }) => {
-      console.log(`Successfully deleted group "${groupName}" from DB. Invalidating queries...`);
-      // Use invalidateQueries to mark as stale and trigger a refetch for all observers
+    onSuccess: async (_, { propertyId }) => {
       await queryClient.invalidateQueries({ 
-        queryKey: ["property-checklist", propertyId],
-        exact: true
+        queryKey: ["property-checklist", propertyId]
       });
-      // Also invalidate the main properties query to update progress bars if needed
       await queryClient.invalidateQueries({ queryKey: ["properties"] });
-      
       toast.success("Grupo excluído com sucesso.");
     },
     onError: (error, { propertyId, groupName }, context) => {

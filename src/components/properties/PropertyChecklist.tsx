@@ -140,7 +140,7 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
           onToggleGroup={handleToggleGroup}
           onUpdateNotes={(id, notes) => updateNotes.mutate({ id, notes, propertyId })}
           onUpdateDate={(id, date) => updateDate.mutate({ id, completedAt: date, propertyId })}
-          onDeleteGroup={() => deleteGroup.mutate({ propertyId, groupName })}
+          onDeleteGroup={() => deleteGroup.mutate({ propertyId, itemIds: groupItems.map(i => i.id) })}
         />
       ))}
 
