@@ -35,7 +35,14 @@ export function useCreateChecklistForStage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ propertyId, stage }: { propertyId: string; stage: PropertyStage }) => {
-      // Check if items already exist for this stage
+      // 0. CLEANUP: Always remove obsolete groups if they exist for this property/stage
+      await supabase
+        .from("property_checklist_items")
+        .delete()
+        .eq("property_id", propertyId)
+        .in("group_name", ["Estratégia Definida", "Execução"]);
+
+      // 1. Check if we already have items for this stage
       const { data: existing } = await supabase
         .from("property_checklist_items")
         .select("id")
@@ -45,7 +52,7 @@ export function useCreateChecklistForStage() {
 
       if (existing && existing.length > 0) return existing;
 
-      // 1. Try hardcoded templates
+      // 2. No items? Create them from template
       let templates = getTemplatesForStage(stage);
       let rows: TablesInsert<"property_checklist_items">[] = [];
 
@@ -58,42 +65,38 @@ export function useCreateChecklistForStage() {
           sort_order: t.sort,
         }));
       } else {
-        // 2. Try dynamic templates from kanban_stages
+        // 3. Try dynamic templates from kanban_stages
         const { data: stageData } = await supabase
           .from("kanban_stages")
           .select("checklist")
           .eq("value", stage)
-          .limit(1)
           .maybeSingle();
 
-        if (stageData?.checklist && Array.isArray(stageData.checklist)) {
-          // Handle both structured and flat formats
-          stageData.checklist.forEach((section: any, sIdx: number) => {
-            const isSection = typeof section === 'object' && section !== null && 'title' in section;
-            const title = isSection ? section.title : "Checklist";
-            const items = isSection ? section.items : [section];
-
-            items.forEach((task: string, iIdx: number) => {
-              rows.push({
-                property_id: propertyId,
-                stage: stage,
-                group_name: title,
-                task_name: task,
-                sort_order: (sIdx * 100) + iIdx,
+        if (stageData?.checklist) {
+          const checklist = stageData.checklist as any[];
+          checklist.forEach((section: any, sIdx: number) => {
+            if (section.items) {
+              section.items.forEach((task: string, tIdx: number) => {
+                rows.push({
+                  property_id: propertyId,
+                  stage,
+                  group_name: section.title,
+                  task_name: task,
+                  sort_order: sIdx * 100 + tIdx,
+                });
               });
-            });
+            }
           });
         }
       }
 
-      if (rows.length === 0) return [];
+      if (rows.length > 0) {
+        const { data, error } = await supabase.from("property_checklist_items").insert(rows).select();
+        if (error) throw error;
+        return data;
+      }
 
-      const { data, error } = await supabase
-        .from("property_checklist_items")
-        .insert(rows)
-        .select();
-      if (error) throw error;
-      return data;
+      return [];
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["property-checklist", vars.propertyId] });
