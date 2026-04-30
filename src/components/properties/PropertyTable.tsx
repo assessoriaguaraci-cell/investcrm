@@ -261,7 +261,13 @@ export default function PropertyTable({ properties }: Props) {
                           <div className="flex flex-col items-end gap-1.5">
                             <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-foreground/80 bg-slate-500/5 px-2 py-1 rounded border border-slate-500/10">
                               <Calendar className="h-3 w-3 text-slate-500/40 shrink-0" />
-                              {format(new Date(p.auction_date + "T12:00:00"), "dd/MM/yyyy")}
+                              {(() => {
+                                try {
+                                  return format(new Date(p.auction_date + "T12:00:00"), "dd/MM/yyyy");
+                                } catch {
+                                  return p.auction_date;
+                                }
+                              })()}
                             </div>
                             {lifeDays !== null && (
                               <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground pr-2 uppercase tracking-tighter">

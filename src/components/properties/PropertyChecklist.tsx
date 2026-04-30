@@ -283,7 +283,7 @@ function ChecklistItemRow({
         />
         <div className="flex-1 min-w-0">
           <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>
-            {item.task_name.toLowerCase().includes("fluxo do crm") || item.task_name.toLowerCase().includes("cadastrado no crm") ? "Imóvel cadastrado no SMARTAPP" : item.task_name}
+            {item.task_name?.toLowerCase().includes("fluxo do crm") || item.task_name?.toLowerCase().includes("cadastrado no crm") ? "Imóvel cadastrado no SMARTAPP" : item.task_name}
           </span>
           {disabled && (
             <p className="text-[10px] text-destructive mt-0.5">Bloqueado (CCV assinado)</p>
@@ -294,7 +294,7 @@ function ChecklistItemRow({
                 <PopoverTrigger asChild>
                   <button className="text-[10px] text-muted-foreground hover:text-primary hover:underline flex items-center gap-0.5 cursor-pointer">
                     <CalendarIcon className="h-2.5 w-2.5" />
-                    {format(new Date(item.completed_at), "dd/MM/yyyy")}
+                    {item.completed_at ? format(new Date(item.completed_at), "dd/MM/yyyy") : "—"}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
