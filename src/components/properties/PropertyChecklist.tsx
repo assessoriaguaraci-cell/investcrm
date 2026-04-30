@@ -56,6 +56,17 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
   }, [isLoading, items, error, propertyId, stage]);
 
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, ChecklistItem[]>();
+    if (!items) return map;
+    items.forEach(item => {
+      const list = map.get(item.group_name) || [];
+      list.push(item);
+      map.set(item.group_name, list);
+    });
+    return map;
+  }, [items]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -82,16 +93,6 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
       </div>
     );
   }
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, ChecklistItem[]>();
-    items.forEach(item => {
-      const list = map.get(item.group_name) || [];
-      list.push(item);
-      map.set(item.group_name, list);
-    });
-    return map;
-  }, [items]);
 
   const totalDone = items.filter(i => i.completed).length;
   const totalItems = items.length;
@@ -149,7 +150,10 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
           </div>
           
           <div className="flex gap-2">
-            <Select onValueChange={(val) => addStrategy.mutate({ propertyId, stage, strategyName: val, tasks: STRATEGY_TEMPLATES[val] })}>
+            <Select 
+              key={`strategy-select-${items.length}`}
+              onValueChange={(val) => addStrategy.mutate({ propertyId, stage, strategyName: val, tasks: STRATEGY_TEMPLATES[val] })}
+            >
               <SelectTrigger className="flex-1 h-10 text-xs font-black uppercase tracking-wider bg-background border-primary/20 shadow-sm">
                 <SelectValue placeholder="SELECIONAR ESTRATÉGIA" />
               </SelectTrigger>

@@ -226,6 +226,7 @@ export function useDeleteChecklistGroup() {
 
   return useMutation({
     mutationFn: async ({ propertyId, groupName }: { propertyId: string; groupName: string }) => {
+      console.log(`Deleting checklist group "${groupName}" for property ${propertyId}`);
       const { error } = await supabase
         .from("property_checklist_items")
         .delete()
@@ -234,15 +235,19 @@ export function useDeleteChecklistGroup() {
 
       if (error) throw error;
     },
-    onSuccess: (_, { propertyId }) => {
-      queryClient.invalidateQueries({ queryKey: ["property-checklist", propertyId] });
+    onSuccess: async (_, { propertyId }) => {
+      // Use refetchQueries to force an immediate update of the UI
+      await queryClient.refetchQueries({ queryKey: ["property-checklist", propertyId] });
+      await queryClient.refetchQueries({ queryKey: ["properties"] });
       toast.success("Grupo excluído com sucesso.");
     },
     onError: (error) => {
+      console.error("Error deleting group:", error);
       toast.error("Falha ao excluir grupo: " + error.message);
     },
   });
 }
+
 
 export function useAddChecklistStrategy() {
   const qc = useQueryClient();
