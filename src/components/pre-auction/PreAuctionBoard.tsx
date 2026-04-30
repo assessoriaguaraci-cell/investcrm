@@ -127,7 +127,20 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
           >
             {STAGES.map((stage, index) => {
               if (!stage || !stage.value) return null;
-              const stageProperties = properties.filter((p) => p && p.stage === stage.value);
+              
+              // Group properties for this stage
+              // If it's the first stage, also include properties with invalid or missing stages
+              const stageProperties = properties.filter((p) => {
+                  if (!p) return false;
+                  if (p.stage === stage.value) return true;
+                  
+                  // Orphaned property logic: if it's the first column and the property stage is invalid
+                  if (index === 0) {
+                      const isValidStage = STAGES.some(s => s && s.value === p.stage);
+                      return !isValidStage;
+                  }
+                  return false;
+              });
               
               // Extracting the CSS variable name from the stageColor string
               let colorVar = stage.color.match(/var\(([^)]+)\)/)?.[1];

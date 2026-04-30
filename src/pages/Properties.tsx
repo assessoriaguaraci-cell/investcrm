@@ -126,16 +126,32 @@ export default function Properties() {
     return [];
   }, [properties, activeListView, stageOrder, location.state]);
 
-  const matchesMultiSelect = (value: string, selected: string[]) => {
+  const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
     if (selected.length === 0) return true; 
     if (selected.length === 1 && selected[0] === "__none__") return false;
-    return selected.includes(value);
+    return selected.includes(value || "");
   };
 
   const filtered = useMemo(() => {
     if (!properties) return [];
     return properties.filter(p => {
-      if (filters.search && !p.code.toLowerCase().includes(filters.search.toLowerCase())) return false;
+      if (filters.search) {
+        const q = filters.search.trim().toLowerCase();
+        const qNumeric = q.replace(/\D/g, "");
+        
+        const code = p.code?.toLowerCase() || "";
+        const codeNumeric = code.replace(/\D/g, "");
+
+        const match = 
+          code.includes(q) ||
+          (qNumeric && codeNumeric.includes(qNumeric)) ||
+          (p.address?.toLowerCase().includes(q)) ||
+          (p.neighborhood?.toLowerCase().includes(q)) ||
+          (p.city?.toLowerCase().includes(q)) ||
+          (p.registration_number?.toLowerCase().includes(q));
+          
+        if (!match) return false;
+      }
       if (!matchesMultiSelect(p.stage, filters.stage)) return false;
       if (!matchesMultiSelect(p.property_type, filters.property_type)) return false;
       if (!matchesMultiSelect(p.state, filters.state)) return false;
@@ -143,26 +159,49 @@ export default function Properties() {
       if (!matchesMultiSelect(p.priority, filters.priority)) return false;
       if (!matchesMultiSelect(p.occupation_status, filters.occupation_status)) return false;
       if (!matchesMultiSelect(p.responsible_user_id ?? "", filters.responsible_user_id)) return false;
+      
       const inv = totalInvestment(p);
       if (filters.price_min && inv < Number(filters.price_min)) return false;
       if (filters.price_max && inv > Number(filters.price_max)) return false;
+      
       if (filters.auction_date_start && (!p.auction_date || p.auction_date < filters.auction_date_start)) return false;
       if (filters.auction_date_end && (!p.auction_date || p.auction_date > filters.auction_date_end)) return false;
+      
       if (filters.neighborhood && !p.neighborhood?.toLowerCase().includes(filters.neighborhood.toLowerCase())) return false;
+      
       if (filters.area_min && (p.area_total ?? 0) < Number(filters.area_min)) return false;
       if (filters.area_max && (p.area_total ?? 0) > Number(filters.area_max)) return false;
+      
       return true;
     });
   }, [properties, filters]);
 
+  // Combined results for Dashboard views (when activeListView is set)
+  // We want to apply the active filters to the dashboard view too!
+  const dashboardFilteredItems = useMemo(() => {
+    return listItems.filter(p => filtered.some(fp => fp.id === p.id));
+  }, [listItems, filtered]);
+
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    if (!stages) return map;
+    if (!stages || stages.length === 0) return map;
+    
     stages.forEach(s => {
       if (s && s.value) map[s.value] = [];
     });
+
+    const firstStageValue = stages[0]?.value;
+
     filtered.forEach(p => {
-      if (p && p.stage && map[p.stage]) map[p.stage]!.push(p);
+      if (p) {
+        // If the property has a stage that exists in the current view, use it
+        if (p.stage && map[p.stage]) {
+          map[p.stage]!.push(p);
+        } else if (firstStageValue) {
+          // Orphaned property: put it in the first stage of the current view so it's not lost
+          map[firstStageValue]!.push(p);
+        }
+      }
     });
     return map;
   }, [filtered, stages]);
@@ -227,16 +266,8 @@ export default function Properties() {
     );
   }
 
-  if (activeListView) {
-    return (
-      <div className="p-4 md:p-6">
-        <Button variant="ghost" className="mb-4 gap-2" onClick={() => setActiveListView(null)}>
-          <ArrowLeft className="h-4 w-4" /> Voltar ao Kanban
-        </Button>
-        <PropertyTable properties={listItems} />
-      </div>
-    );
-  }
+  // Removed early return to keep filters visible
+  // if (activeListView) { ... }
 
   const totalPortfolioValue = filtered.reduce((sum, p) => sum + (p.purchase_price || 0), 0);
 
@@ -248,9 +279,19 @@ export default function Properties() {
             <Building2 className="h-8 w-8 text-primary shrink-0" />
             <div className="flex flex-col gap-0.5">
               <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
-                Funil de Imóveis
+                FUNIL DE IMÓVEIS
               </h1>
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Portfólio e Ativos Imobiliários</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Portfólio e Ativos</p>
+                <Badge variant="outline" className="text-[9px] font-black bg-primary/5 text-primary border-primary/10 h-4">
+                    {properties?.length || 0} TOTAL
+                </Badge>
+                {filtered.length !== properties?.length && (
+                    <Badge variant="secondary" className="text-[9px] font-black h-4">
+                        {filtered.length} NO FILTRO
+                    </Badge>
+                )}
+              </div>
             </div>
           </div>
           
@@ -370,11 +411,20 @@ export default function Properties() {
       </div>
 
       <PropertyFilters filters={filters} onFiltersChange={setFilters} />
-      <div className="mt-2">
+      <div className="mt-2 flex items-center justify-between">
         <SavedFiltersButton currentFilters={filters} onLoadFilter={setFilters} />
+        {activeListView && (
+          <Button variant="outline" size="sm" className="gap-2 text-[10px] font-black uppercase" onClick={() => setActiveListView(null)}>
+            <ArrowLeft className="h-3 w-3" /> Ver Kanban Completo
+          </Button>
+        )}
       </div>
 
-      {viewMode === "kanban" ? (
+      {activeListView ? (
+        <div className="flex-1 overflow-auto mt-4">
+          <PropertyTable properties={listItems} />
+        </div>
+      ) : viewMode === "kanban" ? (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="board" type="column" direction="horizontal">
             {(provided) => (

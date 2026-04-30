@@ -31,7 +31,8 @@ export function useClients() {
       const { data, error } = await supabase
         .from("clients")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(5000);
       if (error) throw error;
       return data as Client[];
     },

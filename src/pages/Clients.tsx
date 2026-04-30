@@ -117,7 +117,8 @@ export default function Clients() {
         const match = c.full_name.toLowerCase().includes(q) ||
           (c.phone ?? "").includes(q) ||
           (c.whatsapp ?? "").includes(q) ||
-          (c.email ?? "").toLowerCase().includes(q);
+          (c.email ?? "").toLowerCase().includes(q) ||
+          (c.cpf ?? "").includes(q);
         if (!match) return false;
       }
       if (!matchesMultiSelect(c.temperature, filters.temperature)) return false;
@@ -144,12 +145,23 @@ export default function Clients() {
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    if (!stagesForPipeline) return map;
+    if (!stagesForPipeline || stagesForPipeline.length === 0) return map;
+    
     stagesForPipeline.forEach(s => {
       if (s && s.value) map[s.value] = [];
     });
+
+    const firstStageValue = stagesForPipeline[0]?.value;
+
     filtered.forEach(c => {
-      if (c && c.stage && map[c.stage]) map[c.stage]!.push(c);
+      if (c) {
+        if (c.stage && map[c.stage]) {
+          map[c.stage]!.push(c);
+        } else if (firstStageValue) {
+          // Orphaned client: put in first stage of current pipeline
+          map[firstStageValue]!.push(c);
+        }
+      }
     });
     return map;
   }, [filtered, stagesForPipeline]);

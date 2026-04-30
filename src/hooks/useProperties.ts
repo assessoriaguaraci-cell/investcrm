@@ -33,7 +33,8 @@ export function useProperties(funnelId?: string) {
       let query = supabase
         .from("properties")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(5000);
 
       if (funnelId) {
         query = query.eq("funnel_id", funnelId);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePreAuctionProperties, usePreAuctionFunnels, useUpdatePreAuctionProperty, useCreatePreAuctionFunnel } from "@/hooks/usePreAuction";
 import { PreAuctionBoard } from "@/components/pre-auction/PreAuctionBoard";
 import { PreAuctionDialog } from "@/components/pre-auction/PreAuctionDialog";
@@ -53,6 +53,20 @@ export default function PreAuctionKanban() {
     }
   };
 
+  const [search, setSearch] = useState("");
+
+  const filteredProperties = useMemo(() => {
+    if (!properties) return [];
+    if (!search) return properties;
+    const q = search.toLowerCase();
+    return properties.filter(p => 
+      (p.code?.toLowerCase().includes(q)) ||
+      (p.address?.toLowerCase().includes(q)) ||
+      (p.neighborhood?.toLowerCase().includes(q)) ||
+      (p.city?.toLowerCase().includes(q))
+    );
+  }, [properties, search]);
+
   return (
     <div className="p-4 md:p-6 h-full flex flex-col space-y-4">
       {/* Header */}
@@ -70,9 +84,19 @@ export default function PreAuctionKanban() {
         </div>
 
         <div className="flex items-center gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+                <LayoutGrid className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Buscar imóvel..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-9 h-9 text-xs font-bold uppercase tracking-tight"
+                />
+            </div>
+
             <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
                 <Select value={selectedFunnelId || "default"} onValueChange={(v) => setSelectedFunnelId(v === "default" ? undefined : v)}>
-                    <SelectTrigger className="w-[180px] h-8 text-[10px] font-black uppercase tracking-widest border-none bg-transparent">
+                    <SelectTrigger className="w-[150px] h-8 text-[10px] font-black uppercase tracking-widest border-none bg-transparent">
                         <SelectValue placeholder="Selecionar Funil" />
                     </SelectTrigger>
                     <SelectContent>
@@ -102,9 +126,10 @@ export default function PreAuctionKanban() {
           </div>
         ) : (
           <PreAuctionBoard 
-            properties={properties || []} 
+            properties={filteredProperties} 
             onMoveProperty={handleMoveProperty}
             onCardClick={handleCardClick}
+            funnelId={selectedFunnelId}
           />
         )}
       </div>
