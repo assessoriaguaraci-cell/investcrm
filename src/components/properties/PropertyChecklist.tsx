@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, MessageSquare, Loader2, CalendarIcon, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageSquare, Loader2, CalendarIcon, Trash2, Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -46,6 +45,23 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
   const deleteGroup = useDeleteChecklistGroup();
   const { user } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <div className="text-center py-8 space-y-4">
+        <p className="text-sm text-muted-foreground">Nenhum checklist configurado para esta etapa.</p>
+        <p className="text-xs text-muted-foreground/60 italic">Isso pode ocorrer se a etapa for nova ou não possuir tarefas padrão.</p>
+      </div>
+    );
+  }
+
   const grouped = useMemo(() => {
     const map = new Map<string, ChecklistItem[]>();
     items.forEach(item => {
@@ -55,22 +71,6 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
     });
     return map;
   }, [items]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-4 text-center">
-        Nenhuma tarefa para esta etapa.
-      </p>
-    );
-  }
 
   const totalDone = items.filter(i => i.completed).length;
   const totalItems = items.length;

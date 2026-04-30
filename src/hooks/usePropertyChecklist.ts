@@ -215,7 +215,6 @@ export function useUpdateChecklistDate() {
 /** Add a specific strategy checklist to a property stage */
 export function useDeleteChecklistGroup() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ propertyId, groupName }: { propertyId: string; groupName: string }) => {
@@ -229,10 +228,10 @@ export function useDeleteChecklistGroup() {
     },
     onSuccess: (_, { propertyId }) => {
       queryClient.invalidateQueries({ queryKey: ["property-checklist", propertyId] });
-      toast({ title: "Sucesso", description: "Grupo excluído com sucesso." });
+      toast.success("Grupo excluído com sucesso.");
     },
     onError: (error) => {
-      toast({ title: "Erro", description: "Falha ao excluir grupo: " + error.message, variant: "destructive" });
+      toast.error("Falha ao excluir grupo: " + error.message);
     },
   });
 }
