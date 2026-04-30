@@ -235,14 +235,19 @@ export function useDeleteChecklistGroup() {
 
   return useMutation({
     mutationFn: async ({ propertyId, groupName }: { propertyId: string; groupName: string }) => {
-      console.log(`Deleting checklist group "${groupName}" for property ${propertyId}`);
+      const trimmedName = groupName.trim();
+      console.log(`Deleting checklist group "${trimmedName}" for property ${propertyId}`);
+      
       const { error } = await supabase
         .from("property_checklist_items")
         .delete()
         .eq("property_id", propertyId)
-        .eq("group_name", groupName);
+        .ilike("group_name", trimmedName);
 
       if (error) throw error;
+      
+      // Small delay to ensure DB consistency before refetch
+      await new Promise(resolve => setTimeout(resolve, 300));
     },
     onMutate: async ({ propertyId, groupName }) => {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
