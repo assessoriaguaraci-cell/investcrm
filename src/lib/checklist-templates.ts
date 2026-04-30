@@ -30,6 +30,16 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
   { stage: "pre_arrematacao", group: "Diligência", task: "Fotos externas do imóvel", sort: 13 },
   { stage: "pre_arrematacao", group: "Diligência", task: "Fotos dos arredores do imóvel", sort: 14 },
   { stage: "pre_arrematacao", group: "Diligência", task: "Análise da região", sort: 15 },
+  
+  // ── DOCUMENTAÇÃO ──────────────────────────────────────────────
+  { stage: "documentacao", group: "Organização Inicial", task: "Pasta criada no Drive", sort: 1 },
+  { stage: "documentacao", group: "Organização Inicial", task: "Matrícula, edital, laudo e contratos salvos", sort: 2 },
+  { stage: "documentacao", group: "Organização Inicial", task: "Gastos lançados nas planilhas e Splitwise", sort: 3 },
+  { stage: "documentacao", group: "Controle Documental", task: "ITBI pago", sort: 4 },
+  { stage: "documentacao", group: "Controle Documental", task: "IPTU pago", sort: 5 },
+  { stage: "documentacao", group: "Controle Documental", task: "Matrícula em nome do novo proprietário", sort: 6 },
+  { stage: "documentacao", group: "Controle Documental", task: "Registro concluído", sort: 7 },
+  { stage: "documentacao", group: "Controle Documental", task: "Listar pendências", sort: 8 },
 
   // ── ITBI/CONTRATO ──────────────────────────────────────────────
   // Grupo 1: Organização Inicial
@@ -110,7 +120,7 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
 /** Returns the next stage in the pipeline, or null if at the end. */
 export function getNextStage(current: PropertyStage): PropertyStage | null {
   const order: PropertyStage[] = [
-    "pre_arrematacao", "itbi_contrato", "registro", "desocupacao", "reforma",
+    "pre_arrematacao", "documentacao", "itbi_contrato", "registro", "desocupacao", "reforma",
     "venda", "pos_venda", "ir", "finalizado",
   ];
   const idx = order.indexOf(current);

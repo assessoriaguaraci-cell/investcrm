@@ -131,7 +131,9 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Etapa</label>
             <MultiSelectFilter
               label="Etapa"
-              options={(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES).map(s => ({ value: s.value, label: s.label }))}
+              options={(dynamicStages.length > 0 ? dynamicStages : PROPERTY_STAGES)
+                .filter(s => s && s.value)
+                .map(s => ({ value: s.value, label: s.label }))}
               selected={filters.stage}
               onSelectionChange={v => update("stage", v)}
               placeholder="Todas"

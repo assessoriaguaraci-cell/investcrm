@@ -6,7 +6,8 @@ type OccupationStatus = Database["public"]["Enums"]["occupation_status"];
 type PriorityLevel = Database["public"]["Enums"]["priority_level"];
 
 export const PROPERTY_STAGES: { value: string; label: string; color: string }[] = [
-  { value: "pos_arrematacao", label: "Pós-Arrematação", color: "bg-[hsl(var(--stage-pre-auction))]" },
+  { value: "pre_arrematacao", label: "Pré-Arrematação", color: "bg-[hsl(var(--stage-pre-auction))]" },
+  { value: "documentacao", label: "Documentação", color: "bg-[hsl(var(--stage-itbi-contract))]" },
   { value: "itbi_contrato", label: "ITBI/Contrato", color: "bg-[hsl(var(--stage-itbi-contract))]" },
   { value: "registro", label: "Registro", color: "bg-[hsl(var(--stage-registration))]" },
   { value: "desocupacao", label: "Desocupação", color: "bg-[hsl(var(--stage-eviction))]" },

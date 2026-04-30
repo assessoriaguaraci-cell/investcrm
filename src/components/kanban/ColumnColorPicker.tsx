@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ColumnColorPicker({ stageId, stageValue, stageLabel, currentColor, funnelType }: Props) {
-    const { updateStage } = useKanbanStages(funnelType);
+    const { updateStage, addStage } = useKanbanStages(funnelType);
     const { toast } = useToast();
 
     const handleColorChange = async (newColor: string) => {

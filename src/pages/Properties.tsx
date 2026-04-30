@@ -98,7 +98,10 @@ export default function Properties() {
 
   const stageOrder = useMemo(() => {
     const map: Record<string, number> = {};
-    stages.forEach((s, i) => { map[s.value] = i; });
+    if (!stages) return map;
+    stages.forEach((s, i) => { 
+      if (s && s.value) map[s.value] = i; 
+    });
     return map;
   }, [stages]);
 
@@ -154,9 +157,12 @@ export default function Properties() {
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    stages.forEach(s => (map[s.value] = []));
+    if (!stages) return map;
+    stages.forEach(s => {
+      if (s && s.value) map[s.value] = [];
+    });
     filtered.forEach(p => {
-      if (map[p.stage]) map[p.stage]!.push(p);
+      if (p && p.stage && map[p.stage]) map[p.stage]!.push(p);
     });
     return map;
   }, [filtered, stages]);

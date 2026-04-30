@@ -81,7 +81,7 @@ export function useCreateProperty() {
       if (error) throw error;
 
       // Auto-create checklist for the initial stage
-      const stage = data.stage ?? "pos_arrematacao";
+      const stage = data.stage ?? "pre_arrematacao";
       const templates = getTemplatesForStage(stage);
       if (templates.length > 0) {
         const rows = templates.map(t => ({

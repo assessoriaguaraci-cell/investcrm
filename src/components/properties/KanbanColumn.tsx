@@ -22,7 +22,7 @@ export default function KanbanColumn({ stageId, stageValue, stageLabel, stageCol
   const totalValue = properties.reduce((sum, p) => sum + (p.final_sale_price || 0), 0);
 
   // Extracting the CSS variable name from the stageColor string (e.g., "bg-[hsl(var(--stage-pre-auction))]")
-  let colorVar = stageColor.match(/var\(([^)]+)\)/)?.[1];
+  let colorVar = stageColor ? stageColor.match(/var\(([^)]+)\)/)?.[1] : undefined;
   
   // Fallback for standard preset tailwind classes stored in DB
   if (!colorVar) {
