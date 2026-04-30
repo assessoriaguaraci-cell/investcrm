@@ -260,18 +260,24 @@ export function useDeleteChecklistGroup() {
 
       return { previousItems };
     },
-    onSuccess: async (_, { propertyId }) => {
-      // Still refetch to ensure we are in sync with the server
-      await queryClient.refetchQueries({ queryKey: ["property-checklist", propertyId] });
-      await queryClient.refetchQueries({ queryKey: ["properties"] });
+    onSuccess: async (_, { propertyId, groupName }) => {
+      console.log(`Successfully deleted group "${groupName}" from DB. Invalidating queries...`);
+      // Use invalidateQueries to mark as stale and trigger a refetch for all observers
+      await queryClient.invalidateQueries({ 
+        queryKey: ["property-checklist", propertyId],
+        exact: true
+      });
+      // Also invalidate the main properties query to update progress bars if needed
+      await queryClient.invalidateQueries({ queryKey: ["properties"] });
+      
       toast.success("Grupo excluído com sucesso.");
     },
-    onError: (error, { propertyId }, context) => {
+    onError: (error, { propertyId, groupName }, context) => {
       // Rollback if there's an error
       if (context?.previousItems) {
         queryClient.setQueryData(["property-checklist", propertyId], context.previousItems);
       }
-      console.error("Error deleting group:", error);
+      console.error(`Error deleting group "${groupName}":`, error);
       toast.error("Falha ao excluir grupo: " + error.message);
     },
   });
