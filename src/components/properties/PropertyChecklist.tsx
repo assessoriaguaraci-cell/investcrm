@@ -49,11 +49,17 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
   const createChecklist = useCreateChecklistForStage();
   
   // If there are no items for this stage, attempt to create default checklist
+  // We use a flag to avoid re-creating if the user intentionally deleted all items in this session
+  const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
+  
   useEffect(() => {
-    if (!isLoading && (!items || items.length === 0) && !error) {
+    if (!isLoading && (!items || items.length === 0) && !error && !hasCheckedInitial) {
       createChecklist.mutate({ propertyId, stage });
+      setHasCheckedInitial(true);
+    } else if (!isLoading && items && items.length > 0) {
+      setHasCheckedInitial(true);
     }
-  }, [isLoading, items, error, propertyId, stage]);
+  }, [isLoading, items, error, propertyId, stage, hasCheckedInitial]);
 
 
   const grouped = useMemo(() => {

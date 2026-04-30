@@ -19,7 +19,13 @@ export function usePropertyChecklist(propertyId: string | undefined) {
         .eq("property_id", propertyId!)
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return data as ChecklistItem[];
+      
+      // Filter out obsolete groups that should no longer exist
+      const filteredData = (data as ChecklistItem[] || []).filter(
+        item => !["Estratégia Definida", "Execução"].includes(item.group_name || "")
+      );
+      
+      return filteredData;
     },
   });
 }
@@ -238,13 +244,33 @@ export function useDeleteChecklistGroup() {
 
       if (error) throw error;
     },
+    onMutate: async ({ propertyId, groupName }) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["property-checklist", propertyId] });
+
+      // Snapshot the previous value
+      const previousItems = queryClient.getQueryData<ChecklistItem[]>(["property-checklist", propertyId]);
+
+      // Optimistically update to the new value
+      if (previousItems) {
+        queryClient.setQueryData<ChecklistItem[]>(["property-checklist", propertyId], 
+          previousItems.filter(item => item.group_name !== groupName)
+        );
+      }
+
+      return { previousItems };
+    },
     onSuccess: async (_, { propertyId }) => {
-      // Use refetchQueries to force an immediate update of the UI
+      // Still refetch to ensure we are in sync with the server
       await queryClient.refetchQueries({ queryKey: ["property-checklist", propertyId] });
       await queryClient.refetchQueries({ queryKey: ["properties"] });
       toast.success("Grupo excluído com sucesso.");
     },
-    onError: (error) => {
+    onError: (error, { propertyId }, context) => {
+      // Rollback if there's an error
+      if (context?.previousItems) {
+        queryClient.setQueryData(["property-checklist", propertyId], context.previousItems);
+      }
       console.error("Error deleting group:", error);
       toast.error("Falha ao excluir grupo: " + error.message);
     },
