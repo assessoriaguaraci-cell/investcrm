@@ -323,7 +323,14 @@ function ChecklistItemRow({
           className="h-6 w-6 shrink-0"
           onClick={() => setShowNotes(!showNotes)}
         >
-          <MessageSquare className={`h-3.5 w-3.5 ${item.notes ? "text-primary" : "text-muted-foreground"}`} />
+          <MessageSquare 
+            className={cn(
+              "h-3.5 w-3.5 transition-colors",
+              item.notes 
+                ? "text-orange-500 fill-orange-500" 
+                : "text-muted-foreground"
+            )} 
+          />
         </Button>
       </div>
       {showNotes && (

@@ -115,7 +115,8 @@ export default function PropertyReportGenerator({ property }: Props) {
 
     // Checklist grouped by stage and then by group
     const stageOrder = PROPERTY_STAGES.map(s => s.value);
-    const stagesWithItems = stageOrder.filter(s => (allItems || []).some(item => item.stage === s));
+    // ONLY show the current stage
+    const stagesWithItems = [property.stage].filter(s => (allItems || []).some(item => item.stage === s));
 
     for (const stageValue of stagesWithItems) {
       const stageItems = (allItems || []).filter(item => item.stage === stageValue);
