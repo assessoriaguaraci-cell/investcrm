@@ -138,20 +138,34 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
       ))}
 
       {stage === "desocupacao" && (
-        <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Adicionar Estratégia de Desocupação</p>
+        <div className="mt-6 p-4 rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 space-y-4">
+          <div className="flex flex-col gap-1">
+            <h4 className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+              <Plus className="h-3 w-3" /> Escolher estratégia de desocupação
+            </h4>
+            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight">
+              Selecione uma ou mais estratégias para adicionar as tarefas correspondentes
+            </p>
+          </div>
+          
           <div className="flex gap-2">
             <Select onValueChange={(val) => addStrategy.mutate({ propertyId, stage, strategyName: val, tasks: STRATEGY_TEMPLATES[val] })}>
-              <SelectTrigger className="flex-1 h-9 text-xs font-bold uppercase">
-                <SelectValue placeholder="SELECIONE A ESTRATÉGIA" />
+              <SelectTrigger className="flex-1 h-10 text-xs font-black uppercase tracking-wider bg-background border-primary/20 shadow-sm">
+                <SelectValue placeholder="SELECIONAR ESTRATÉGIA" />
               </SelectTrigger>
               <SelectContent>
                 {Object.keys(STRATEGY_TEMPLATES).map(strat => (
-                  <SelectItem key={strat} value={strat} className="text-xs font-bold uppercase">{strat}</SelectItem>
+                  <SelectItem key={strat} value={strat} className="text-xs font-black uppercase">
+                    {strat}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          
+          <p className="text-[8px] text-muted-foreground italic text-center">
+            * Você pode adicionar múltiplas estratégias se necessário. Elas aparecerão como novos grupos de tarefas acima.
+          </p>
         </div>
       )}
     </div>

@@ -197,7 +197,7 @@ export default function Properties() {
         // If the property has a stage that exists in the current view, use it
         if (p.stage && map[p.stage]) {
           map[p.stage]!.push(p);
-        } else if (firstStageValue) {
+        } else if (firstStageValue && map[firstStageValue]) {
           // Orphaned property: put it in the first stage of the current view so it's not lost
           map[firstStageValue]!.push(p);
         }

@@ -25,7 +25,7 @@ export default function KanbanColumn({ stageId, stageValue, stageLabel, stageCol
   let colorVar = stageColor ? stageColor.match(/var\(([^)]+)\)/)?.[1] : undefined;
   
   // Fallback for standard preset tailwind classes stored in DB
-  if (!colorVar) {
+  if (!colorVar && stageColor) {
       if (stageColor.includes('blue')) colorVar = '--preset-blue';
       else if (stageColor.includes('green')) colorVar = '--preset-green';
       else if (stageColor.includes('yellow')) colorVar = '--preset-yellow';
