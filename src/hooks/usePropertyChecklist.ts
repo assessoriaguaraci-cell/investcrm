@@ -213,6 +213,30 @@ export function useUpdateChecklistDate() {
 }
 
 /** Add a specific strategy checklist to a property stage */
+export function useDeleteChecklistGroup() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ propertyId, groupName }: { propertyId: string; groupName: string }) => {
+      const { error } = await supabase
+        .from("property_checklist_items")
+        .delete()
+        .eq("property_id", propertyId)
+        .eq("group_name", groupName);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { propertyId }) => {
+      queryClient.invalidateQueries({ queryKey: ["property-checklist", propertyId] });
+      toast({ title: "Sucesso", description: "Grupo excluído com sucesso." });
+    },
+    onError: (error) => {
+      toast({ title: "Erro", description: "Falha ao excluir grupo: " + error.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useAddChecklistStrategy() {
   const qc = useQueryClient();
   return useMutation({

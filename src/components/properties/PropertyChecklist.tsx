@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, MessageSquare, Loader2, CalendarIcon } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageSquare, Loader2, CalendarIcon, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   useUpdateChecklistNotes,
   useUpdateChecklistDate,
   useAddChecklistStrategy,
+  useDeleteChecklistGroup,
   type ChecklistItem,
 } from "@/hooks/usePropertyChecklist";
 import { STRATEGY_TEMPLATES } from "@/lib/checklist-templates";
@@ -42,6 +43,7 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
   const updateNotes = useUpdateChecklistNotes();
   const updateDate = useUpdateChecklistDate();
   const addStrategy = useAddChecklistStrategy();
+  const deleteGroup = useDeleteChecklistGroup();
   const { user } = useAuth();
 
   const grouped = useMemo(() => {
@@ -110,6 +112,7 @@ export default function PropertyChecklist({ propertyId, stage }: Props) {
           onToggleGroup={handleToggleGroup}
           onUpdateNotes={(id, notes) => updateNotes.mutate({ id, notes, propertyId })}
           onUpdateDate={(id, date) => updateDate.mutate({ id, completedAt: date, propertyId })}
+          onDeleteGroup={() => deleteGroup.mutate({ propertyId, groupName })}
         />
       ))}
 
@@ -143,6 +146,7 @@ function ChecklistGroup({
   onToggleGroup,
   onUpdateNotes,
   onUpdateDate,
+  onDeleteGroup,
 }: {
   groupName: string;
   items: ChecklistItem[];
@@ -152,6 +156,7 @@ function ChecklistGroup({
   onToggleGroup: (items: ChecklistItem[], allDone: boolean) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onUpdateDate: (id: string, date: string) => void;
+  onDeleteGroup: () => void;
 }) {
   const [open, setOpen] = useState(true);
   const done = items.filter(i => i.completed).length;
@@ -166,10 +171,27 @@ function ChecklistGroup({
           className="shrink-0"
         />
         <Collapsible open={open} onOpenChange={setOpen} className="flex-1">
-          <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors">
+          <CollapsibleTrigger className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors group/trigger">
             {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
             <span className="text-sm font-medium flex-1">{groupName}</span>
-            <span className="text-xs text-muted-foreground">{done}/{items.length}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{done}/{items.length}</span>
+              {groupName !== "Diagnóstico" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover/trigger:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Tem certeza que deseja excluir o grupo "${groupName}"?`)) {
+                      onDeleteGroup();
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           </CollapsibleTrigger>
           <CollapsibleContent className="pl-4 space-y-1 mt-1">
             {items.map(item => {

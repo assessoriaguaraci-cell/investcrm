@@ -67,17 +67,17 @@ export default function Properties() {
     }
   }, [user]);
 
-  // One-time cleanup for old "Execução" tasks
+  // One-time cleanup for old "Execução" and "Estratégia Definida" tasks
   useEffect(() => {
     const cleanupOldTasks = async () => {
       const { error } = await supabase
         .from("property_checklist_items")
         .delete()
-        .eq("group_name", "Execução")
+        .in("group_name", ["Execução", "Estratégia Definida"])
         .eq("stage", "desocupacao");
       
       if (!error) {
-        console.log("Old 'Execução' tasks cleaned up successfully.");
+        console.log("Old tasks cleaned up successfully.");
       }
     };
     cleanupOldTasks();
