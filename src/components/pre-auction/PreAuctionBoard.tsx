@@ -239,6 +239,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                     </DropdownMenu>
                 </div>
               </div>
+            </div>
 
               <Droppable droppableId={stage.value}>
                 {(provided, snapshot) => (
