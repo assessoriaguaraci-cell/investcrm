@@ -126,7 +126,8 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
             className="flex gap-4 overflow-x-auto pb-6 h-full min-h-[calc(100vh-200px)]"
           >
             {STAGES.map((stage, index) => {
-              const stageProperties = properties.filter((p) => p.stage === stage.value);
+              if (!stage || !stage.value) return null;
+              const stageProperties = properties.filter((p) => p && p.stage === stage.value);
               
               // Extracting the CSS variable name from the stageColor string
               let colorVar = stage.color.match(/var\(([^)]+)\)/)?.[1];

@@ -144,9 +144,12 @@ export default function Clients() {
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    stagesForPipeline.forEach(s => (map[s.value] = []));
+    if (!stagesForPipeline) return map;
+    stagesForPipeline.forEach(s => {
+      if (s && s.value) map[s.value] = [];
+    });
     filtered.forEach(c => {
-      if (map[c.stage]) map[c.stage]!.push(c);
+      if (c && c.stage && map[c.stage]) map[c.stage]!.push(c);
     });
     return map;
   }, [filtered, stagesForPipeline]);

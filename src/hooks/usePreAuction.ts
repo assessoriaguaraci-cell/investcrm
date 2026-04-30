@@ -127,7 +127,7 @@ async function handleArrematadoAutomation(property: PreAuctionProperty) {
       occupation_status: property.occupation_status,
       responsible_user_id: property.responsible_id,
       operation_responsible_id: property.operation_responsible_id,
-      stage: 'pos_arrematacao', // New stage name
+      stage: 'pre_arrematacao', // Corrected stage name
       photo_url: property.photo_url,
       area_total: property.area_total,
       area_useful: property.area_useful,
