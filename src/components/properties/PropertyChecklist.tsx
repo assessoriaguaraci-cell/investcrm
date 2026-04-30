@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChevronDown, ChevronRight, MessageSquare, Loader2, CalendarIcon, Trash2, Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   useChecklistForStage,
@@ -16,6 +17,7 @@ import {
   useUpdateChecklistDate,
   useAddChecklistStrategy,
   useDeleteChecklistGroup,
+  useCreateChecklistForStage,
   type ChecklistItem,
 } from "@/hooks/usePropertyChecklist";
 import { STRATEGY_TEMPLATES } from "@/lib/checklist-templates";
@@ -37,18 +39,37 @@ interface Props {
 }
 
 export default function PropertyChecklist({ propertyId, stage }: Props) {
-  const { data: items, isLoading } = useChecklistForStage(propertyId, stage);
+  const { data: items, isLoading, error } = useChecklistForStage(propertyId, stage);
   const toggleItem = useToggleChecklistItem();
   const updateNotes = useUpdateChecklistNotes();
   const updateDate = useUpdateChecklistDate();
   const addStrategy = useAddChecklistStrategy();
   const deleteGroup = useDeleteChecklistGroup();
   const { user } = useAuth();
+  const createChecklist = useCreateChecklistForStage();
+  
+  // If there are no items for this stage, attempt to create default checklist
+  useEffect(() => {
+    if (!isLoading && (!items || items.length === 0) && !error) {
+      createChecklist.mutate({ propertyId, stage });
+    }
+  }, [isLoading, items, error, propertyId, stage]);
+
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error("Error loading checklist:", error);
+    toast.error("Erro ao carregar checklist: " + (error.message || "Erro desconhecido"));
+    return (
+      <div className="p-4 text-center text-destructive">
+        Falha ao obter tarefas. Verifique a conexão ou tente novamente.
       </div>
     );
   }
