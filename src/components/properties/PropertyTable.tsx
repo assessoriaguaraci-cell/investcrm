@@ -207,9 +207,8 @@ export default function PropertyTable({ properties }: Props) {
         </DropdownMenu>
       </div>
 
-      <div className="rounded-xl border bg-card/30 backdrop-blur-sm shadow-xl overflow-hidden mx-4 mb-8">
-        <div className="overflow-x-auto">
-          <Table className="border-collapse">
+      <div className="flex-1 overflow-auto border rounded-xl bg-card/30 backdrop-blur-sm shadow-xl mx-4 mb-8">
+          <Table className="border-collapse min-w-full">
             <TableHeader className="sticky top-0 z-30 shadow-md">
               <TableRow className="hover:bg-transparent h-10 border-none">
                 {activeColumns.map(col => (
@@ -418,7 +417,6 @@ export default function PropertyTable({ properties }: Props) {
               )}
             </TableBody>
           </Table>
-        </div>
       </div>
 
       {selectedProperty && (

@@ -427,7 +427,7 @@ export default function Properties() {
       </div>
 
       {activeListView ? (
-        <div className="flex-1 overflow-auto mt-4">
+        <div className="flex-1 mt-4 min-h-0">
           <PropertyTable properties={listItems} />
         </div>
       ) : viewMode === "kanban" ? (
@@ -472,7 +472,7 @@ export default function Properties() {
           </Droppable>
         </DragDropContext>
       ) : (
-        <div className="flex-1 overflow-auto mt-4">
+        <div className="flex-1 mt-4 min-h-0">
           <PropertyTable properties={filtered} />
         </div>
       )}
