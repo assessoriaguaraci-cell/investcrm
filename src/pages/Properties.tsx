@@ -165,6 +165,7 @@ export default function Properties() {
       if (!matchesMultiSelect(p.priority, filters.priority)) return false;
       if (!matchesMultiSelect(p.occupation_status, filters.occupation_status)) return false;
       if (!matchesMultiSelect(p.responsible_user_id ?? "", filters.responsible_user_id)) return false;
+      if (!matchesMultiSelect(p.operation_responsible_id ?? "", filters.operation_responsible_id)) return false;
       
       const inv = totalInvestment(p);
       if (filters.price_min && inv < Number(filters.price_min)) return false;

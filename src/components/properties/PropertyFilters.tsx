@@ -24,6 +24,7 @@ export interface PropertyFilterValues {
   price_min: string;
   price_max: string;
   responsible_user_id: string[];
+  operation_responsible_id: string[];
   auction_date_start: string;
   auction_date_end: string;
   neighborhood: string;
@@ -42,6 +43,7 @@ export const EMPTY_FILTERS: PropertyFilterValues = {
   price_min: "",
   price_max: "",
   responsible_user_id: [],
+  operation_responsible_id: [],
   auction_date_start: "",
   auction_date_end: "",
   neighborhood: "",
@@ -200,12 +202,23 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável Geral</label>
             <MultiSelectFilter
-              label="Responsável"
+              label="Responsável Geral"
               options={memberOptions}
               selected={filters.responsible_user_id}
               onSelectionChange={v => update("responsible_user_id", v)}
+              placeholder="Todos"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Responsável da Operação</label>
+            <MultiSelectFilter
+              label="Responsável da Operação"
+              options={memberOptions}
+              selected={filters.operation_responsible_id}
+              onSelectionChange={v => update("operation_responsible_id", v)}
               placeholder="Todos"
             />
           </div>
