@@ -20,9 +20,13 @@ export function usePropertyChecklist(propertyId: string | undefined) {
         .order("sort_order", { ascending: true });
       if (error) throw error;
       
-      // Filter out obsolete groups that should no longer exist
+      // Filter out obsolete groups or tasks that should no longer exist
       const filteredData = (data as ChecklistItem[] || []).filter(
-        item => !["Estratégia Definida", "Execução"].includes(item.group_name || "")
+        item => {
+          if (["Estratégia Definida", "Execução"].includes(item.group_name || "")) return false;
+          if (["Histórico de pagamento conhecido", "Risco jurídico avaliado"].includes(item.task_name || "")) return false;
+          return true;
+        }
       );
       
       return filteredData;
