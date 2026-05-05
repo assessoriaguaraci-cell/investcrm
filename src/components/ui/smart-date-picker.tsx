@@ -72,25 +72,25 @@ export function SmartDatePicker({
   };
 
   return (
-    <div className={cn("flex gap-1", className)}>
+    <div className={cn("flex gap-1 items-center", className)} onClick={(e) => e.stopPropagation()}>
       <Input
         value={inputValue}
         onChange={handleInputChange}
         placeholder={placeholder}
-        className="flex-1"
+        className="flex-1 h-full px-1 text-inherit bg-transparent border-none focus-visible:ring-0"
         maxLength={10}
       />
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
-            className="w-10 p-0 shrink-0"
+            variant="ghost"
+            className="w-6 h-6 p-0 shrink-0 hover:bg-primary/10"
             type="button"
           >
-            <CalendarIcon className="h-4 w-4 opacity-50" />
+            <CalendarIcon className="h-3 w-3 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className="w-auto p-0" align="end" onClick={(e) => e.stopPropagation()}>
           <Calendar
             mode="single"
             selected={value ? new Date(value + "T12:00:00") : undefined}

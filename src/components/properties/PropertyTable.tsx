@@ -568,12 +568,118 @@ export default function PropertyTable({ properties }: Props) {
                               </Select>
                             );
                             break;
+                          case "zip_code":
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-20 px-1"
+                                defaultValue={p.zip_code || ""}
+                                onClick={(e) => e.stopPropagation()}
+                                onBlur={(e) => {
+                                  if (e.target.value !== p.zip_code) handleUpdate(id, "zip_code", e.target.value);
+                                }}
+                              />
+                            );
+                            break;
+                          case "area_useful":
+                            content = (
+                              <div className="flex items-center gap-1">
+                                <Input 
+                                  type="number"
+                                  className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-16 px-1"
+                                  defaultValue={p.area_useful || ""}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onBlur={(e) => {
+                                    if (Number(e.target.value) !== p.area_useful) handleUpdate(id, "area_useful", Number(e.target.value));
+                                  }}
+                                />
+                                <span className="text-[8px] opacity-30">m²</span>
+                              </div>
+                            );
+                            break;
+                          case "condo_value":
+                            content = (
+                              <CurrencyInput 
+                                className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
+                                value={p.condo_value || 0}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(val) => {
+                                  if (val !== p.condo_value) handleUpdate(id, "condo_value", val);
+                                }}
+                              />
+                            );
+                            break;
+                          case "documentation_cost":
+                          case "itbi_cost":
+                          case "registration_cost":
+                          case "eviction_cost":
+                          case "renovation_cost":
+                            content = (
+                              <CurrencyInput 
+                                className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
+                                value={(p as any)[col.id] || 0}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(val) => {
+                                  if (val !== (p as any)[col.id]) handleUpdate(id, col.id, val);
+                                }}
+                              />
+                            );
+                            break;
+                          case "possession_date":
+                          case "renovation_start":
+                          case "renovation_end":
+                          case "appraisal_date":
+                          case "appraisal_expiry":
+                            content = (
+                              <div className="w-28">
+                                <SmartDatePicker 
+                                  value={(p as any)[col.id] || ""} 
+                                  onChange={(val) => handleUpdate(id, col.id, val)}
+                                  className="h-7 text-[9px] p-0 border-none bg-transparent hover:bg-muted/50"
+                                />
+                              </div>
+                            );
+                            break;
+                          case "appraisal_status":
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 px-1 uppercase"
+                                defaultValue={(p as any).appraisal_status || ""}
+                                onClick={(e) => e.stopPropagation()}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (p as any).appraisal_status) handleUpdate(id, "appraisal_status", e.target.value.toUpperCase());
+                                }}
+                              />
+                            );
+                            break;
+                          case "auction_type":
+                          case "sale_type":
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 px-1 uppercase"
+                                defaultValue={(p as any)[col.id] || ""}
+                                onClick={(e) => e.stopPropagation()}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (p as any)[col.id]) handleUpdate(id, col.id, e.target.value.toUpperCase());
+                                }}
+                              />
+                            );
+                            break;
                           case "total_investment":
                             content = <span className="font-mono font-black text-foreground underline decoration-primary/30 decoration-2 underline-offset-2 px-1">{formatCurrency(inv)}</span>;
                             break;
                           // Default for other fields
                           default:
-                             content = <span className="px-1 opacity-50">#</span>;
+                            const val = (p as any)[col.id];
+                            content = typeof val === 'string' || typeof val === 'number' ? (
+                                <Input 
+                                  className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[80px] px-1"
+                                  defaultValue={val || ""}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onBlur={(e) => {
+                                    if (e.target.value !== String(val)) handleUpdate(id, col.id, e.target.value);
+                                  }}
+                                />
+                            ) : <span className="px-1 opacity-50">#</span>;
                         }
 
                         return (
