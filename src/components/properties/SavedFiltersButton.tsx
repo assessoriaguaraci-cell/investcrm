@@ -120,7 +120,20 @@ export default function SavedFiltersButton({ currentFilters, onLoadFilter }: Pro
                 variant="outline"
                 size="sm"
                 className="gap-1 text-xs h-7"
-                onClick={() => onLoadFilter(s.filters)}
+                onClick={() => {
+                  const sanitized = { ...EMPTY_FILTERS, ...s.filters };
+                  // Ensure array fields are actually arrays (for old saved filters)
+                  const arrayFields: (keyof PropertyFilterValues)[] = [
+                    "stage", "property_type", "state", "city", "priority", 
+                    "occupation_status", "responsible_user_id", "operation_responsible_id"
+                  ];
+                  arrayFields.forEach(field => {
+                    if (!Array.isArray(sanitized[field])) {
+                      sanitized[field] = sanitized[field] ? [sanitized[field] as any] : [];
+                    }
+                  });
+                  onLoadFilter(sanitized);
+                }}
               >
                 <Bookmark className="h-3 w-3" />
                 {s.name}
