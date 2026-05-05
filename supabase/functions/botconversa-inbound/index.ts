@@ -88,7 +88,7 @@ serve(async (req) => {
     ]) || ""
     
     // Tenta capturar mensagem/código
-    rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo', 'last_text']) || ""
+    rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo', 'last_text', 'mensagem']) || ""
     searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku']) || ""
 
     // Se não veio código, tenta extrair da mensagem (IL-0000-0000 ou apenas os números finais)
