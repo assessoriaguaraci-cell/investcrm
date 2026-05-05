@@ -11,135 +11,129 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
+  // DEBUG: Se for GET, retorna os últimos logs de auditoria
+  if (req.method === 'GET') {
+    const { data: logs } = await supabaseClient
+      .from('audit_logs')
+      .select('*')
+      .eq('entity_type', 'botconversa_webhook')
+      .order('created_at', { ascending: false })
+      .limit(5)
+    
+    return new Response(JSON.stringify(logs), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    })
+  }
+
+  if (req.method === 'GET') {
+    const { data: logs } = await supabaseClient
+      .from('audit_logs')
+      .select('*')
+      .eq('entity_type', 'botconversa_webhook')
+      .order('created_at', { ascending: false })
+      .limit(10)
+    
+    return new Response(JSON.stringify(logs), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    })
+  }
+
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    console.log("--- WEBHOOK BOTCONVERSA INICIADO ---")
     const data = await req.json()
+    console.log("DADOS RECEBIDOS:", JSON.stringify(data))
 
-    // 1. Extração robusta de dados
-    const leadName = data.full_name || data.name || data.first_name || data.Nome_do_Cliente || data.contact_name || "Lead WhatsApp"
-    const leadPhone = data.phone || data.telefone || data.wa_id || data.contact_phone || data.subscriber_id || ""
-    const searchCode = (data.property_code || data.imovel || data.property || data.codigo_imovel || "")
-      .toString()
-      .trim()
-      .replace("@", "")
-      .replace("{", "")
-      .replace("}", "")
-    
-    console.log(`Corpo Recebido:`, JSON.stringify(data))
-    console.log(`Extraído: Nome: ${leadName}, Fone: ${leadPhone}, Imóvel: ${searchCode}`)
+    // Log de Auditoria
+    await supabaseClient.from('audit_logs').insert({
+      entity_type: 'botconversa_webhook',
+      entity_id: '00000000-0000-0000-0000-000000000000',
+      action: 'receive_webhook',
+      changes: data
+    })
 
-    const cleanPhone = leadPhone ? String(leadPhone).replace(/\D/g, '') : null
-    const clientName = leadName && leadName !== "@nome_do_contato" ? leadName : "Lead WhatsApp"
+    // 1. BUSCA EXAUSTIVA (Deep Scan)
+    // Procuramos em qualquer campo que contenha palavras-chave
+    let leadName = "Lead WhatsApp"
+    let leadPhone = ""
+    let rawMessage = ""
+    let searchCode = ""
 
-    // 2. Busca DETALHADA do imóvel (Lógica de Detetive)
-    let propertyId = null;
-    let propertyInfo = "";
-    
-    if (searchCode) {
-      console.log(`Buscando imóvel com código: "${searchCode}"`)
-      
-      // Tentativa 1: Busca Exata
-      let { data: propExact } = await supabaseClient
-        .from('properties')
-        .select('id, address, code')
-        .eq('code', searchCode)
-        .maybeSingle()
-
-      if (propExact) {
-        propertyId = propExact.id
-        propertyInfo = propExact.address || propExact.code
-        console.log("Encontrado por Busca Exata!")
-      } else {
-        // Tentativa 2: Busca por FINAL do código (LIKE %code)
-        console.log("Não achou por exato. Tentando final do código...")
-        let { data: propFuzzy } = await supabaseClient
-          .from('properties')
-          .select('id, address, code')
-          .ilike('code', `%${searchCode}`)
-          .maybeSingle()
-        
-        if (propFuzzy) {
-          propertyId = propFuzzy.id
-          propertyInfo = propFuzzy.address || propFuzzy.code
-          console.log("Encontrado por Final do Código!")
-        } else {
-          // Tentativa 3: Busca CONTÉM (LIKE %code%)
-          console.log("Não achou por final. Tentando busca global...")
-          let { data: propGlobal } = await supabaseClient
-            .from('properties')
-            .select('id, address, code')
-            .ilike('code', `%${searchCode}%`)
-            .maybeSingle()
-          
-          if (propGlobal) {
-            propertyId = propGlobal.id
-            propertyInfo = propGlobal.address || propGlobal.code
-            console.log("Encontrado por Busca Global!")
-          }
-        }
+    const findValue = (keys: string[]) => {
+      for (const k of keys) {
+        if (data[k]) return data[k]
       }
+      return null
     }
 
-    // 3. Criar o Cliente no CRM
+    // Tenta capturar nome de várias formas
+    leadName = findValue(['full_name', 'contact_name', 'nome', 'first_name', 'name', 'Nome_do_Cliente']) || leadName
+    if (data.first_name && data.last_name) leadName = `${data.first_name} ${data.last_name}`
+
+    // Tenta capturar telefone
+    leadPhone = findValue(['phone', 'telefone', 'id', 'wa_id', 'contact_phone', 'fone', 'subscriber_id']) || ""
+    
+    // Tenta capturar mensagem/código
+    rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo']) || ""
+    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel']) || ""
+
+    // Se não veio código, tenta extrair da mensagem
+    if (!searchCode && rawMessage) {
+      const codeMatch = String(rawMessage).match(/IL-\d{4}-\d{4}/i) || String(rawMessage).match(/\d{4}$/)
+      if (codeMatch) searchCode = codeMatch[0]
+    }
+
+    const cleanPhone = leadPhone ? String(leadPhone).replace(/\D/g, '') : null
+    const finalName = (leadName && leadName !== "@contact_name" && leadName !== "Lead WhatsApp") 
+                      ? leadName 
+                      : (cleanPhone || "Lead WhatsApp")
+
+    // 2. Criar Cliente
     const { data: client, error: clientError } = await supabaseClient
       .from('clients')
       .insert({
-        full_name: clientName,
+        full_name: finalName,
         phone: cleanPhone,
         whatsapp: cleanPhone,
         pipeline: 'inicial',
         stage: 'chegada_lead',
         temperature: 'morno',
-        notes: searchCode ? `Interesse no imóvel: ${propertyInfo || searchCode}` : 'Vindo do Botconversa'
+        notes: `BotConversa: ${rawMessage}\nImóvel Ref: ${searchCode}`
       })
       .select('id')
       .single()
 
-    if (clientError) {
-      console.error("Erro ao criar cliente:", clientError)
-      throw clientError
-    }
+    if (clientError) throw clientError
 
-    // 4. Vincular Leads ao Imóvel
-    if (client && propertyId) {
-      const { error: linkError } = await supabaseClient
-        .from('client_property_links')
-        .insert({
+    // 3. Vincular Imóvel (se houver código)
+    if (client && searchCode) {
+      const { data: prop } = await supabaseClient
+        .from('properties')
+        .ilike('code', `%${searchCode}%`)
+        .maybeSingle()
+
+      if (prop) {
+        await supabaseClient.from('client_property_links').insert({
           client_id: client.id,
-          property_id: propertyId,
+          property_id: prop.id,
           status: 'interessado'
         })
-      
-      if (linkError) console.error("Erro no vínculo:", linkError)
-      else console.log(`Sucesso! Lead vinculado ao imóvel ${propertyId}`)
+      }
     }
 
-    console.log(`Lead salvo com sucesso em: Pipeline: inicial, Stage: chegada_lead`)
+    return new Response(JSON.stringify({ success: true, id: client?.id }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
+    })
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        client_id: client?.id, 
-        property_linked: !!propertyId, 
-        found_property: propertyId ? propertyInfo : "NÃO ENCONTRADO",
-        saved_location: {
-          pipeline: "inicial",
-          stage: "chegada_lead"
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    )
-
-  } catch (error) {
-    console.error("Erro Geral:", error.message)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    )
+  } catch (err) {
+    console.error("ERRO WEBHOOK:", err.message)
+    return new Response(JSON.stringify({ error: err.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400
+    })
   }
 })

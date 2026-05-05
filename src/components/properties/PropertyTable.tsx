@@ -1,21 +1,80 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, AlertTriangle, User, Calendar, Clock, Receipt, Home, FileText, Image as ImageIcon, Link2, Megaphone, CheckCircle2, XCircle, FolderOpen } from "lucide-react";
-import { formatCurrency, totalInvestment, PROPERTY_STAGES, PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS } from "@/lib/property-constants";
+import { 
+  MapPin, AlertTriangle, User, Calendar, Clock, Receipt, Home, 
+  FileText, Image as ImageIcon, Link2, Megaphone, CheckCircle2, 
+  XCircle, FolderOpen, Settings2, ChevronDown, Check, Columns,
+  DollarSign, TrendingUp, Info, Briefcase, Key, Hammer
+} from "lucide-react";
+import { 
+  formatCurrency, totalInvestment, PROPERTY_STAGES, PROPERTY_TYPES, 
+  OCCUPATION_STATUSES, PRIORITY_LEVELS 
+} from "@/lib/property-constants";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import { format, differenceInDays } from "date-fns";
 import EditPropertyDialog from "./EditPropertyDialog";
 import type { Property } from "@/hooks/useProperties";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface Props {
   properties: Property[];
 }
 
+const COLUMN_CATEGORIES = {
+  identification: { label: "Identificação", icon: Info },
+  location: { label: "Localização", icon: MapPin },
+  status: { label: "Status & Prioridade", icon: AlertTriangle },
+  areas: { label: "Áreas & Divisão", icon: Home },
+  financial: { label: "Financeiro", icon: DollarSign },
+  auction: { label: "Leilão", icon: Calendar },
+  possession: { label: "Ocupação & Posse", icon: Key },
+  renovation: { label: "Reforma", icon: Hammer },
+  marketing: { label: "Marketing", icon: Megaphone },
+  management: { label: "Gestão", icon: Briefcase },
+  appraisal: { label: "Avaliação", icon: TrendingUp },
+};
+
 export default function PropertyTable({ properties }: Props) {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const { data: members } = useApprovedMembers();
+
+  // Columns visibility state
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem("property-table-columns");
+    if (saved) return JSON.parse(saved);
+    // Default columns
+    return {
+      photo: true,
+      code: true,
+      stage: true,
+      city: true,
+      property_type: true,
+      purchase_price: true,
+      auction_date: true,
+      priority: true,
+      responsible: true
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem("property-table-columns", JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
 
   const getStage = (val: string) => PROPERTY_STAGES.find(s => s.value === val);
   const getType = (val: string) => PROPERTY_TYPES.find(t => t.value === val);
@@ -23,33 +82,150 @@ export default function PropertyTable({ properties }: Props) {
   const getPrio = (val: string) => PRIORITY_LEVELS.find(p => p.value === val);
   const getResp = (id: string | null) => id ? members?.find(m => m.user_id === id)?.full_name : null;
 
+  const allColumns = useMemo(() => [
+    { id: "photo", label: "Foto", category: "identification" },
+    { id: "code", label: "Código", category: "identification" },
+    { id: "registration_number", label: "Matrícula", category: "identification" },
+    { id: "owner", label: "Proprietário", category: "identification" },
+    { id: "origin", label: "Origem", category: "identification" },
+    
+    { id: "address", label: "Endereço", category: "location" },
+    { id: "city", label: "Cidade/UF", category: "location" },
+    { id: "neighborhood", label: "Bairro", category: "location" },
+    { id: "zip_code", label: "CEP", category: "location" },
+    { id: "landmark", label: "Ponto de Ref.", category: "location" },
+    
+    { id: "stage", label: "Etapa Atual", category: "status" },
+    { id: "priority", label: "Prioridade", category: "status" },
+    
+    { id: "property_type", label: "Tipo", category: "areas" },
+    { id: "area_total", label: "Área Total", category: "areas" },
+    { id: "area_useful", label: "Área Útil", category: "areas" },
+    { id: "property_division", label: "Divisão", category: "areas" },
+    { id: "has_condo", label: "Condomínio?", category: "areas" },
+    { id: "condo_value", label: "Valor Cond.", category: "areas" },
+    
+    { id: "purchase_price", label: "Valor Compra", category: "financial" },
+    { id: "documentation_cost", label: "Custos Doc.", category: "financial" },
+    { id: "itbi_cost", label: "ITBI", category: "financial" },
+    { id: "registration_cost", label: "Registro", category: "financial" },
+    { id: "eviction_cost", label: "Desocupação $", category: "financial" },
+    { id: "renovation_cost", label: "Reforma $", category: "financial" },
+    { id: "listed_price", label: "Vlr. Laudo/Lista", category: "financial" },
+    { id: "sale_price", label: "Preço de Venda", category: "financial" },
+    { id: "cash_sale_discount", label: "Desc. à Vista", category: "financial" },
+    { id: "final_sale_price", label: "Vlr. Venda Final", category: "financial" },
+    { id: "total_investment", label: "Invest. Total", category: "financial" },
+    
+    { id: "auction_date", label: "Data Leilão", category: "auction" },
+    { id: "auction_type", label: "Transação", category: "auction" },
+    { id: "sale_type", label: "Usado/Novo", category: "auction" },
+    
+    { id: "occupation_status", label: "Status Posse", category: "possession" },
+    { id: "possession_date", label: "Data Posse", category: "possession" },
+    
+    { id: "renovation_start", label: "Início Reforma", category: "renovation" },
+    { id: "renovation_end", label: "Fim Reforma", category: "renovation" },
+    
+    { id: "marketing_smartlink", label: "Smartlink", category: "marketing" },
+    { id: "marketing_paid_traffic", label: "Tráfego Pago", category: "marketing" },
+    { id: "marketing_board", label: "Placa", category: "marketing" },
+    { id: "marketing_banner", label: "Faixa", category: "marketing" },
+    { id: "has_broker", label: "Corretor?", category: "marketing" },
+    
+    { id: "responsible", label: "Resp. Geral", category: "management" },
+    { id: "op_responsible", label: "Resp. Operação", category: "management" },
+    { id: "caretaker_payment_date", label: "Pag. Cuidador", category: "management" },
+    
+    { id: "appraisal_status", label: "Status Laudo", category: "appraisal" },
+    { id: "appraisal_date", label: "Data Laudo", category: "appraisal" },
+    { id: "appraisal_expiry", label: "Venc. Laudo", category: "appraisal" },
+  ], []);
+
+  const activeColumns = allColumns.filter(c => visibleColumns[c.id]);
+
+  const toggleColumn = (id: string) => {
+    setVisibleColumns(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleAllInCategory = (category: string, value: boolean) => {
+    const cols = allColumns.filter(c => c.category === category);
+    const newVisible = { ...visibleColumns };
+    cols.forEach(c => newVisible[c.id] = value);
+    setVisibleColumns(newVisible);
+  };
+
   return (
-    <>
-      <div className="rounded-xl border bg-card/30 backdrop-blur-sm shadow-xl overflow-hidden">
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end px-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="bg-card/50 backdrop-blur-md border-white/10 gap-2 shadow-lg">
+              <Columns className="h-4 w-4" />
+              Colunas
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[300px] bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl p-0">
+            <DropdownMenuLabel className="flex items-center gap-2 p-4 pb-2">
+              <Settings2 className="h-4 w-4 text-primary" />
+              Configurar Colunas
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="opacity-10" />
+            <ScrollArea className="h-[450px] p-2">
+              {Object.entries(COLUMN_CATEGORIES).map(([key, cat]) => (
+                <div key={key} className="mb-2 last:mb-0">
+                  <div className="flex items-center justify-between px-2 py-1 mb-1">
+                    <div className="flex items-center gap-2">
+                       <cat.icon className="h-3 w-3 text-muted-foreground" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{cat.label}</span>
+                    </div>
+                    <div className="flex gap-1">
+                       <button onClick={() => toggleAllInCategory(key, true)} className="text-[9px] font-bold text-primary hover:underline">Ver tudo</button>
+                       <span className="text-[9px] opacity-20">|</span>
+                       <button onClick={() => toggleAllInCategory(key, false)} className="text-[9px] font-bold text-muted-foreground hover:underline">Ocultar</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-0.5">
+                    {allColumns.filter(c => c.category === key).map(col => (
+                      <DropdownMenuCheckboxItem
+                        key={col.id}
+                        checked={visibleColumns[col.id]}
+                        onCheckedChange={() => toggleColumn(col.id)}
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-[11px] h-8"
+                      >
+                        {col.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </div>
+                  <DropdownMenuSeparator className="mt-2 opacity-5" />
+                </div>
+              ))}
+            </ScrollArea>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="rounded-xl border bg-card/30 backdrop-blur-sm shadow-xl overflow-hidden mx-4 mb-8">
         <div className="overflow-x-auto">
-          <Table className="min-w-[1400px]">
-            <TableHeader className="bg-muted/50 border-b border-white/5">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[80px] font-bold text-[10px] uppercase tracking-wider text-center">Foto</TableHead>
-                <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-wider">Identificação</TableHead>
-                <TableHead className="w-[150px] font-bold text-[10px] uppercase tracking-wider">Etapa / Ocupação</TableHead>
-                <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-wider">Localização & Tipo</TableHead>
-                <TableHead className="w-[200px] font-bold text-[10px] uppercase tracking-wider">Áreas & Divisão</TableHead>
-                <TableHead className="w-[100px] font-bold text-[10px] uppercase tracking-wider">Prioridade</TableHead>
-                <TableHead className="w-[180px] font-bold text-[10px] uppercase tracking-wider">Gestão</TableHead>
-                <TableHead className="w-[140px] font-bold text-[10px] uppercase tracking-wider text-right">Financeiro</TableHead>
-                <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-wider text-center">Marketing</TableHead>
-                <TableHead className="w-[120px] font-bold text-[10px] uppercase tracking-wider text-right">Leilão</TableHead>
+          <Table className="border-collapse">
+            <TableHeader className="bg-muted/50 border-b border-white/10 sticky top-0 z-10 shadow-sm">
+              <TableRow className="hover:bg-transparent h-10">
+                {activeColumns.map(col => (
+                  <TableHead key={col.id} className="font-bold text-[9px] uppercase tracking-wider px-3 border-r border-white/5 last:border-0 whitespace-nowrap text-muted-foreground bg-muted/80 backdrop-blur-sm">
+                    {col.label}
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {properties.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-20">
+                  <TableCell colSpan={activeColumns.length} className="text-center text-muted-foreground py-20">
                     <div className="flex flex-col items-center gap-2 opacity-50">
                       <Home className="h-10 w-10 text-primary/20" />
                       <p className="font-medium text-sm">Nenhum imóvel encontrado.</p>
-                      <p className="text-xs">Tente ajustar seus filtros para ver resultados.</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -59,225 +235,183 @@ export default function PropertyTable({ properties }: Props) {
                   const inv = totalInvestment(p);
                   const resp = getResp(p.responsible_user_id);
                   const respOp = getResp((p as any).operation_responsible_id);
-                  const lifeDays = p.auction_date ? differenceInDays(new Date(), new Date(p.auction_date)) : null;
                   const occ = getOcc(p.occupation_status);
                   const prio = getPrio(p.priority);
-                  const registration = (p as any).registration_number;
-                  const owner = (p as any).owner;
-                  const photoUrl = (p as any).photo_url;
-                  const division = (p as any).property_division;
-                  const address = p.address;
-                  const mapsUrl = p.maps_url;
-                  const driveUrl = (p as any).drive_url;
-                  const appraisalExpiry = (p as any).appraisal_expiry;
-                  const daysUntilExpiry = appraisalExpiry ? differenceInDays(new Date(appraisalExpiry + "T12:00:00"), new Date()) : null;
 
                   return (
                     <TableRow
                       key={p.id}
-                      className="group cursor-pointer hover:bg-primary/[0.03] transition-all duration-200 border-b border-white/5 h-28"
+                      className="group cursor-pointer hover:bg-primary/[0.03] transition-all duration-200 border-b border-white/5 h-12"
                       onClick={() => setSelectedProperty(p)}
                     >
-                      {/* Foto */}
-                      <TableCell>
-                        <div className="flex justify-center">
-                          {photoUrl ? (
-                            <img src={photoUrl} alt="Prop" className="h-16 w-16 rounded-lg object-cover border border-white/10 shadow-lg group-hover:scale-105 transition-transform" />
-                          ) : (
-                            <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center border border-white/5">
-                              <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      {/* Identificação */}
-                      <TableCell>
-                        <div className="flex flex-col gap-1.5">
-                          <span className="font-mono font-black text-primary px-2 py-0.5 bg-primary/10 rounded border border-primary/20 text-[11px] w-fit shadow-sm">
-                            {p.code}
-                          </span>
-                          {registration && (
-                            <div className="flex items-center gap-1 text-[9px] text-muted-foreground font-bold tracking-tight px-1 uppercase italic">
-                              <FileText className="h-2.5 w-2.5 opacity-40" />
-                              <span className="truncate max-w-[100px]">{registration}</span>
-                            </div>
-                          )}
-                          <div className="flex gap-1.5 mt-1">
-                            {mapsUrl && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" 
-                                      onClick={(e) => { e.stopPropagation(); window.open(mapsUrl, '_blank'); }}>
-                                <MapPin className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {driveUrl && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
-                                      onClick={(e) => { e.stopPropagation(); window.open(driveUrl, '_blank'); }}>
-                                <FolderOpen className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      
-                      {/* Etapa / Ocupação */}
-                      <TableCell>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2.5 w-2.5 rounded-full border border-white/20 shadow-sm ${stage?.color || "bg-slate-400"}`} />
-                            <span className="text-[11px] font-black uppercase tracking-tight text-foreground/90 leading-none">{stage?.label}</span>
-                          </div>
-                          <div className={`flex items-center gap-1.5 text-[9px] w-fit px-2 py-0.5 rounded border shadow-inner font-black uppercase tracking-tighter ${
-                            p.occupation_status === "desocupado" 
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
-                              : (p.occupation_status === "venda_para_ocupante" || p.occupation_status === "imissao_na_posse")
-                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                : "bg-destructive/10 text-destructive border-destructive/20"
-                          }`}>
-                            <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-                            {occ?.label}
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Localização & Tipo */}
-                      <TableCell>
-                        <div className="flex flex-col gap-1 max-w-[220px]">
-                          <div className="flex items-center gap-1 group-hover:text-primary transition-colors">
-                            <MapPin className="h-3 w-3 text-primary/40 shrink-0" />
-                            <span className="text-[11px] font-extrabold leading-tight">
-                              {[p.city, p.state].filter(Boolean).join("/") || "—"}
-                            </span>
-                          </div>
-                          {address && (
-                            <div className="text-[9px] text-foreground/70 font-bold leading-tight line-clamp-2 pl-4">
-                              {address}
-                            </div>
-                          )}
-                          <div className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight pl-4 italic truncate">
-                             {p.neighborhood || "—"}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[9px] text-primary/60 font-black pl-4 uppercase tracking-[0.05em]">
-                            <Home className="h-2.5 w-2.5 opacity-40" />
-                            {getType(p.property_type)?.label}
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Áreas & Divisão */}
-                      <TableCell>
-                        <div className="flex flex-col gap-1.5">
-                          <div className="grid grid-cols-2 gap-2 text-[10px]">
-                             <div className="bg-muted px-1.5 py-0.5 rounded font-black text-muted-foreground uppercase tracking-widest text-[8px] flex items-center justify-center border border-white/5">
-                                Total: {p.area_total || 0}m²
-                             </div>
-                             <div className="bg-primary/5 px-1.5 py-0.5 rounded font-black text-primary uppercase tracking-widest text-[8px] flex items-center justify-center border border-primary/10">
-                                Útil: {p.area_useful || 0}m²
-                             </div>
-                          </div>
-                          <div className="text-[9px] text-muted-foreground/80 font-bold italic line-clamp-2 border-l-2 border-primary/20 pl-2">
-                             {division || "Divisão não informada"}
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Prioridade */}
-                      <TableCell>
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border shadow-sm w-fit uppercase font-black tracking-tighter text-[9px] ${
-                          p.priority === 'alta' ? 'bg-destructive/10 text-destructive border-destructive/20' : 
-                          p.priority === 'media' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20' : 
-                          'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                        }`}>
-                          <div className={`rounded-full h-1.5 w-1.5 ${
-                            p.priority === 'alta' ? 'bg-destructive animate-pulse' : 
-                            p.priority === 'media' ? 'bg-orange-500' : 
-                            'bg-emerald-500'
-                          }`} />
-                          {prio?.label}
-                        </div>
-                      </TableCell>
-
-                      {/* Gestão */}
-                      <TableCell>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex flex-col gap-1 bg-muted/30 p-1.5 rounded-lg border border-white/5">
-                             <div className="flex items-center gap-1.5">
-                                <User className="h-3 w-3 text-primary/60 shrink-0" />
-                                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Geral:</span>
-                                <span className="text-[9px] font-bold truncate text-foreground uppercase">{resp || "—"}</span>
-                             </div>
-                             <div className="flex items-center gap-1.5">
-                                <CheckCircle2 className="h-3 w-3 text-emerald-500/60 shrink-0" />
-                                <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Oper.:</span>
-                                <span className="text-[9px] font-bold truncate text-foreground uppercase">{respOp || "—"}</span>
-                             </div>
-                          </div>
-                          {owner && (
-                            <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/60 font-black italic border-l border-primary/20 pl-2 leading-none max-w-[140px]">
-                              <span className="truncate">{owner}</span>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      {/* Financeiro */}
-                      <TableCell className="text-right">
-                        <div className="flex flex-col items-end gap-1.5">
-                          <div className="bg-primary/5 px-2 py-1 rounded border border-primary/10 shadow-inner">
-                            <span className="text-[8px] font-black text-muted-foreground/60 block uppercase leading-none mb-0.5 tracking-tighter">Total Invest.</span>
-                            <span className="text-[12px] font-mono font-black text-foreground">{formatCurrency(inv)}</span>
-                          </div>
-                          {p.listed_price ? (
-                            <div className="px-2 border-r-2 border-emerald-500/30">
-                              <span className="text-[7px] font-black text-emerald-600/60 block uppercase leading-none tracking-tighter">Laudo</span>
-                              <span className="text-[11px] font-mono font-black text-emerald-600 italic tracking-tighter">{formatCurrency(p.listed_price)}</span>
-                            </div>
-                          ) : null}
-                          {appraisalExpiry && (
-                            <div className={`mt-1 flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
-                              daysUntilExpiry! <= 7 ? "bg-destructive text-white" : daysUntilExpiry! <= 30 ? "bg-orange-500 text-white" : "bg-muted text-muted-foreground"
-                            }`}>
-                              <Clock className="h-2.5 w-2.5" />
-                              Expira: {format(new Date(appraisalExpiry + "T12:00:00"), "dd/MM/yy")}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      {/* Marketing */}
-                      <TableCell>
-                        <div className="flex justify-center flex-wrap gap-1 max-w-[100px] mx-auto">
-                           {(p as any).marketing_smartlink && <Badge variant="outline" className="text-[8px] h-4 px-1 bg-blue-500/10 border-blue-500/20 text-blue-500 font-black" title="Smartlink">SL</Badge>}
-                           {(p as any).marketing_paid_traffic && <Badge variant="outline" className="text-[8px] h-4 px-1 bg-purple-500/10 border-purple-500/20 text-purple-500 font-black" title="Tráfego Pago">AD</Badge>}
-                           {(p as any).marketing_board && <Badge variant="outline" className="text-[8px] h-4 px-1 bg-amber-500/10 border-amber-500/20 text-amber-500 font-black" title="Placa">PC</Badge>}
-                           {(p as any).marketing_banner && <Badge variant="outline" className="text-[8px] h-4 px-1 bg-pink-500/10 border-pink-500/20 text-pink-500 font-black" title="Faixa">FX</Badge>}
-                           {(p as any).has_broker && <Badge variant="outline" className="text-[8px] h-4 px-1 bg-emerald-500/10 border-emerald-500/20 text-emerald-500 font-black" title="Corretor Parceiro">CRT</Badge>}
-                        </div>
-                      </TableCell>
-
-                      {/* Leilão */}
-                      <TableCell className="text-right">
-                        {p.auction_date ? (
-                          <div className="flex flex-col items-end gap-1.5">
-                            <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-foreground/80 bg-slate-500/5 px-2 py-1 rounded border border-slate-500/10">
-                              <Calendar className="h-3 w-3 text-slate-500/40 shrink-0" />
-                              {(() => {
-                                try {
-                                  return format(new Date(p.auction_date + "T12:00:00"), "dd/MM/yyyy");
-                                } catch {
-                                  return p.auction_date;
-                                }
-                              })()}
-                            </div>
-                            {lifeDays !== null && (
-                              <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground pr-2 uppercase tracking-tighter">
-                                <Clock className="h-2.5 w-2.5 opacity-40 shrink-0" />
-                                {lifeDays} dias
+                      {activeColumns.map(col => {
+                        let content: React.ReactNode = "—";
+                        
+                        switch(col.id) {
+                          case "photo":
+                            content = (p as any).photo_url ? (
+                              <img src={(p as any).photo_url} className="h-8 w-8 rounded object-cover border border-white/10 shadow-sm" />
+                            ) : <ImageIcon className="h-5 w-5 opacity-10" />;
+                            break;
+                          case "code":
+                            content = <span className="font-mono font-black text-primary text-[10px] bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">{p.code}</span>;
+                            break;
+                          case "registration_number":
+                            content = <span className="text-foreground/80 font-bold">{(p as any).registration_number}</span>;
+                            break;
+                          case "owner":
+                            content = (p as any).owner;
+                            break;
+                          case "origin":
+                            content = <span className="uppercase font-black text-blue-500/80">{(p as any).origin}</span>;
+                            break;
+                          case "address":
+                            content = <span className="truncate max-w-[180px] block font-bold text-foreground/70" title={p.address}>{p.address}</span>;
+                            break;
+                          case "city":
+                            content = [p.city, p.state].filter(Boolean).join("/");
+                            break;
+                          case "neighborhood":
+                            content = p.neighborhood;
+                            break;
+                          case "zip_code":
+                            content = p.zip_code;
+                            break;
+                          case "landmark":
+                            content = (p as any).landmark;
+                            break;
+                          case "stage":
+                            content = (
+                              <div className="flex items-center gap-1.5">
+                                <div className={cn("h-1.5 w-1.5 rounded-full", stage?.color || "bg-slate-400")} />
+                                <span className="text-[9px] font-black uppercase tracking-tight text-foreground/90">{stage?.label}</span>
                               </div>
-                            )}
-                          </div>
-                        ) : "—"}
-                      </TableCell>
+                            );
+                            break;
+                          case "priority":
+                            content = (
+                              <div className={cn("text-[8px] font-black uppercase px-1.5 py-0.5 rounded border w-fit leading-none", 
+                                p.priority === 'alta' ? 'bg-destructive/10 text-destructive border-destructive/20' : 
+                                p.priority === 'media' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20' : 
+                                'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                              )}>
+                                {prio?.label}
+                              </div>
+                            );
+                            break;
+                          case "property_type":
+                            content = <span className="text-[9px] uppercase font-bold text-muted-foreground">{getType(p.property_type)?.label}</span>;
+                            break;
+                          case "area_total":
+                            content = p.area_total ? <span className="font-mono">{p.area_total}m²</span> : "—";
+                            break;
+                          case "area_useful":
+                            content = p.area_useful ? <span className="font-mono text-primary/80">{p.area_useful}m²</span> : "—";
+                            break;
+                          case "property_division":
+                            content = <span className="truncate max-w-[120px] block italic text-muted-foreground" title={(p as any).property_division}>{(p as any).property_division}</span>;
+                            break;
+                          case "has_condo":
+                            content = p.has_condo ? <Badge className="h-4 text-[7px] bg-amber-500/20 text-amber-600 border-amber-500/30">Sim</Badge> : "Não";
+                            break;
+                          case "condo_value":
+                            content = p.condo_value ? formatCurrency(p.condo_value) : "—";
+                            break;
+                          case "purchase_price":
+                            content = <span className="font-mono text-foreground/80">{formatCurrency(p.purchase_price || 0)}</span>;
+                            break;
+                          case "documentation_cost":
+                            content = formatCurrency(p.documentation_cost || 0);
+                            break;
+                          case "itbi_cost":
+                            content = formatCurrency(p.itbi_cost || 0);
+                            break;
+                          case "registration_cost":
+                            content = formatCurrency(p.registration_cost || 0);
+                            break;
+                          case "eviction_cost":
+                            content = formatCurrency(p.eviction_cost || 0);
+                            break;
+                          case "renovation_cost":
+                            content = formatCurrency(p.renovation_cost || 0);
+                            break;
+                          case "listed_price":
+                            content = <span className="font-mono text-emerald-600 font-bold">{formatCurrency(p.listed_price || 0)}</span>;
+                            break;
+                          case "sale_price":
+                            content = <span className="font-mono text-primary font-bold">{formatCurrency((p as any).sale_price || 0)}</span>;
+                            break;
+                          case "cash_sale_discount":
+                            content = (p as any).cash_sale_discount ? `${(p as any).cash_sale_discount}%` : "—";
+                            break;
+                          case "final_sale_price":
+                            content = (p as any).final_sale_price ? <span className="font-mono text-foreground font-black">{formatCurrency((p as any).final_sale_price)}</span> : "—";
+                            break;
+                          case "total_investment":
+                            content = <span className="font-mono font-black text-foreground underline decoration-primary/30 decoration-2 underline-offset-2">{formatCurrency(inv)}</span>;
+                            break;
+                          case "auction_date":
+                            content = p.auction_date ? <div className="flex items-center gap-1 font-bold text-foreground/60"><Calendar className="h-2.5 w-2.5 opacity-40" /> {format(new Date(p.auction_date + "T12:00:00"), "dd/MM/yy")}</div> : "—";
+                            break;
+                          case "auction_type":
+                            content = <span className="text-[8px] font-black uppercase text-muted-foreground">{(p as any).auction_type}</span>;
+                            break;
+                          case "sale_type":
+                            content = <span className="text-[8px] font-black uppercase text-muted-foreground/60">{(p as any).sale_type}</span>;
+                            break;
+                          case "occupation_status":
+                            content = <span className={cn("text-[9px] font-bold uppercase", p.occupation_status === 'desocupado' ? 'text-emerald-500' : 'text-amber-500')}>{occ?.label}</span>;
+                            break;
+                          case "possession_date":
+                            content = p.possession_date ? format(new Date(p.possession_date + "T12:00:00"), "dd/MM/yy") : "—";
+                            break;
+                          case "renovation_start":
+                            content = p.renovation_start ? format(new Date(p.renovation_start + "T12:00:00"), "dd/MM/yy") : "—";
+                            break;
+                          case "renovation_end":
+                            content = p.renovation_end ? format(new Date(p.renovation_end + "T12:00:00"), "dd/MM/yy") : "—";
+                            break;
+                          case "marketing_smartlink":
+                            content = (p as any).marketing_smartlink ? <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
+                            break;
+                          case "marketing_paid_traffic":
+                            content = (p as any).marketing_paid_traffic ? <div className="h-1.5 w-1.5 rounded-full bg-purple-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
+                            break;
+                          case "marketing_board":
+                            content = (p as any).marketing_board ? <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
+                            break;
+                          case "marketing_banner":
+                            content = (p as any).marketing_banner ? <div className="h-1.5 w-1.5 rounded-full bg-pink-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
+                            break;
+                          case "has_broker":
+                            content = (p as any).has_broker ? <CheckCircle2 className="h-3 w-3 text-emerald-500 mx-auto" /> : <XCircle className="h-3 w-3 text-white/5 mx-auto" />;
+                            break;
+                          case "responsible":
+                            content = <span className="truncate max-w-[100px] block">{resp}</span>;
+                            break;
+                          case "op_responsible":
+                            content = <span className="truncate max-w-[100px] block text-emerald-500/80 font-bold">{respOp}</span>;
+                            break;
+                          case "caretaker_payment_date":
+                            content = (p as any).caretaker_payment_date ? `Dia ${(p as any).caretaker_payment_date}` : "—";
+                            break;
+                          case "appraisal_status":
+                            content = <span className="uppercase text-[8px] font-black opacity-60">{(p as any).appraisal_status}</span>;
+                            break;
+                          case "appraisal_date":
+                            content = (p as any).appraisal_date ? format(new Date((p as any).appraisal_date + "T12:00:00"), "dd/MM/yy") : "—";
+                            break;
+                          case "appraisal_expiry":
+                            content = (p as any).appraisal_expiry ? <span className="text-orange-500/80 font-bold">{format(new Date((p as any).appraisal_expiry + "T12:00:00"), "dd/MM/yy")}</span> : "—";
+                            break;
+                        }
+
+                        return (
+                          <TableCell key={col.id} className="px-3 py-1.5 text-[9px] font-medium border-r border-white/5 last:border-0 whitespace-nowrap group-hover:bg-primary/[0.01]">
+                            {content}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   );
                 })
@@ -294,6 +428,6 @@ export default function PropertyTable({ properties }: Props) {
           onOpenChange={(open) => { if (!open) setSelectedProperty(null); }}
         />
       )}
-    </>
+    </div>
   );
 }
