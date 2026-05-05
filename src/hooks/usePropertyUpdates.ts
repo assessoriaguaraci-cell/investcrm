@@ -98,3 +98,23 @@ export function useDeletePropertyUpdate() {
     },
   });
 }
+export function useUpdatePropertyUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, propertyId, content, updateDate }: { id: string; propertyId: string; content: string; updateDate: string }) => {
+      const { data, error } = await supabase
+        .from("property_updates")
+        .update({ content, update_date: updateDate })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["property-updates", vars.propertyId] });
+      toast.success("Atualização modificada!");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao editar atualização"),
+  });
+}
