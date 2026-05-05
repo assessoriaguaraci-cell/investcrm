@@ -6,7 +6,7 @@ import {
   MapPin, AlertTriangle, User, Calendar, Clock, Receipt, Home, 
   FileText, Image as ImageIcon, Link2, Megaphone, CheckCircle2, 
   XCircle, FolderOpen, Settings2, ChevronDown, Check, Columns,
-  DollarSign, TrendingUp, Info, Briefcase, Key, Hammer
+  DollarSign, TrendingUp, Info, Briefcase, Key, Hammer, ExternalLink
 } from "lucide-react";
 import { 
   formatCurrency, totalInvestment, PROPERTY_STAGES, PROPERTY_TYPES, 
@@ -31,6 +31,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useUpdateProperty } from "@/hooks/useProperties";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SmartDatePicker } from "@/components/ui/smart-date-picker";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { toast } from "sonner";
 
 interface Props {
   properties: Property[];
@@ -53,6 +59,13 @@ const COLUMN_CATEGORIES = {
 export default function PropertyTable({ properties }: Props) {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const { data: members } = useApprovedMembers();
+  const updateProperty = useUpdateProperty();
+
+  const handleUpdate = (id: string, field: string, value: any) => {
+    updateProperty.mutate({ id, [field]: value }, {
+      onError: (err: any) => toast.error(`Erro ao atualizar: ${err.message}`)
+    });
+  };
 
   // Columns visibility state
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
@@ -245,6 +258,7 @@ export default function PropertyTable({ properties }: Props) {
                     >
                       {activeColumns.map(col => {
                         let content: React.ReactNode = "—";
+                        const id = p.id;
                         
                         switch(col.id) {
                           case "photo":
@@ -253,160 +267,285 @@ export default function PropertyTable({ properties }: Props) {
                             ) : <ImageIcon className="h-5 w-5 opacity-10" />;
                             break;
                           case "code":
-                            content = <span className="font-mono font-black text-primary text-[10px] bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">{p.code}</span>;
+                            content = (
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  className="h-7 text-[10px] font-black uppercase bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 px-1"
+                                  defaultValue={p.code}
+                                  onBlur={(e) => {
+                                    if (e.target.value !== p.code) handleUpdate(id, "code", e.target.value.toUpperCase());
+                                  }}
+                                />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => { e.stopPropagation(); setSelectedProperty(p); }}
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            );
                             break;
                           case "registration_number":
-                            content = <span className="text-foreground/80 font-bold">{(p as any).registration_number}</span>;
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] font-bold bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 px-1"
+                                defaultValue={(p as any).registration_number || ""}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (p as any).registration_number) handleUpdate(id, "registration_number", e.target.value);
+                                }}
+                              />
+                            );
                             break;
                           case "owner":
-                            content = (p as any).owner;
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[120px] px-1"
+                                defaultValue={(p as any).owner || ""}
+                                onBlur={(e) => {
+                                  if (e.target.value !== (p as any).owner) handleUpdate(id, "owner", e.target.value);
+                                }}
+                              />
+                            );
                             break;
                           case "origin":
-                            content = <span className="uppercase font-black text-blue-500/80">{(p as any).origin}</span>;
+                            content = (
+                              <Select 
+                                defaultValue={(p as any).origin || ""} 
+                                onValueChange={(val) => handleUpdate(id, "origin", val)}
+                              >
+                                <SelectTrigger className="h-7 text-[10px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1 w-20">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="caixa">Caixa</SelectItem>
+                                  <SelectItem value="emgea">Emgea</SelectItem>
+                                  <SelectItem value="bancos_leiloes">Bancos</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            );
                             break;
                           case "address":
-                            content = <span className="truncate max-w-[180px] block font-bold text-foreground/70" title={p.address}>{p.address}</span>;
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[200px] px-1"
+                                defaultValue={p.address || ""}
+                                onBlur={(e) => {
+                                  if (e.target.value !== p.address) handleUpdate(id, "address", e.target.value);
+                                }}
+                              />
+                            );
                             break;
                           case "city":
-                            content = [p.city, p.state].filter(Boolean).join("/");
+                            content = (
+                              <div className="flex items-center gap-1">
+                                <Input 
+                                  className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-20 px-1 uppercase"
+                                  defaultValue={p.city || ""}
+                                  onBlur={(e) => {
+                                    if (e.target.value !== p.city) handleUpdate(id, "city", e.target.value.toUpperCase());
+                                  }}
+                                />
+                                <span className="opacity-30">/</span>
+                                <Input 
+                                  className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-8 px-1 uppercase"
+                                  defaultValue={p.state || ""}
+                                  onBlur={(e) => {
+                                    if (e.target.value !== p.state) handleUpdate(id, "state", e.target.value.toUpperCase());
+                                  }}
+                                />
+                              </div>
+                            );
                             break;
                           case "neighborhood":
-                            content = p.neighborhood;
-                            break;
-                          case "zip_code":
-                            content = p.zip_code;
-                            break;
-                          case "landmark":
-                            content = (p as any).landmark;
+                            content = (
+                              <Input 
+                                className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[100px] px-1 uppercase"
+                                defaultValue={p.neighborhood || ""}
+                                onBlur={(e) => {
+                                  if (e.target.value !== p.neighborhood) handleUpdate(id, "neighborhood", e.target.value.toUpperCase());
+                                }}
+                              />
+                            );
                             break;
                           case "stage":
                             content = (
-                              <div className="flex items-center gap-1.5">
-                                <div className={cn("h-1.5 w-1.5 rounded-full", stage?.color || "bg-slate-400")} />
-                                <span className="text-[9px] font-black uppercase tracking-tight text-foreground/90">{stage?.label}</span>
-                              </div>
+                              <Select value={p.stage} onValueChange={(val) => handleUpdate(id, "stage", val)}>
+                                <SelectTrigger className="h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className={cn("h-1.5 w-1.5 rounded-full", stage?.color || "bg-slate-400")} />
+                                    <span>{stage?.label}</span>
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {PROPERTY_STAGES.map(s => (
+                                    <SelectItem key={s.value} value={s.value}>
+                                      <div className="flex items-center gap-2">
+                                        <div className={cn("h-2 w-2 rounded-full", s.color)} />
+                                        {s.label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             );
                             break;
                           case "priority":
                             content = (
-                              <div className={cn("text-[8px] font-black uppercase px-1.5 py-0.5 rounded border w-fit leading-none", 
-                                p.priority === 'alta' ? 'bg-destructive/10 text-destructive border-destructive/20' : 
-                                p.priority === 'media' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20' : 
-                                'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                              )}>
-                                {prio?.label}
-                              </div>
+                              <Select value={p.priority} onValueChange={(val) => handleUpdate(id, "priority", val)}>
+                                <SelectTrigger className={cn("h-7 text-[8px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1", 
+                                  p.priority === 'alta' ? 'text-destructive' : 
+                                  p.priority === 'media' ? 'text-orange-600' : 
+                                  'text-emerald-600'
+                                )}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {PRIORITY_LEVELS.map(l => (
+                                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             );
                             break;
                           case "property_type":
-                            content = <span className="text-[9px] uppercase font-bold text-muted-foreground">{getType(p.property_type)?.label}</span>;
+                            content = (
+                              <Select value={p.property_type} onValueChange={(val) => handleUpdate(id, "property_type", val)}>
+                                <SelectTrigger className="h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {PROPERTY_TYPES.map(t => (
+                                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
                             break;
                           case "area_total":
-                            content = p.area_total ? <span className="font-mono">{p.area_total}m²</span> : "—";
-                            break;
-                          case "area_useful":
-                            content = p.area_useful ? <span className="font-mono text-primary/80">{p.area_useful}m²</span> : "—";
-                            break;
-                          case "property_division":
-                            content = <span className="truncate max-w-[120px] block italic text-muted-foreground" title={(p as any).property_division}>{(p as any).property_division}</span>;
-                            break;
-                          case "has_condo":
-                            content = p.has_condo ? <Badge className="h-4 text-[7px] bg-amber-500/20 text-amber-600 border-amber-500/30">Sim</Badge> : "Não";
-                            break;
-                          case "condo_value":
-                            content = p.condo_value ? formatCurrency(p.condo_value) : "—";
+                            content = (
+                              <div className="flex items-center gap-1">
+                                <Input 
+                                  type="number"
+                                  className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-16 px-1"
+                                  defaultValue={p.area_total || ""}
+                                  onBlur={(e) => {
+                                    if (Number(e.target.value) !== p.area_total) handleUpdate(id, "area_total", Number(e.target.value));
+                                  }}
+                                />
+                                <span className="text-[8px] opacity-30">m²</span>
+                              </div>
+                            );
                             break;
                           case "purchase_price":
-                            content = <span className="font-mono text-foreground/80">{formatCurrency(p.purchase_price || 0)}</span>;
-                            break;
-                          case "documentation_cost":
-                            content = formatCurrency(p.documentation_cost || 0);
-                            break;
-                          case "itbi_cost":
-                            content = formatCurrency(p.itbi_cost || 0);
-                            break;
-                          case "registration_cost":
-                            content = formatCurrency(p.registration_cost || 0);
-                            break;
-                          case "eviction_cost":
-                            content = formatCurrency(p.eviction_cost || 0);
-                            break;
-                          case "renovation_cost":
-                            content = formatCurrency(p.renovation_cost || 0);
+                            content = (
+                              <CurrencyInput 
+                                className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
+                                value={p.purchase_price || 0}
+                                onBlur={() => {}} // CurrencyInput handles blur internally or via callback
+                                onChange={(val) => {
+                                  if (val !== p.purchase_price) handleUpdate(id, "purchase_price", val);
+                                }}
+                              />
+                            );
                             break;
                           case "listed_price":
-                            content = <span className="font-mono text-emerald-600 font-bold">{formatCurrency(p.listed_price || 0)}</span>;
+                            content = (
+                              <CurrencyInput 
+                                className="h-7 text-[10px] font-mono font-bold text-emerald-600 bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
+                                value={p.listed_price || 0}
+                                onChange={(val) => {
+                                  if (val !== p.listed_price) handleUpdate(id, "listed_price", val);
+                                }}
+                              />
+                            );
                             break;
                           case "sale_price":
-                            content = <span className="font-mono text-primary font-bold">{formatCurrency((p as any).sale_price || 0)}</span>;
-                            break;
-                          case "cash_sale_discount":
-                            content = (p as any).cash_sale_discount ? `${(p as any).cash_sale_discount}%` : "—";
-                            break;
-                          case "final_sale_price":
-                            content = (p as any).final_sale_price ? <span className="font-mono text-foreground font-black">{formatCurrency((p as any).final_sale_price)}</span> : "—";
-                            break;
-                          case "total_investment":
-                            content = <span className="font-mono font-black text-foreground underline decoration-primary/30 decoration-2 underline-offset-2">{formatCurrency(inv)}</span>;
+                            content = (
+                              <CurrencyInput 
+                                className="h-7 text-[10px] font-mono font-bold text-primary bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
+                                value={(p as any).sale_price || 0}
+                                onChange={(val) => {
+                                  if (val !== (p as any).sale_price) handleUpdate(id, "sale_price", val);
+                                }}
+                              />
+                            );
                             break;
                           case "auction_date":
-                            content = p.auction_date ? <div className="flex items-center gap-1 font-bold text-foreground/60"><Calendar className="h-2.5 w-2.5 opacity-40" /> {format(new Date(p.auction_date + "T12:00:00"), "dd/MM/yy")}</div> : "—";
-                            break;
-                          case "auction_type":
-                            content = <span className="text-[8px] font-black uppercase text-muted-foreground">{(p as any).auction_type}</span>;
-                            break;
-                          case "sale_type":
-                            content = <span className="text-[8px] font-black uppercase text-muted-foreground/60">{(p as any).sale_type}</span>;
+                            content = (
+                              <div className="w-24">
+                                <SmartDatePicker 
+                                  value={p.auction_date || ""} 
+                                  onChange={(val) => handleUpdate(id, "auction_date", val)}
+                                  className="h-7 text-[9px] p-1 border-none bg-transparent hover:bg-muted/50"
+                                />
+                              </div>
+                            );
                             break;
                           case "occupation_status":
-                            content = <span className={cn("text-[9px] font-bold uppercase", p.occupation_status === 'desocupado' ? 'text-emerald-500' : 'text-amber-500')}>{occ?.label}</span>;
-                            break;
-                          case "possession_date":
-                            content = p.possession_date ? format(new Date(p.possession_date + "T12:00:00"), "dd/MM/yy") : "—";
-                            break;
-                          case "renovation_start":
-                            content = p.renovation_start ? format(new Date(p.renovation_start + "T12:00:00"), "dd/MM/yy") : "—";
-                            break;
-                          case "renovation_end":
-                            content = p.renovation_end ? format(new Date(p.renovation_end + "T12:00:00"), "dd/MM/yy") : "—";
-                            break;
-                          case "marketing_smartlink":
-                            content = (p as any).marketing_smartlink ? <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
-                            break;
-                          case "marketing_paid_traffic":
-                            content = (p as any).marketing_paid_traffic ? <div className="h-1.5 w-1.5 rounded-full bg-purple-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
-                            break;
-                          case "marketing_board":
-                            content = (p as any).marketing_board ? <div className="h-1.5 w-1.5 rounded-full bg-amber-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
-                            break;
-                          case "marketing_banner":
-                            content = (p as any).marketing_banner ? <div className="h-1.5 w-1.5 rounded-full bg-pink-500 mx-auto" /> : <div className="h-1 w-1 rounded-full bg-white/5 mx-auto" />;
-                            break;
-                          case "has_broker":
-                            content = (p as any).has_broker ? <CheckCircle2 className="h-3 w-3 text-emerald-500 mx-auto" /> : <XCircle className="h-3 w-3 text-white/5 mx-auto" />;
+                            content = (
+                              <Select value={p.occupation_status} onValueChange={(val) => handleUpdate(id, "occupation_status", val)}>
+                                <SelectTrigger className={cn("h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1", 
+                                  p.occupation_status === 'desocupado' ? 'text-emerald-500' : 'text-amber-500'
+                                )}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {OCCUPATION_STATUSES.map(o => (
+                                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
                             break;
                           case "responsible":
-                            content = <span className="truncate max-w-[100px] block">{resp}</span>;
+                            content = (
+                              <Select 
+                                value={p.responsible_user_id || "__none__"} 
+                                onValueChange={(val) => handleUpdate(id, "responsible_user_id", val === "__none__" ? null : val)}
+                              >
+                                <SelectTrigger className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32">
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">Nenhum</SelectItem>
+                                  {members?.map(m => (
+                                    <SelectItem key={m.user_id} value={m.user_id || ""}>{m.full_name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
                             break;
                           case "op_responsible":
-                            content = <span className="truncate max-w-[100px] block text-emerald-500/80 font-bold">{respOp}</span>;
+                            content = (
+                              <Select 
+                                value={(p as any).operation_responsible_id || "__none__"} 
+                                onValueChange={(val) => handleUpdate(id, "operation_responsible_id", val === "__none__" ? null : val)}
+                              >
+                                <SelectTrigger className="h-7 text-[9px] font-bold text-emerald-600 border-none bg-transparent hover:bg-muted/50 p-1 w-32">
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">Nenhum</SelectItem>
+                                  <SelectItem value="mentoria">Mentoria</SelectItem>
+                                  {members?.map(m => (
+                                    <SelectItem key={m.user_id} value={m.user_id || ""}>{m.full_name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
                             break;
-                          case "caretaker_payment_date":
-                            content = (p as any).caretaker_payment_date ? `Dia ${(p as any).caretaker_payment_date}` : "—";
+                          case "total_investment":
+                            content = <span className="font-mono font-black text-foreground underline decoration-primary/30 decoration-2 underline-offset-2 px-1">{formatCurrency(inv)}</span>;
                             break;
-                          case "appraisal_status":
-                            content = <span className="uppercase text-[8px] font-black opacity-60">{(p as any).appraisal_status}</span>;
-                            break;
-                          case "appraisal_date":
-                            content = (p as any).appraisal_date ? format(new Date((p as any).appraisal_date + "T12:00:00"), "dd/MM/yy") : "—";
-                            break;
-                          case "appraisal_expiry":
-                            content = (p as any).appraisal_expiry ? <span className="text-orange-500/80 font-bold">{format(new Date((p as any).appraisal_expiry + "T12:00:00"), "dd/MM/yy")}</span> : "—";
-                            break;
+                          // Default for other fields
+                          default:
+                             content = <span className="px-1 opacity-50">#</span>;
                         }
 
                         return (
-                          <TableCell key={col.id} className="px-3 py-1.5 text-[9px] font-medium border-r border-white/5 last:border-0 whitespace-nowrap group-hover:bg-primary/[0.01]">
+                          <TableCell key={col.id} className="px-1 py-0 text-[9px] font-medium border-r border-white/5 last:border-0 whitespace-nowrap hover:bg-primary/[0.05] transition-colors focus-within:bg-primary/[0.08]">
                             {content}
                           </TableCell>
                         );
