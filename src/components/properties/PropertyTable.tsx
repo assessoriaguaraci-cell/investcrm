@@ -210,10 +210,10 @@ export default function PropertyTable({ properties }: Props) {
       <div className="rounded-xl border bg-card/30 backdrop-blur-sm shadow-xl overflow-hidden mx-4 mb-8">
         <div className="overflow-x-auto">
           <Table className="border-collapse">
-            <TableHeader className="bg-muted/50 border-b border-white/10 sticky top-0 z-10 shadow-sm">
-              <TableRow className="hover:bg-transparent h-10">
+            <TableHeader className="sticky top-0 z-30 shadow-md">
+              <TableRow className="hover:bg-transparent h-10 border-none">
                 {activeColumns.map(col => (
-                  <TableHead key={col.id} className="font-bold text-[9px] uppercase tracking-wider px-3 border-r border-white/5 last:border-0 whitespace-nowrap text-muted-foreground bg-muted/80 backdrop-blur-sm">
+                  <TableHead key={col.id} className="font-bold text-[9px] uppercase tracking-wider px-3 border-r border-white/5 last:border-0 whitespace-nowrap text-muted-foreground bg-muted/95 backdrop-blur-sm sticky top-0">
                     {col.label}
                   </TableHead>
                 ))}
