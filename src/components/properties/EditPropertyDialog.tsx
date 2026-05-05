@@ -180,6 +180,8 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
       await updateProperty.mutateAsync({
         id: property.id,
         ...values,
+        city: values.city.toUpperCase(),
+        state: values.state.toUpperCase(),
         photo_url: photoUrl,
       } as any);
       toast.success("Imóvel atualizado com sucesso!");

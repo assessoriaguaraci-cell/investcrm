@@ -24,44 +24,47 @@ export default function CityCombobox({ value, onValueChange, state }: Props) {
       if (state) query.eq("state", state);
       const { data, error } = await query;
       if (error) throw error;
-      const unique = [...new Set(data.map(d => d.city).filter(Boolean))] as string[];
+      // Normalize to uppercase and remove duplicates
+      const normalized = data.map(d => (d.city || "").toUpperCase()).filter(Boolean);
+      const unique = [...new Set(normalized)] as string[];
       return unique.sort();
     },
   });
 
   const filtered = useMemo(() => {
     if (!search) return cities;
-    const s = search.toLowerCase();
-    return cities.filter(c => c.toLowerCase().includes(s));
+    const s = search.toUpperCase();
+    return cities.filter(c => c.toUpperCase().includes(s));
   }, [cities, search]);
 
-  const showCustom = search && !cities.some(c => c.toLowerCase() === search.toLowerCase());
+  const showCustom = search && !cities.some(c => c.toUpperCase() === search.toUpperCase());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal h-10">
+        <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal h-10 uppercase">
           {value || "Selecione a cidade..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-50" align="start">
         <Command shouldFilter={false}>
-          <CommandInput placeholder="Buscar cidade..." value={search} onValueChange={setSearch} />
+          <CommandInput placeholder="Buscar cidade..." value={search} onValueChange={(v) => setSearch(v.toUpperCase())} className="uppercase" />
           <CommandList>
             <CommandEmpty>Nenhuma cidade encontrada.</CommandEmpty>
             <CommandGroup>
               {showCustom && (
                 <CommandItem
-                  value={search}
+                  value={search.toUpperCase()}
                   onSelect={() => {
-                    onValueChange(search);
+                    onValueChange(search.toUpperCase());
                     setOpen(false);
                     setSearch("");
                   }}
+                  className="uppercase"
                 >
-                  <Check className={cn("mr-2 h-4 w-4", value === search ? "opacity-100" : "opacity-0")} />
-                  Usar "{search}"
+                  <Check className={cn("mr-2 h-4 w-4", value === search.toUpperCase() ? "opacity-100" : "opacity-0")} />
+                  Usar "{search.toUpperCase()}"
                 </CommandItem>
               )}
               {filtered.map(city => (
@@ -73,6 +76,7 @@ export default function CityCombobox({ value, onValueChange, state }: Props) {
                     setOpen(false);
                     setSearch("");
                   }}
+                  className="uppercase"
                 >
                   <Check className={cn("mr-2 h-4 w-4", value === city ? "opacity-100" : "opacity-0")} />
                   {city}

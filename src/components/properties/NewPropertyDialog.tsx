@@ -100,9 +100,10 @@ export default function NewPropertyDialog({ defaultFunnelId }: Props) {
     try {
       await createProperty.mutateAsync({
         ...values,
+        city: values.city.toUpperCase(),
+        state: values.state.toUpperCase(),
         code: values.code && values.code.trim() !== "" ? values.code : `INV-${Math.floor(Math.random() * 1000000)}`,
         responsible_user_id: values.responsible_user_id || user?.id || null,
-        state: values.state,
         funnel_id: defaultFunnelId as any
       });
       toast.success("Imóvel cadastrado com sucesso!");

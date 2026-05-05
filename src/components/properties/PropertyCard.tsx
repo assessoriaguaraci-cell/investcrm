@@ -80,7 +80,7 @@ export default function PropertyCard({ property, index, cardSettings }: Props) {
               {/* Core Property Info */}
               {cardSettings.showLocation && (
                 <div className="space-y-0.5">
-                  <h4 className={`${cardSettings.size === 'small' ? 'text-xs' : cardSettings.size === 'large' ? 'text-base' : 'text-sm'} font-extrabold text-foreground tracking-tight leading-snug group-hover:text-primary transition-colors line-clamp-2`}>
+                  <h4 className={`${cardSettings.size === 'small' ? 'text-xs' : cardSettings.size === 'large' ? 'text-base' : 'text-sm'} font-extrabold text-foreground tracking-tight leading-snug group-hover:text-primary transition-colors line-clamp-2 uppercase`}>
                     {property.city ? `${property.city}/${property.state}` : "Sem endereço"}
                   </h4>
                   {cardSettings.showNeighborhood && (
