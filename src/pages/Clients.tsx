@@ -481,6 +481,22 @@ export default function Clients() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button 
+            variant={selectionModeActive ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setSelectionModeActive(!selectionModeActive);
+              if (!selectionModeActive) setSelectedIds([]);
+            }}
+            className={cn(
+              "gap-1.5 font-black uppercase tracking-tight shadow-sm transition-all",
+              selectionModeActive ? "bg-[#002B44] hover:bg-[#003d61]" : "border-primary/20 hover:bg-primary/5"
+            )}
+          >
+            <CheckSquare className="h-4 w-4" />
+            {selectionModeActive ? "Sair da Seleção" : "Seleção em Massa"}
+          </Button>
+
           <NewClientDialog />
 
           <div className="h-6 w-px bg-border/50 mx-1" />
@@ -599,6 +615,7 @@ export default function Clients() {
                                     stageLabel={stage.label}
                                     stageColor={stage.color}
                                     clients={grouped[stage.value] || []}
+                                    selectable={selectionModeActive}
                                     onSelect={handleSelect}
                                     onSelectAll={handleSelectAll}
                                     selectedIds={selectedIds}
