@@ -5,6 +5,7 @@ import { useProperties, useUpdateProperty } from "@/hooks/useProperties";
 import { PROPERTY_STAGES, totalInvestment, formatCurrency } from "@/lib/property-constants";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { usePropertySettings } from "@/hooks/usePropertySettings";
+import { usePropertyFiltersStore } from "@/hooks/usePropertyFiltersStore";
 import { useAuth } from "@/hooks/useAuth";
 import { exportToCSV, exportToExcel } from "@/utils/exportUtils";
 import KanbanColumn from "@/components/properties/KanbanColumn";
@@ -54,7 +55,7 @@ export default function Properties() {
   const createFunnelMutation = useCreatePropertyFunnel();
 
   const updateProperty = useUpdateProperty();
-  const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
+  const { filters, setFilters, loadFromCloud: loadFiltersFromCloud } = usePropertyFiltersStore();
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (localStorage.getItem("properties_view_mode") as ViewMode) || "kanban";
@@ -72,6 +73,7 @@ export default function Properties() {
   useEffect(() => {
     if (user) {
       cardSettings.loadFromCloud(user.id);
+      loadFiltersFromCloud(user.id);
     }
   }, [user]);
 
