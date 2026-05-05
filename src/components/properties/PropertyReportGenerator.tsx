@@ -113,13 +113,20 @@ export default function PropertyReportGenerator({ property }: Props) {
 
     lines.push("");
 
+    // Filter out obsolete items
+    const filteredAllItems = (allItems || []).filter(item => {
+      if (["Estratégia Definida", "Execução"].includes(item.group_name || "")) return false;
+      if (["Histórico de pagamento conhecido", "Risco jurídico avaliado"].includes(item.task_name || "")) return false;
+      return true;
+    });
+
     // Checklist grouped by stage and then by group
     const stageOrder = PROPERTY_STAGES.map(s => s.value);
     // ONLY show the current stage
-    const stagesWithItems = [property.stage].filter(s => (allItems || []).some(item => item.stage === s));
+    const stagesWithItems = [property.stage].filter(s => filteredAllItems.some(item => item.stage === s));
 
     for (const stageValue of stagesWithItems) {
-      const stageItems = (allItems || []).filter(item => item.stage === stageValue);
+      const stageItems = filteredAllItems.filter(item => item.stage === stageValue);
       const stageLabel = PROPERTY_STAGES.find(s => s.value === stageValue)?.label ?? stageValue;
       
       const done = stageItems.filter(i => i.completed).length;
@@ -148,7 +155,14 @@ export default function PropertyReportGenerator({ property }: Props) {
             ? ` (${format(new Date(item.completed_at), "dd/MM")})`
             : "";
           const notePart = item.notes ? `\n      💬 _Obs: ${item.notes}_` : "";
-          lines.push(`    ${emoji} ${item.task_name}${datePart}${notePart}`);
+          
+          // Apply renaming logic for SMARTAPP
+          let displayName = item.task_name;
+          if (displayName?.toLowerCase().includes("fluxo do crm") || displayName?.toLowerCase().includes("cadastrado no crm")) {
+            displayName = "Imóvel cadastrado no SMARTAPP";
+          }
+          
+          lines.push(`    ${emoji} ${displayName}${datePart}${notePart}`);
         });
       }
       lines.push("");
