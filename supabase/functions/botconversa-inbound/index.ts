@@ -70,24 +70,35 @@ serve(async (req) => {
     }
 
     // Tenta capturar nome de várias formas
-    leadName = findValue(['full_name', 'contact_name', 'nome', 'first_name', 'name', 'Nome_do_Cliente']) || leadName
-    if (data.first_name && data.last_name) leadName = `${data.first_name} ${data.last_name}`
+    leadName = findValue([
+      'full_name', 'contact_name', 'nome', 'first_name', 'name', 
+      'Nome_do_Cliente', 'nome_completo', 'first_name_contact', '@first_name'
+    ]) || leadName
+    
+    if (data.first_name && data.last_name) {
+      leadName = `${data.first_name} ${data.last_name}`
+    } else if (data.first_name) {
+      leadName = data.first_name
+    }
 
     // Tenta capturar telefone
-    leadPhone = findValue(['phone', 'telefone', 'id', 'wa_id', 'contact_phone', 'fone', 'subscriber_id']) || ""
+    leadPhone = findValue([
+      'phone', 'telefone', 'id', 'wa_id', 'contact_phone', 'fone', 
+      'subscriber_id', 'whatsapp', 'celular', 'phone_number', '@phone'
+    ]) || ""
     
     // Tenta capturar mensagem/código
-    rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo']) || ""
-    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel']) || ""
+    rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo', 'last_text']) || ""
+    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku']) || ""
 
-    // Se não veio código, tenta extrair da mensagem
+    // Se não veio código, tenta extrair da mensagem (IL-0000-0000 ou apenas os números finais)
     if (!searchCode && rawMessage) {
       const codeMatch = String(rawMessage).match(/IL-\d{4}-\d{4}/i) || String(rawMessage).match(/\d{4}$/)
       if (codeMatch) searchCode = codeMatch[0]
     }
 
     const cleanPhone = leadPhone ? String(leadPhone).replace(/\D/g, '') : null
-    const finalName = (leadName && leadName !== "@contact_name" && leadName !== "Lead WhatsApp") 
+    const finalName = (leadName && !String(leadName).startsWith("@") && leadName !== "Lead WhatsApp") 
                       ? leadName 
                       : (cleanPhone || "Lead WhatsApp")
 
