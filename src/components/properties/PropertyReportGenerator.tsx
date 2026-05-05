@@ -106,7 +106,7 @@ export default function PropertyReportGenerator({ property }: Props) {
     // Last update
     if (updates && updates.length > 0) {
       const last = updates[0];
-      lines.push(`🕐 Última atualização: ${format(new Date(last.update_date), "dd/MM/yyyy")} — ${last.content.substring(0, 100)}${last.content.length > 100 ? "..." : ""}`);
+      lines.push(`🕐 Última atualização: ${format(new Date(last.update_date), "dd/MM/yyyy")} — ${last.content}`);
     } else {
       lines.push(`🕐 Última atualização: _Nenhuma registrada_`);
     }
