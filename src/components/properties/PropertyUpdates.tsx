@@ -168,24 +168,26 @@ export default function PropertyUpdates({ propertyId, currentStage, auctionDate 
                         </Badge>
                       )}
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 shrink-0">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-[22px] w-[22px] rounded-full hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" 
+                        className="h-7 w-7 rounded-full hover:bg-primary/10 transition-colors" 
                         onClick={() => startEditing(u)}
+                        title="Editar Atualização"
                       >
-                        <Pencil className="h-[10px] w-[10px] text-muted-foreground hover:text-primary" />
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-[22px] w-[22px] rounded-full hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity" 
+                        className="h-7 w-7 rounded-full hover:bg-destructive/10 transition-colors" 
                         onClick={() => {
                           if (confirm("Deseja excluir esta atualização?")) deleteUpdate.mutate({ id: u.id, propertyId });
                         }}
+                        title="Excluir Atualização"
                       >
-                        <Trash2 className="h-[10px] w-[10px] text-muted-foreground hover:text-destructive" />
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
                       </Button>
                     </div>
                   </div>
