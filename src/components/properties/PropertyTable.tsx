@@ -272,6 +272,7 @@ export default function PropertyTable({ properties }: Props) {
                                 <Input 
                                   className="h-7 text-[10px] font-black uppercase bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 px-1"
                                   defaultValue={p.code}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={(e) => {
                                     if (e.target.value !== p.code) handleUpdate(id, "code", e.target.value.toUpperCase());
                                   }}
@@ -292,6 +293,7 @@ export default function PropertyTable({ properties }: Props) {
                               <Input 
                                 className="h-7 text-[10px] font-bold bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 px-1"
                                 defaultValue={(p as any).registration_number || ""}
+                                onClick={(e) => e.stopPropagation()}
                                 onBlur={(e) => {
                                   if (e.target.value !== (p as any).registration_number) handleUpdate(id, "registration_number", e.target.value);
                                 }}
@@ -303,6 +305,7 @@ export default function PropertyTable({ properties }: Props) {
                               <Input 
                                 className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[120px] px-1"
                                 defaultValue={(p as any).owner || ""}
+                                onClick={(e) => e.stopPropagation()}
                                 onBlur={(e) => {
                                   if (e.target.value !== (p as any).owner) handleUpdate(id, "owner", e.target.value);
                                 }}
@@ -315,7 +318,10 @@ export default function PropertyTable({ properties }: Props) {
                                 defaultValue={(p as any).origin || ""} 
                                 onValueChange={(val) => handleUpdate(id, "origin", val)}
                               >
-                                <SelectTrigger className="h-7 text-[10px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1 w-20">
+                                <SelectTrigger 
+                                  className="h-7 text-[10px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1 w-20"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -331,6 +337,7 @@ export default function PropertyTable({ properties }: Props) {
                               <Input 
                                 className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[200px] px-1"
                                 defaultValue={p.address || ""}
+                                onClick={(e) => e.stopPropagation()}
                                 onBlur={(e) => {
                                   if (e.target.value !== p.address) handleUpdate(id, "address", e.target.value);
                                 }}
@@ -343,6 +350,7 @@ export default function PropertyTable({ properties }: Props) {
                                 <Input 
                                   className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-20 px-1 uppercase"
                                   defaultValue={p.city || ""}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={(e) => {
                                     if (e.target.value !== p.city) handleUpdate(id, "city", e.target.value.toUpperCase());
                                   }}
@@ -351,6 +359,7 @@ export default function PropertyTable({ properties }: Props) {
                                 <Input 
                                   className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-8 px-1 uppercase"
                                   defaultValue={p.state || ""}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={(e) => {
                                     if (e.target.value !== p.state) handleUpdate(id, "state", e.target.value.toUpperCase());
                                   }}
@@ -363,6 +372,7 @@ export default function PropertyTable({ properties }: Props) {
                               <Input 
                                 className="h-7 text-[10px] bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary min-w-[100px] px-1 uppercase"
                                 defaultValue={p.neighborhood || ""}
+                                onClick={(e) => e.stopPropagation()}
                                 onBlur={(e) => {
                                   if (e.target.value !== p.neighborhood) handleUpdate(id, "neighborhood", e.target.value.toUpperCase());
                                 }}
@@ -372,7 +382,10 @@ export default function PropertyTable({ properties }: Props) {
                           case "stage":
                             content = (
                               <Select value={p.stage} onValueChange={(val) => handleUpdate(id, "stage", val)}>
-                                <SelectTrigger className="h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1">
+                                <SelectTrigger 
+                                  className="h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <div className="flex items-center gap-1.5">
                                     <div className={cn("h-1.5 w-1.5 rounded-full", stage?.color || "bg-slate-400")} />
                                     <span>{stage?.label}</span>
@@ -394,11 +407,14 @@ export default function PropertyTable({ properties }: Props) {
                           case "priority":
                             content = (
                               <Select value={p.priority} onValueChange={(val) => handleUpdate(id, "priority", val)}>
-                                <SelectTrigger className={cn("h-7 text-[8px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1", 
-                                  p.priority === 'alta' ? 'text-destructive' : 
-                                  p.priority === 'media' ? 'text-orange-600' : 
-                                  'text-emerald-600'
-                                )}>
+                                <SelectTrigger 
+                                  className={cn("h-7 text-[8px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1", 
+                                    p.priority === 'alta' ? 'text-destructive' : 
+                                    p.priority === 'media' ? 'text-orange-600' : 
+                                    'text-emerald-600'
+                                  )}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -412,7 +428,10 @@ export default function PropertyTable({ properties }: Props) {
                           case "property_type":
                             content = (
                               <Select value={p.property_type} onValueChange={(val) => handleUpdate(id, "property_type", val)}>
-                                <SelectTrigger className="h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1">
+                                <SelectTrigger 
+                                  className="h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -430,6 +449,7 @@ export default function PropertyTable({ properties }: Props) {
                                   type="number"
                                   className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-16 px-1"
                                   defaultValue={p.area_total || ""}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={(e) => {
                                     if (Number(e.target.value) !== p.area_total) handleUpdate(id, "area_total", Number(e.target.value));
                                   }}
@@ -443,6 +463,7 @@ export default function PropertyTable({ properties }: Props) {
                               <CurrencyInput 
                                 className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
                                 value={p.purchase_price || 0}
+                                onClick={(e) => e.stopPropagation()}
                                 onBlur={() => {}} // CurrencyInput handles blur internally or via callback
                                 onChange={(val) => {
                                   if (val !== p.purchase_price) handleUpdate(id, "purchase_price", val);
@@ -455,6 +476,7 @@ export default function PropertyTable({ properties }: Props) {
                               <CurrencyInput 
                                 className="h-7 text-[10px] font-mono font-bold text-emerald-600 bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
                                 value={p.listed_price || 0}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(val) => {
                                   if (val !== p.listed_price) handleUpdate(id, "listed_price", val);
                                 }}
@@ -466,6 +488,7 @@ export default function PropertyTable({ properties }: Props) {
                               <CurrencyInput 
                                 className="h-7 text-[10px] font-mono font-bold text-primary bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
                                 value={(p as any).sale_price || 0}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(val) => {
                                   if (val !== (p as any).sale_price) handleUpdate(id, "sale_price", val);
                                 }}
@@ -474,7 +497,7 @@ export default function PropertyTable({ properties }: Props) {
                             break;
                           case "auction_date":
                             content = (
-                              <div className="w-24">
+                              <div className="w-24" onClick={(e) => e.stopPropagation()}>
                                 <SmartDatePicker 
                                   value={p.auction_date || ""} 
                                   onChange={(val) => handleUpdate(id, "auction_date", val)}
@@ -486,9 +509,12 @@ export default function PropertyTable({ properties }: Props) {
                           case "occupation_status":
                             content = (
                               <Select value={p.occupation_status} onValueChange={(val) => handleUpdate(id, "occupation_status", val)}>
-                                <SelectTrigger className={cn("h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1", 
-                                  p.occupation_status === 'desocupado' ? 'text-emerald-500' : 'text-amber-500'
-                                )}>
+                                <SelectTrigger 
+                                  className={cn("h-7 text-[9px] font-black uppercase border-none bg-transparent hover:bg-muted/50 p-1", 
+                                    p.occupation_status === 'desocupado' ? 'text-emerald-500' : 'text-amber-500'
+                                  )}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -505,7 +531,10 @@ export default function PropertyTable({ properties }: Props) {
                                 value={p.responsible_user_id || "__none__"} 
                                 onValueChange={(val) => handleUpdate(id, "responsible_user_id", val === "__none__" ? null : val)}
                               >
-                                <SelectTrigger className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32">
+                                <SelectTrigger 
+                                  className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -523,7 +552,10 @@ export default function PropertyTable({ properties }: Props) {
                                 value={(p as any).operation_responsible_id || "__none__"} 
                                 onValueChange={(val) => handleUpdate(id, "operation_responsible_id", val === "__none__" ? null : val)}
                               >
-                                <SelectTrigger className="h-7 text-[9px] font-bold text-emerald-600 border-none bg-transparent hover:bg-muted/50 p-1 w-32">
+                                <SelectTrigger 
+                                  className="h-7 text-[9px] font-bold text-emerald-600 border-none bg-transparent hover:bg-muted/50 p-1 w-32"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
