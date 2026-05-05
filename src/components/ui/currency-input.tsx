@@ -83,7 +83,7 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
   };
 
   return (
-    <div className="relative flex items-center w-full">
+    <div className="relative flex items-center w-full" onClick={(e) => e.stopPropagation()}>
       <span className="absolute left-3 text-muted-foreground text-sm font-medium z-10">R$</span>
       <Input
         {...rest}
