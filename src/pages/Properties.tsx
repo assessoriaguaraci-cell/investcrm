@@ -56,9 +56,15 @@ export default function Properties() {
   const updateProperty = useUpdateProperty();
   const [filters, setFilters] = useState<PropertyFilterValues>(EMPTY_FILTERS);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (localStorage.getItem("properties_view_mode") as ViewMode) || "kanban";
+  });
   const { user } = useAuth();
   const cardSettings = usePropertySettings();
+
+  useEffect(() => {
+    localStorage.setItem("properties_view_mode", viewMode);
+  }, [viewMode]);
 
   const [isNewFunnelOpen, setIsNewFunnelOpen] = useState(false);
   const [newFunnelName, setNewFunnelName] = useState("");
