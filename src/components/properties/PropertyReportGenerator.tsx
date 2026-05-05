@@ -96,7 +96,7 @@ export default function PropertyReportGenerator({ property }: Props) {
       const allItems = await ensureAllChecklists();
     const lines: string[] = [];
 
-    lines.push(`📋 *RELATÓRIO — ${property.code}${property.city ? ` (${property.city}/${property.state})` : ""}*`);
+    lines.push(`📋 *Relatório — ${property.code}${property.city ? ` (${property.city}/${property.state})` : ""}*`);
     lines.push("");
     lines.push(`📍 Etapa atual: *${stageLabel}*`);
     if (daysSinceAuction !== null) {
@@ -127,7 +127,9 @@ export default function PropertyReportGenerator({ property }: Props) {
 
     for (const stageValue of stagesWithItems) {
       const stageItems = filteredAllItems.filter(item => item.stage === stageValue);
-      const stageLabel = PROPERTY_STAGES.find(s => s.value === stageValue)?.label ?? stageValue;
+      const stageLabelRaw = PROPERTY_STAGES.find(s => s.value === stageValue)?.label ?? stageValue;
+      // Standardize stage label casing
+      const stageLabel = stageLabelRaw.charAt(0).toUpperCase() + stageLabelRaw.slice(1).toLowerCase();
       
       const done = stageItems.filter(i => i.completed).length;
       const total = stageItems.length;
@@ -148,7 +150,9 @@ export default function PropertyReportGenerator({ property }: Props) {
       });
 
       for (const [groupName, groupItems] of byGroup.entries()) {
-        lines.push(`  _${groupName}_`);
+        // Standardize group name casing
+        const displayGroup = groupName.charAt(0).toUpperCase() + groupName.slice(1).toLowerCase();
+        lines.push(`  _${displayGroup}_`);
         groupItems.forEach(item => {
           const emoji = item.completed ? "✅" : "⬜";
           const datePart = item.completed && item.completed_at
@@ -160,6 +164,11 @@ export default function PropertyReportGenerator({ property }: Props) {
           let displayName = item.task_name;
           if (displayName?.toLowerCase().includes("fluxo do crm") || displayName?.toLowerCase().includes("cadastrado no crm")) {
             displayName = "Imóvel cadastrado no SMARTAPP";
+          }
+          
+          // Standardize task name casing (only if it's all caps)
+          if (displayName && displayName === displayName.toUpperCase() && displayName.length > 3) {
+            displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1).toLowerCase();
           }
           
           lines.push(`    ${emoji} ${displayName}${datePart}${notePart}`);
