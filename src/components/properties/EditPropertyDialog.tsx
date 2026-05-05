@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import { useUpdateProperty, useDeleteProperty, type Property } from "@/hooks/useProperties";
 import { PROPERTY_TYPES, OCCUPATION_STATUSES, PRIORITY_LEVELS, BRAZILIAN_STATES } from "@/lib/property-constants";
 import CityCombobox from "./CityCombobox";
@@ -216,20 +217,32 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
           <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
-            <div className="flex items-center gap-4">
-              <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                Imóvel: {property.code}
-              </DialogTitle>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" 
-                onClick={handleDelete} 
-                title="Excluir Imóvel"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div className="flex flex-col gap-1.5 w-full">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                    Imóvel: {property.code}
+                    <span className="text-muted-foreground font-bold ml-2 text-base">
+                      {property.city ? `${property.city}/${property.state}` : ""}
+                    </span>
+                  </DialogTitle>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" 
+                  onClick={handleDelete} 
+                  title="Excluir Imóvel"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] font-black bg-primary/10 text-primary border-primary/20 uppercase tracking-wider">
+                  Etapa: {currentStage?.label || property.stage?.toUpperCase().replace(/_/g, " ")}
+                </Badge>
+              </div>
             </div>
           </DialogHeader>
 

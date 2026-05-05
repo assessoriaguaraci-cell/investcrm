@@ -96,7 +96,7 @@ export default function PropertyReportGenerator({ property }: Props) {
       const allItems = await ensureAllChecklists();
     const lines: string[] = [];
 
-    lines.push(`📋 *RELATÓRIO — ${property.code}*`);
+    lines.push(`📋 *RELATÓRIO — ${property.code}${property.city ? ` (${property.city}/${property.state})` : ""}*`);
     lines.push("");
     lines.push(`📍 Etapa atual: *${stageLabel}*`);
     if (daysSinceAuction !== null) {
