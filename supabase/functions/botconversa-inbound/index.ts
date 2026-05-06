@@ -62,20 +62,37 @@ serve(async (req) => {
     let rawMessage = ""
     let searchCode = ""
 
-    const findValue = (keys: string[], obj: any = data): any => {
+    const findValue = (keys: string[], obj: any = data, depth = 0): any => {
+      if (!obj || typeof obj !== 'object' || depth > 5) return null;
+      
       // Tenta no nível atual
       for (const k of keys) {
-        if (obj[k]) return obj[k]
+        if (obj[k]) return obj[k];
       }
-      // Se não achou, procura em objetos filhos (recursão simples para 1 nível)
+      
+      // Procura recursivamente em todos os objetos filhos e arrays
       for (const k in obj) {
-        if (obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
-          for (const key of keys) {
-            if (obj[k][key]) return obj[k][key]
+        if (obj[k] && typeof obj[k] === 'object') {
+          if (Array.isArray(obj[k])) {
+            // Se for array, procura por objetos que tenham chaves úteis
+            for (const item of obj[k]) {
+              if (item && typeof item === 'object') {
+                // Tenta achar em propriedades do item ou se o item é um par chave-valor {key: '...', value: '...'}
+                const itemKey = item.key || item.name || item.slug;
+                const itemVal = item.value || item.val;
+                if (itemKey && itemVal && keys.includes(itemKey)) return itemVal;
+                
+                const found = findValue(keys, item, depth + 1);
+                if (found) return found;
+              }
+            }
+          } else {
+            const found = findValue(keys, obj[k], depth + 1);
+            if (found) return found;
           }
         }
       }
-      return null
+      return null;
     }
 
     // Tenta capturar nome de várias formas
