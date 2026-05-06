@@ -35,7 +35,8 @@ export default function ImportClientsDialog() {
         income: 5000,
         city: "São Paulo",
         state: "SP",
-        notes: "Observação importante"
+        notes: "Observação importante",
+        codigo_imovel: "IL-0000-0000"
       }
     ];
     exportToCSV("modelo_importacao_clientes", template);
@@ -149,20 +150,31 @@ export default function ImportClientsDialog() {
           } else {
             // New record
             const newItem = {
-              full_name: item.full_name || 'Sem nome',
+              full_name: item.full_name || item.nome || 'Sem nome',
               email: item.email || null,
-              phone: item.phone || null,
-              whatsapp: item.whatsapp || null,
+              phone: item.phone || item.telefone || null,
+              whatsapp: item.whatsapp || item.telefone || null,
               cpf: item.cpf || null,
               income: item.income ? parseFloat(item.income) : null,
-              city: item.city || null,
-              state: item.state || null,
-              notes: item.notes || null,
+              city: item.city || item.cidade || null,
+              state: item.state || item.estado || null,
+              notes: item.notes || item.observacao || null,
               pipeline: 'inicial' as any,
               stage: 'chegada_lead' as any,
               temperature: 'morno' as any
             };
-            await supabase.from("clients").insert(newItem);
+            const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();
+            if (!insError && inserted && (item.property_code || item.codigo_imovel)) {
+              const code = (item.property_code || item.codigo_imovel).toString();
+              const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+              if (prop) {
+                await supabase.from("client_property_links").insert({
+                  client_id: inserted.id,
+                  property_id: prop.id,
+                  status: 'interessado'
+                });
+              }
+            }
             insertedCount++;
           }
         }

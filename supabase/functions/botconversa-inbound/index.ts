@@ -89,12 +89,22 @@ serve(async (req) => {
     
     // Tenta capturar mensagem/código
     rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo', 'last_text', 'mensagem']) || ""
-    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku']) || ""
+    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku', 'etiqueta', 'tag']) || ""
 
-    // Se não veio código, tenta extrair da mensagem (IL-0000-0000 ou apenas os números finais)
+    // Se não veio código, tenta extrair da mensagem (IL-0000-0000 ou CÓDIGO XXXX ou apenas os números de 4 dígitos)
     if (!searchCode && rawMessage) {
-      const codeMatch = String(rawMessage).match(/IL-\d{4}-\d{4}/i) || String(rawMessage).match(/\d{4}$/)
-      if (codeMatch) searchCode = codeMatch[0]
+      const msgStr = String(rawMessage).toUpperCase()
+      const codeMatch = 
+        msgStr.match(/IL-\d{4}-\d{4}/) || 
+        msgStr.match(/CÓDIGO\s*(\d{4,})/) || 
+        msgStr.match(/CODIGO\s*(\d{4,})/) ||
+        msgStr.match(/(\d{4,})$/) ||
+        msgStr.match(/(\d{4,})/)
+      
+      if (codeMatch) {
+        // Se pegou o grupo de captura (apenas números), usa ele, senão pega o match inteiro
+        searchCode = codeMatch[1] || codeMatch[0]
+      }
     }
 
     const cleanPhone = leadPhone ? String(leadPhone).replace(/\D/g, '') : null
