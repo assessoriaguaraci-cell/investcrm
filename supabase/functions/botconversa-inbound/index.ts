@@ -72,7 +72,8 @@ serve(async (req) => {
     // Tenta capturar nome de várias formas
     leadName = findValue([
       'full_name', 'contact_name', 'nome', 'first_name', 'name', 
-      'Nome_do_Cliente', 'nome_completo', 'first_name_contact', '@first_name'
+      'Nome_do_Cliente', 'nome_completo', 'first_name_contact', '@first_name',
+      'peopleName'
     ]) || leadName
     
     if (data.first_name && data.last_name) {
@@ -84,12 +85,13 @@ serve(async (req) => {
     // Tenta capturar telefone
     leadPhone = findValue([
       'phone', 'telefone', 'id', 'wa_id', 'contact_phone', 'fone', 
-      'subscriber_id', 'whatsapp', 'celular', 'phone_number', '@phone'
+      'subscriber_id', 'whatsapp', 'celular', 'phone_number', '@phone',
+      'peoplePhone'
     ]) || ""
     
     // Tenta capturar mensagem/código
     rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo', 'last_text', 'mensagem']) || ""
-    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku', 'etiqueta', 'tag']) || ""
+    searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku', 'etiqueta', 'tag', 'imovelcod']) || ""
 
     // Se não veio código, tenta extrair da mensagem (IL-0000-0000 ou CÓDIGO XXXX ou apenas os números de 4 dígitos)
     if (!searchCode && rawMessage) {
