@@ -1,7 +1,42 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
-import { ClientFilterValues, EMPTY_CLIENT_FILTERS } from '@/components/clients/ClientFilters';
+
+export interface ClientFilterValues {
+  search: string;
+  temperature: string[];
+  state: string[];
+  city: string[];
+  work_regime: string[];
+  marital_status: string[];
+  has_fgts: string[];
+  has_financial_pending: string[];
+  can_compose_income: string[];
+  income_min: string;
+  income_max: string;
+  responsible_user_id: string[];
+  tag: string;
+  created_at_start: string;
+  created_at_end: string;
+}
+
+export const EMPTY_CLIENT_FILTERS: ClientFilterValues = {
+  search: "",
+  temperature: [],
+  state: [],
+  city: [],
+  work_regime: [],
+  marital_status: [],
+  has_fgts: [],
+  has_financial_pending: [],
+  can_compose_income: [],
+  income_min: "",
+  income_max: "",
+  responsible_user_id: [],
+  tag: "",
+  created_at_start: "",
+  created_at_end: "",
+};
 
 interface ClientFiltersState {
   activeFilters: ClientFilterValues;
