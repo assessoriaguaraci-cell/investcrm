@@ -20,6 +20,7 @@ interface Props<T extends object> {
   emptyFilters: T;
   onLoadFilter: (filters: T) => void;
   isFilterActive?: (filters: T) => boolean;
+  sanitize?: (filters: any) => T;
 }
 
 export function SavedFiltersButton<T extends object>({
@@ -28,6 +29,7 @@ export function SavedFiltersButton<T extends object>({
   emptyFilters,
   onLoadFilter,
   isFilterActive,
+  sanitize,
 }: Props<T>) {
   const { user } = useAuth();
   const [saveOpen, setSaveOpen] = useState(false);
@@ -131,7 +133,10 @@ export function SavedFiltersButton<T extends object>({
                 variant="outline"
                 size="sm"
                 className="gap-1 text-xs h-7"
-                onClick={() => onLoadFilter(s.filters)}
+                onClick={() => {
+                  const filters = sanitize ? sanitize(s.filters) : s.filters;
+                  onLoadFilter(filters);
+                }}
               >
                 <Bookmark className="h-3 w-3" />
                 {s.name}

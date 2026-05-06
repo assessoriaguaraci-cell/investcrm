@@ -12,6 +12,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { sanitizeClientFilters } from "@/hooks/useClientFiltersStore";
 
 export interface ClientFilterValues {
   search: string;
@@ -263,12 +264,13 @@ export default function ClientFilters({ filters, onFiltersChange, activePipeline
           </div>
         </div>
       )}
-      <div className="mt-2">
+    <div className="mt-2">
         <SavedFiltersButton
           entityType="clients"
           currentFilters={filters}
           emptyFilters={EMPTY_CLIENT_FILTERS}
           onLoadFilter={onFiltersChange}
+          sanitize={sanitizeClientFilters}
         />
       </div>
     </div>

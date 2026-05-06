@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Users, Loader2, ArrowLeft, LayoutGrid, TableIcon, MoreHorizontal, ChevronDown, Search, CheckSquare, Download } from "lucide-react";
@@ -30,6 +31,7 @@ import { BulkTaskDialog } from "@/components/kanban/BulkTaskDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { BulkFieldDialog } from "@/components/kanban/BulkFieldDialog";
 import ImportClientsDialog from "@/components/clients/ImportClientsDialog";
+import { useClientFiltersStore } from "@/hooks/useClientFiltersStore";
 import { exportToCSV, exportToExcel } from "@/utils/exportUtils";
 import {
   DropdownMenu,
@@ -51,7 +53,7 @@ export default function Clients() {
   const { stages: dynamicStages, isLoading: isStagesLoading, updateStage, addStage } = useKanbanStages("client" as any);
   const updateClient = useUpdateClient();
   const qc = useQueryClient();
-  const [filters, setFilters] = useState<ClientFilterValues>(EMPTY_CLIENT_FILTERS);
+  const { activeFilters: filters, setActiveFilters: setFilters, loadFromCloud, saveToCloud } = useClientFiltersStore();
   const [activePipeline, setActivePipeline] = useState<ClientPipeline>("inicial");
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [selectionModeActive, setSelectionModeActive] = useState(false);
@@ -66,6 +68,18 @@ export default function Clients() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      loadFromCloud(user.id);
+    }
+  }, [user, loadFromCloud]);
+
+  useEffect(() => {
+    if (user) {
+      saveToCloud(user.id);
+    }
+  }, [filters, user, saveToCloud]);
 
   const dashboardFilter = (location.state as any)?.from === "dashboard"
     ? (location.state as any)?.filter ?? null
