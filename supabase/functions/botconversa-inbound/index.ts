@@ -95,31 +95,40 @@ serve(async (req) => {
       return null;
     }
 
-    // Tenta capturar nome de várias formas
+    // Tenta capturar nome de várias formas (prioriza campos do contato)
     leadName = findValue([
       'full_name', 'contact_name', 'nome', 'first_name', 'name', 
       'Nome_do_Cliente', 'nome_completo', 'first_name_contact', '@first_name',
-      'peopleName'
+      'peopleName', 'contact.name', 'subscriber.name'
     ]) || leadName
     
-    if (data.first_name && data.last_name) {
-      leadName = `${data.first_name} ${data.last_name}`
-    } else if (data.first_name) {
-      leadName = data.first_name
-    }
-
     // Tenta capturar telefone
     leadPhone = findValue([
       'phone', 'telefone', 'id', 'wa_id', 'contact_phone', 'fone', 
       'subscriber_id', 'whatsapp', 'celular', 'phone_number', '@phone',
-      'peoplePhone'
+      'peoplePhone', 'contact.phone', 'subscriber.phone'
     ]) || ""
     
     // Tenta capturar mensagem/código
     rawMessage = findValue(['message', 'text', 'last_message', 'msg', 'conteudo', 'last_text', 'mensagem']) || ""
     searchCode = findValue(['property_code', 'codigo', 'imovel', 'code', 'codigo_imovel', 'sku', 'etiqueta', 'tag', 'imovelcod']) || ""
 
-    // Se não veio código, tenta extrair da mensagem (IL-0000-0000 ou CÓDIGO XXXX ou apenas os números de 4 dígitos)
+    // Se não achou código nos campos específicos, procura dentro de TODAS as tags/etiquetas
+    const allTags = findValue(['tags', 'labels', 'etiquetas'])
+    if (!searchCode && allTags) {
+      const tagArray = Array.isArray(allTags) ? allTags : String(allTags).split(',')
+      for (const tag of tagArray) {
+        const cleanTag = String(tag).trim()
+        // Procura por 4 dígitos na tag
+        const tagMatch = cleanTag.match(/\d{4}$/) || cleanTag.match(/^\d{4}$/) || cleanTag.match(/\d{4}/)
+        if (tagMatch) {
+          searchCode = tagMatch[0]
+          break
+        }
+      }
+    }
+
+    // Se ainda não veio código, tenta extrair da mensagem (IL-0000-0000 ou CÓDIGO XXXX ou apenas os números de 4 dígitos)
     if (!searchCode && rawMessage) {
       const msgStr = String(rawMessage).toUpperCase()
       const codeMatch = 
@@ -130,7 +139,6 @@ serve(async (req) => {
         msgStr.match(/(\d{4,})/)
       
       if (codeMatch) {
-        // Se pegou o grupo de captura (apenas números), usa ele, senão pega o match inteiro
         searchCode = codeMatch[1] || codeMatch[0]
       }
     }
