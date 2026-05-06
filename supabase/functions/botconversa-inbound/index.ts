@@ -62,9 +62,18 @@ serve(async (req) => {
     let rawMessage = ""
     let searchCode = ""
 
-    const findValue = (keys: string[]) => {
+    const findValue = (keys: string[], obj: any = data): any => {
+      // Tenta no nível atual
       for (const k of keys) {
-        if (data[k]) return data[k]
+        if (obj[k]) return obj[k]
+      }
+      // Se não achou, procura em objetos filhos (recursão simples para 1 nível)
+      for (const k in obj) {
+        if (obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
+          for (const key of keys) {
+            if (obj[k][key]) return obj[k][key]
+          }
+        }
       }
       return null
     }
