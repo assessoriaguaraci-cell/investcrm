@@ -88,7 +88,7 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
             <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Responsável</span>
             <div className="flex items-center gap-1 text-[11px] font-bold truncate">
               <User className="h-3 w-3 text-primary" />
-              {(property as any).responsible?.full_name || "N/A"}
+              {(property as any).responsible?.full_name || property.responsible_id || "N/A"}
             </div>
           </div>
         </div>

@@ -238,16 +238,18 @@ export function PreAuctionTable({ properties }: Props) {
                         );
                         break;
                     case "responsible":
+                      const respName = members?.find(m => m.user_id === p.responsible_id)?.full_name || p.responsible_id;
                       content = (
                         <Select 
                             value={p.responsible_id || "__none__"} 
                             onValueChange={(val) => handleUpdate(id, "responsible_id", val === "__none__" ? null : val)}
                         >
                             <SelectTrigger className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32" onClick={(e) => e.stopPropagation()}>
-                                <SelectValue placeholder="Selecione" />
+                                <SelectValue>{respName && respName !== "__none__" ? respName : "Selecione"}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="__none__">Nenhum</SelectItem>
+                                <SelectItem value="mentoria">Mentoria</SelectItem>
                                 {members?.map(m => (
                                     <SelectItem key={m.user_id} value={m.user_id || ""}>{m.full_name}</SelectItem>
                                 ))}
@@ -256,13 +258,14 @@ export function PreAuctionTable({ properties }: Props) {
                       );
                       break;
                     case "op_responsible":
+                        const opRespName = members?.find(m => m.user_id === p.operation_responsible_id)?.full_name || p.operation_responsible_id;
                         content = (
                           <Select 
                               value={p.operation_responsible_id || "__none__"} 
                               onValueChange={(val) => handleUpdate(id, "operation_responsible_id", val === "__none__" ? null : val)}
                           >
                               <SelectTrigger className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32 font-bold text-emerald-600" onClick={(e) => e.stopPropagation()}>
-                                  <SelectValue placeholder="Selecione" />
+                                  <SelectValue>{opRespName && opRespName !== "__none__" ? opRespName : "Selecione"}</SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                   <SelectItem value="__none__">Nenhum</SelectItem>
