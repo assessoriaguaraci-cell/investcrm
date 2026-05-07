@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PreAuctionProperty, PreAuctionStage, PreAuctionFunnel } from "@/types/pre-auction";
@@ -19,6 +20,25 @@ export function usePreAuctionFunnels() {
 }
 
 export function usePreAuctionProperties(funnelId?: string, diligenteId?: string) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("pre-auction-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pre_auction_properties" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, funnelId, diligenteId]);
+
   return useQuery({
     queryKey: ["pre-auction-properties", funnelId, diligenteId],
     queryFn: async () => {
