@@ -30,7 +30,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
           .order("created_at", { ascending: false })
           .limit(5000);
         
-        if (funnelId) {
+        if (funnelId && funnelId !== "default") {
           query = query.eq("funnel_id", funnelId);
         } else if (!diligenteId) {
           query = query.is("funnel_id", null);
