@@ -20,13 +20,32 @@ export function usePreAuctionFunnels() {
 }
 
 export function usePreAuctionProperties(funnelId?: string, diligenteId?: string) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("pre-auction-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pre_auction_properties" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, funnelId, diligenteId]);
+
   return useQuery({
     queryKey: ["pre-auction-properties", funnelId, diligenteId],
     queryFn: async () => {
       try {
         let query = supabase
           .from("pre_auction_properties")
-          .select("*, responsible:profiles(full_name)")
+          .select("*")
           .order("created_at", { ascending: false })
           .limit(5000);
         
@@ -45,7 +64,14 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
           console.error("Erro Supabase:", error);
           throw error;
         }
-        return (data || []) as PreAuctionProperty[];
+
+        // Map and ensure properties have a valid stage and basic info
+        const sanitizedData = (data || []).map(p => ({
+          ...p,
+          stage: p.stage || 'inicial'
+        }));
+
+        return sanitizedData as PreAuctionProperty[];
       } catch (err) {
         console.error("Erro na busca de propriedades:", err);
         return [] as PreAuctionProperty[];
