@@ -200,14 +200,16 @@ export function PreAuctionTable({ properties }: Props) {
                     case "appraisal_value":
                     case "listed_price":
                       content = (
-                        <CurrencyInput 
-                            className="h-7 text-[10px] font-mono bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary w-24 p-1"
-                            value={(p as any)[col.id] || 0}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(val) => {
-                                if (val !== (p as any)[col.id]) handleUpdate(id, col.id, val);
-                            }}
-                        />
+                        <div className="min-w-[140px] px-2 flex items-center h-full">
+                          <CurrencyInput 
+                              className="h-8 text-[11px] font-mono bg-transparent border-none focus-visible:ring-0 w-full"
+                              value={(p as any)[col.id] || 0}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(val) => {
+                                  if (val !== (p as any)[col.id]) handleUpdate(id, col.id, val);
+                              }}
+                          />
+                        </div>
                       );
                       break;
                     case "auction_date":
