@@ -174,7 +174,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
         <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
-          <div className="flex items-center justify-between w-full">
+          <div className="flex items-center justify-between w-full pr-12">
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
               <Gavel className="h-6 w-6 text-primary" />
               {property ? `Ficha do Imóvel: ${property.code}` : "Novo Imóvel"}
