@@ -20,47 +20,36 @@ export function usePreAuctionFunnels() {
 }
 
 export function usePreAuctionProperties(funnelId?: string, diligenteId?: string) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("schema-db-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pre_auction_properties" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]); // Reduced dependencies to prevent excessive reconnections
-
   return useQuery({
     queryKey: ["pre-auction-properties", funnelId, diligenteId],
     queryFn: async () => {
-      let query = supabase
-        .from("pre_auction_properties")
-        .select("*, responsible:profiles(full_name)")
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      
-      if (funnelId) {
-        query = query.eq("funnel_id", funnelId);
-      } else if (!diligenteId) {
-        query = query.is("funnel_id", null);
-      }
+      try {
+        let query = supabase
+          .from("pre_auction_properties")
+          .select("*, responsible:profiles(full_name)")
+          .order("created_at", { ascending: false })
+          .limit(5000);
+        
+        if (funnelId) {
+          query = query.eq("funnel_id", funnelId);
+        } else if (!diligenteId) {
+          query = query.is("funnel_id", null);
+        }
 
-      if (diligenteId) {
-        query = query.eq("diligence_professional_id", diligenteId);
-      }
+        if (diligenteId) {
+          query = query.eq("diligence_professional_id", diligenteId);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as PreAuctionProperty[];
+        const { data, error } = await query;
+        if (error) {
+          console.error("Erro Supabase:", error);
+          throw error;
+        }
+        return (data || []) as PreAuctionProperty[];
+      } catch (err) {
+        console.error("Erro na busca de propriedades:", err);
+        return [] as PreAuctionProperty[];
+      }
     },
   });
 }
@@ -68,17 +57,17 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
 export function useUpdatePreAuctionProperty() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (property: Partial<PreAuctionProperty> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<PreAuctionProperty> & { id: string }) => {
       const { data, error } = await supabase
         .from("pre_auction_properties")
-        .update(property)
-        .eq("id", property.id)
+        .update(updates)
+        .eq("id", id)
         .select()
         .single();
       
       if (error) throw error;
 
-      if (property.stage === 'arrematado') {
+      if (updates.stage === 'arrematado') {
         await handleArrematadoAutomation(data as PreAuctionProperty);
       }
 

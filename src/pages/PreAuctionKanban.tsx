@@ -251,7 +251,7 @@ export default function PreAuctionKanban() {
 
       {/* Board/Table */}
       <div className="flex-1 overflow-hidden">
-        {isLoading ? (
+        {isLoading && !properties ? (
           <div className="h-full flex flex-col items-center justify-center gap-4 opacity-50">
             <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
             <p className="font-black uppercase tracking-widest text-xs">Carregando...</p>
