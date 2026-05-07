@@ -104,6 +104,61 @@ export function useCreatePreAuctionFunnel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pre-auction-funnels"] });
+      toast.success("Funil criado!");
+    },
+  });
+}
+
+export function useUpdatePreAuctionFunnel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { data, error } = await supabase
+        .from("pre_auction_funnels")
+        .update({ name })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pre-auction-funnels"] });
+      toast.success("Funil atualizado!");
+    },
+  });
+}
+
+export function useDeletePreAuctionFunnel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("pre_auction_funnels")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pre-auction-funnels"] });
+      toast.success("Funil excluído!");
+    },
+  });
+}
+
+export function useDeletePreAuctionProperty() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("pre_auction_properties")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
+      toast.success("Imóvel excluído com sucesso!");
     },
   });
 }

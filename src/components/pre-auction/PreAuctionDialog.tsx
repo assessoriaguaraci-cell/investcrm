@@ -10,11 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PreAuctionProperty } from "@/types/pre-auction";
-import { useUpdatePreAuctionProperty, useCreatePreAuctionProperty, usePreAuctionFunnels } from "@/hooks/usePreAuction";
+import { useUpdatePreAuctionProperty, useCreatePreAuctionProperty, usePreAuctionFunnels, useDeletePreAuctionProperty } from "@/hooks/usePreAuction";
 import { PROPERTY_TYPES, BRAZILIAN_STATES, OCCUPATION_STATUSES } from "@/lib/property-constants";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { SmartDatePicker } from "@/components/ui/smart-date-picker";
-import { Save, Gavel, ExternalLink } from "lucide-react";
+import { Save, Gavel, ExternalLink, Trash2 } from "lucide-react";
 import PropertyPhotoUpload from "@/components/properties/PropertyPhotoUpload";
 import PropertyChecklist from "@/components/properties/PropertyChecklist";
 import ResponsibleSelect from "@/components/properties/ResponsibleSelect";
@@ -95,6 +95,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
   const [photoUrl, setPhotoUrl] = useState<string | null>(property?.photo_url ?? null);
   const updateMutation = useUpdatePreAuctionProperty();
   const createMutation = useCreatePreAuctionProperty();
+  const deleteMutation = useDeletePreAuctionProperty();
   const { data: funnels } = usePreAuctionFunnels();
   const currentFunnelId = property?.funnel_id || funnelId;
   const { stages } = useKanbanStages("pre_auction", currentFunnelId || undefined);
@@ -138,6 +139,18 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
       }
     }
   }, [open, property, initialDiligenteId, funnelId]);
+  const handleDelete = async () => {
+    if (!property?.id) return;
+    if (confirm("Tem certeza que deseja excluir este imóvel permanentemente?")) {
+      try {
+        await deleteMutation.mutateAsync(property.id);
+        onOpenChange(false);
+      } catch (error) {
+        toast.error("Erro ao excluir imóvel.");
+      }
+    }
+  };
+
   const onSubmit = async (values: FormValues) => {
     try {
       const data = {
@@ -161,11 +174,24 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl focus:outline-none">
         <DialogHeader className="p-6 pb-2 border-b bg-muted/20">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between w-full">
             <DialogTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">
               <Gavel className="h-6 w-6 text-primary" />
-              {property ? `Ficha do Imóvel: ${property.code}` : "Novo Imóvel para Pré-Arremate"}
+              {property ? `Ficha do Imóvel: ${property.code}` : "Novo Imóvel"}
             </DialogTitle>
+            
+            {property && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleDelete}
+                className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                disabled={deleteMutation.isPending}
+                title="Excluir Imóvel"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </DialogHeader>
 
@@ -176,8 +202,14 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
               <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="checklist" className="mt-0">
+            <TabsContent value="checklist" className="mt-0 space-y-6">
                <PropertyChecklist propertyId={property?.id || ""} stage={(property as any)?.stage || "pre_arrematacao"} />
+               <div className="flex justify-end pt-6 border-t">
+                  <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2" disabled={updateMutation.isPending || createMutation.isPending}>
+                    <Save className="h-4 w-4" />
+                    {updateMutation.isPending || createMutation.isPending ? "SALVANDO..." : "SALVAR CHECKLIST"}
+                  </Button>
+               </div>
             </TabsContent>
 
             <TabsContent value="dados" className="mt-0">
@@ -525,7 +557,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
               </div>
 
               {/* SEÇÃO 7: CONCLUSÃO E OBSERVAÇÕES */}
-              <div className="space-y-4 pt-6 border-t pb-8">
+              <div className="space-y-4 pt-6 border-t">
                 <h3 className="font-black uppercase text-xs tracking-widest text-primary flex items-center gap-2">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary" /> Conclusão e Observações
                 </h3>
@@ -541,6 +573,13 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                         <FormControl><Textarea {...field} value={field.value || ""} rows={3} /></FormControl>
                     </FormItem>
                 )} />
+
+                <div className="flex justify-end pt-6 border-t pb-8">
+                  <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2 h-10 px-8 shadow-lg shadow-primary/20" disabled={updateMutation.isPending || createMutation.isPending}>
+                    <Save className="h-4 w-4" />
+                    {updateMutation.isPending || createMutation.isPending ? "SALVANDO..." : "SALVAR FICHA"}
+                  </Button>
+                </div>
               </div>
 
                 <div className="h-px bg-transparent" /> {/* Spacer */}
@@ -550,11 +589,11 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
         </Tabs>
         </div>
 
-        <DialogFooter className="p-6 border-t bg-muted/20">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="font-black uppercase tracking-tight">Cancelar</Button>
-          <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2" disabled={updateMutation.isPending || createMutation.isPending}>
-            <Save className="h-4 w-4" />
-            {updateMutation.isPending || createMutation.isPending ? "SALVANDO..." : "SALVAR FICHA"}
+        <DialogFooter className="p-4 border-t bg-muted/5 flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="font-black uppercase tracking-tight h-9 px-4 text-[10px]">Fechar</Button>
+          <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2 h-9 px-6 text-[10px] shadow-md shadow-primary/10" disabled={updateMutation.isPending || createMutation.isPending}>
+            <Save className="h-3.5 w-3.5" />
+            {updateMutation.isPending || createMutation.isPending ? "SALVANDO..." : "SALVAR TUDO"}
           </Button>
         </DialogFooter>
       </DialogContent>
