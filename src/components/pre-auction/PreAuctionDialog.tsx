@@ -155,6 +155,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
     try {
       const data = {
         ...values,
+        stage: property?.stage || 'inicial',
         funnel_id: values.funnel_id && values.funnel_id !== "default" ? values.funnel_id : null,
         photo_url: photoUrl,
       };

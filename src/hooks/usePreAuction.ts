@@ -24,7 +24,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
 
   useEffect(() => {
     const channel = supabase
-      .channel("pre-auction-realtime")
+      .channel("pre-auction-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pre_auction_properties" },
