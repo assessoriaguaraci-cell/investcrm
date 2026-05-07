@@ -24,7 +24,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
 
   useEffect(() => {
     const channel = supabase
-      .channel("pre-auction-realtime")
+      .channel("schema-db-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pre_auction_properties" },
@@ -37,7 +37,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient, funnelId, diligenteId]);
+  }, [queryClient]); // Reduced dependencies to prevent excessive reconnections
 
   return useQuery({
     queryKey: ["pre-auction-properties", funnelId, diligenteId],
