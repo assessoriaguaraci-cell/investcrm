@@ -82,9 +82,13 @@ CREATE TABLE IF NOT EXISTS public.pre_auction_properties (
 ALTER TABLE public.pre_auction_funnels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pre_auction_properties ENABLE ROW LEVEL SECURITY;
 
--- Add policies
+-- Add explicit policies for better permission management
 DROP POLICY IF EXISTS "All authenticated users can manage funnels" ON public.pre_auction_funnels;
-CREATE POLICY "All authenticated users can manage funnels" ON public.pre_auction_funnels FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable manage funnels for authenticated users" ON public.pre_auction_funnels 
+FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "All authenticated users can manage pre_auction_properties" ON public.pre_auction_properties;
-CREATE POLICY "All authenticated users can manage pre_auction_properties" ON public.pre_auction_properties FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable select for authenticated users" ON public.pre_auction_properties FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable insert for authenticated users" ON public.pre_auction_properties FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update for authenticated users" ON public.pre_auction_properties FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable delete for authenticated users" ON public.pre_auction_properties FOR DELETE USING (auth.role() = 'authenticated');
