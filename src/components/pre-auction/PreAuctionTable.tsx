@@ -61,6 +61,9 @@ export function PreAuctionTable({ properties }: Props) {
       stage: true,
       city: true,
       purchase_price: true,
+      appraisal_value: true,
+      proposal_deadline: true,
+      condo_fees: true,
       auction_date: true,
       responsible: true
     };
@@ -89,6 +92,8 @@ export function PreAuctionTable({ properties }: Props) {
     { id: "market_value", label: "Vlr. Mercado", category: "financial" },
     { id: "appraisal_value", label: "Vlr. Laudo", category: "financial" },
     { id: "listed_price", label: "Venda Pret.", category: "financial" },
+    { id: "condo_fees", label: "Condomínio", category: "financial" },
+    { id: "iptu", label: "IPTU", category: "financial" },
     
     { id: "auction_date", label: "Data Leilão", category: "auction" },
     { id: "proposal_deadline", label: "Venc. Lance", category: "auction" },
