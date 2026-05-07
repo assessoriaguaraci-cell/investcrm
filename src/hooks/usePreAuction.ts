@@ -75,6 +75,7 @@ export function useUpdatePreAuctionProperty() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
+      queryClient.refetchQueries({ queryKey: ["pre-auction-properties"] });
       toast.success("Imóvel atualizado!");
     },
   });
@@ -94,6 +95,8 @@ export function useCreatePreAuctionProperty() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
+      // Force a hard refresh of the specific query to be sure
+      queryClient.refetchQueries({ queryKey: ["pre-auction-properties"] });
       toast.success("Imóvel adicionado!");
     },
   });
