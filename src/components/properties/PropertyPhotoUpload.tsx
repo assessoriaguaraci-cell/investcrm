@@ -32,11 +32,12 @@ export default function PropertyPhotoUpload({ propertyId, currentUrl, onUploaded
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `${propertyId}/photo.${ext}`;
+      const fileName = `${Date.now()}.${ext}`;
+      const path = `${propertyId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("property-photos")
-        .upload(path, file, { upsert: true });
+        .upload(path, file);
 
       if (uploadError) throw uploadError;
 
@@ -44,7 +45,9 @@ export default function PropertyPhotoUpload({ propertyId, currentUrl, onUploaded
         .from("property-photos")
         .getPublicUrl(path);
 
-      onUploaded(publicUrl);
+      // Add cache buster to force UI refresh
+      const finalUrl = `${publicUrl}?t=${Date.now()}`;
+      onUploaded(finalUrl);
       toast.success("Foto enviada!");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar foto");
