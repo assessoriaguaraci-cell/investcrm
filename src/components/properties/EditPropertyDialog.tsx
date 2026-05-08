@@ -93,6 +93,17 @@ const schema = z.object({
   })).optional().nullable(),
   sale_price: z.coerce.number().min(0).optional().nullable(),
   cash_sale_discount: z.coerce.number().min(0).optional().nullable(),
+  bill_due_date: z.string().optional().nullable(),
+  current_bid: z.coerce.number().min(0).optional().nullable(),
+  market_value: z.coerce.number().min(0).optional().nullable(),
+  property_conditions: z.string().optional().nullable(),
+  registry_analysis: z.string().optional().nullable(),
+  legal_analysis: z.string().optional().nullable(),
+  neighborhood_security: z.string().optional().nullable(),
+  neighborhood_amenities: z.string().optional().nullable(),
+  occupant_contact: z.string().optional().nullable(),
+  syndic_contact: z.string().optional().nullable(),
+  admin_contact: z.string().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -173,6 +184,17 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
       appraisal_history: (property as any).appraisal_history || [],
       sale_price: (property as any).sale_price ?? null,
       cash_sale_discount: (property as any).cash_sale_discount ?? null,
+      bill_due_date: (property as any).bill_due_date ?? null,
+      current_bid: (property as any).current_bid ?? null,
+      market_value: (property as any).market_value ?? null,
+      property_conditions: (property as any).property_conditions ?? "",
+      registry_analysis: (property as any).registry_analysis ?? "",
+      legal_analysis: (property as any).legal_analysis ?? "",
+      neighborhood_security: (property as any).neighborhood_security ?? "",
+      neighborhood_amenities: (property as any).neighborhood_amenities ?? "",
+      occupant_contact: (property as any).occupant_contact ?? "",
+      syndic_contact: (property as any).syndic_contact ?? "",
+      admin_contact: (property as any).admin_contact ?? "",
     },
   });
 
@@ -250,6 +272,7 @@ export default function EditPropertyDialog({ property, open, onOpenChange }: Pro
             <Tabs defaultValue="dados" className="w-full">
           <TabsList className="w-full flex-wrap h-auto gap-1">
             <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+            <TabsTrigger value="analise" className="flex-1">Análise</TabsTrigger>
             <TabsTrigger value="financeiro" className="flex-1">Financeiro</TabsTrigger>
             <TabsTrigger value="venda" className="flex-1">Venda</TabsTrigger>
             <TabsTrigger value="marketing" className="flex-1">Mkt</TabsTrigger>
@@ -456,6 +479,73 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
 🚘 area ampla de garagem`);
                   }}>Gerar Texto</Button>
                   <Button type="submit" disabled={updateProperty.isPending}>{updateProperty.isPending ? "Salvando..." : "Salvar"}</Button>
+                </div>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="analise" className="mt-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4 rounded-md border p-4 bg-muted/10">
+                    <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Datas e Valores</h3>
+                    <FormField control={form.control} name="bill_due_date" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Data vencimento do boleto</FormLabel>
+                        <FormControl><SmartDatePicker value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="current_bid" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lance atual (R$)</FormLabel>
+                        <FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="market_value" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor de mercado (R$)</FormLabel>
+                        <FormControl><CurrencyInput value={field.value ?? undefined} onChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <div className="space-y-4 rounded-md border p-4 bg-muted/10">
+                    <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Contatos Úteis</h3>
+                    <FormField control={form.control} name="occupant_contact" render={({ field }) => (
+                      <FormItem><FormLabel>Contato do ocupante</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="syndic_contact" render={({ field }) => (
+                      <FormItem><FormLabel>Contato do síndico</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="admin_contact" render={({ field }) => (
+                      <FormItem><FormLabel>Contato Administradora</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
+                    )} />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-4 rounded-md border p-4 bg-muted/10">
+                    <h3 className="font-semibold text-sm flex items-center gap-2"><div className="h-2 w-2 rounded-full bg-primary/60"></div> Análises Detalhadas</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="property_conditions" render={({ field }) => (
+                        <FormItem><FormLabel>Condições do imóvel</FormLabel><FormControl><Textarea {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="registry_analysis" render={({ field }) => (
+                        <FormItem><FormLabel>Análise da Matrícula</FormLabel><FormControl><Textarea {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="legal_analysis" render={({ field }) => (
+                        <FormItem><FormLabel>Análise Jurídica</FormLabel><FormControl><Textarea {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="neighborhood_security" render={({ field }) => (
+                        <FormItem><FormLabel>Segurança da região</FormLabel><FormControl><Textarea {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="neighborhood_amenities" render={({ field }) => (
+                        <FormItem className="md:col-span-2"><FormLabel>Comércios, transporte e serviços</FormLabel><FormControl><Textarea {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" disabled={updateProperty.isPending}>{updateProperty.isPending ? "Salvando..." : "Salvar Análise"}</Button>
                 </div>
               </form>
             </Form>

@@ -194,6 +194,60 @@ export default function PropertyReportGenerator({ property }: Props) {
     }
   };
 
+  const generatePreAuctionReport = () => {
+    setGenerating(true);
+    try {
+      const lines: string[] = [];
+      const formatCurrency = (val: any) => 
+        val ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : "---";
+      const formatDate = (date: any) => date ? format(new Date(date + "T12:00:00"), "dd/MM/yyyy") : "---";
+
+      lines.push(`📊 *ANÁLISE PRÉ-ARREMATAÇÃO – INVEST LAR*`);
+      lines.push("");
+      lines.push(`📆 Data vencimento do boleto: *${formatDate((property as any).bill_due_date)}*`);
+      lines.push("");
+      lines.push(`🏠 Código do imóvel: *${property.code}*`);
+      lines.push("");
+      lines.push(`📍 Endereço: *${property.address || "---"}*`);
+      lines.push(`Link do Localização (Maps): ${property.maps_url || "---"}`);
+      lines.push("");
+      lines.push(`💰 Lance atual: *${formatCurrency((property as any).current_bid || property.purchase_price)}*`);
+      lines.push("");
+      lines.push(`📈 Valor de mercado: *${formatCurrency((property as any).market_value || property.listed_price)}*`);
+      lines.push("");
+      lines.push(`📅 Data de Validade do laudo: *${formatDate((property as any).appraisal_expiry)}*`);
+      lines.push("");
+      lines.push(`📄 Débitos`);
+      lines.push(`•  IPTU: *${formatCurrency(property.iptu_debts)}*`);
+      lines.push(`•  Condomínio: *${formatCurrency(property.condo_debts)}*`);
+      lines.push("");
+      lines.push(`🧱 Condicoes do imóvel:`);
+      lines.push(`${(property as any).property_conditions || "---"}`);
+      lines.push("");
+      lines.push(`📄 Analise da Matricula:`);
+      lines.push(`${(property as any).registry_analysis || "---"}`);
+      lines.push("");
+      lines.push(`🗃️ Analise juridica:`);
+      lines.push(`${(property as any).legal_analysis || "---"}`);
+      lines.push("");
+      lines.push(`🔐 Segurança da região:`);
+      lines.push(`${(property as any).neighborhood_security || "---"}`);
+      lines.push("");
+      lines.push(`🏪 Comércios, transporte e serviços:`);
+      lines.push(`${(property as any).neighborhood_amenities || "---"}`);
+      lines.push("");
+      lines.push(`📞 Contato do ocupante: *${(property as any).occupant_contact || "---"}*`);
+      lines.push("");
+      lines.push(`📞 Contato do síndico: *${(property as any).syndic_contact || "---"}*`);
+      lines.push("");
+      lines.push(`🏢 Contato Administradora: *${(property as any).admin_contact || "---"}*`);
+
+      setReport(lines.join("\n"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(report);
     setCopied(true);
@@ -208,14 +262,25 @@ export default function PropertyReportGenerator({ property }: Props) {
         </p>
       </div>
 
-      <Button onClick={generateReport} disabled={isLoading || generating} className="w-full">
-        {isLoading || generating ? (
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        ) : (
-          <FileText className="h-4 w-4 mr-2" />
-        )}
-        {generating ? "Gerando..." : "Gerar Relatório"}
-      </Button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Button onClick={generateReport} disabled={isLoading || generating} variant="outline" className="w-full">
+          {isLoading || generating ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <FileText className="h-4 w-4 mr-2" />
+          )}
+          Resumo Status
+        </Button>
+
+        <Button onClick={generatePreAuctionReport} disabled={isLoading || generating} className="w-full bg-primary font-bold">
+          {generating ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <ClipboardCopy className="h-4 w-4 mr-2" />
+          )}
+          Análise Pré-Arrematação
+        </Button>
+      </div>
 
       {report && (
         <div className="space-y-2">
