@@ -163,16 +163,27 @@ export default function ImportClientsDialog() {
               stage: 'chegada_lead' as any,
               temperature: 'morno' as any
             };
+
             const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();
+            
             if (!insError && inserted && (item.property_code || item.codigo_imovel)) {
               const code = (item.property_code || item.codigo_imovel).toString();
               const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+              
               if (prop) {
+                // Link the property
                 await supabase.from("client_property_links").insert({
                   client_id: inserted.id,
                   property_id: prop.id,
                   status: 'interessado'
                 });
+
+                // Inherit data from property
+                await supabase.from("clients").update({
+                  responsible_user_id: prop.responsible_user_id,
+                  city: prop.city || newItem.city,
+                  state: prop.state || newItem.state
+                }).eq('id', inserted.id);
               }
             }
             insertedCount++;
