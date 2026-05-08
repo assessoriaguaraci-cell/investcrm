@@ -166,24 +166,34 @@ export default function ImportClientsDialog() {
 
             const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();
             
-            if (!insError && inserted && (item.property_code || item.codigo_imovel)) {
-              const code = (item.property_code || item.codigo_imovel).toString();
-              const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+            if (!insError && inserted) {
+              // Extract codes from various possible fields (including "etiquetas")
+              const rawCodes = item.etiquetas || item.tags || item.property_code || item.codigo_imovel || "";
+              const codes = String(rawCodes).match(/\d{4}/g) || [];
               
-              if (prop) {
-                // Link the property
-                await supabase.from("client_property_links").insert({
-                  client_id: inserted.id,
-                  property_id: prop.id,
-                  status: 'interessado'
-                });
+              let firstPropFound = false;
 
-                // Inherit data from property
-                await supabase.from("clients").update({
-                  responsible_user_id: prop.responsible_user_id,
-                  city: prop.city || newItem.city,
-                  state: prop.state || newItem.state
-                }).eq('id', inserted.id);
+              for (const code of [...new Set(codes)]) {
+                const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+                
+                if (prop) {
+                  // Link the property
+                  await supabase.from("client_property_links").insert({
+                    client_id: inserted.id,
+                    property_id: prop.id,
+                    status: 'interessado'
+                  });
+
+                  // If it's the first property found, inherit its data
+                  if (!firstPropFound) {
+                    await supabase.from("clients").update({
+                      responsible_user_id: prop.responsible_user_id,
+                      city: prop.city || newItem.city,
+                      state: prop.state || newItem.state
+                    }).eq('id', inserted.id);
+                    firstPropFound = true;
+                  }
+                }
               }
             }
             insertedCount++;
