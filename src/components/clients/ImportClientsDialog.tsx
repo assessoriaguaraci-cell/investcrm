@@ -101,6 +101,20 @@ export default function ImportClientsDialog() {
     setShowDuplicates(false);
   };
 
+  // Função auxiliar para encontrar valor em colunas com nomes variados
+  const findColumnValue = (item: any, possibleNames: string[]) => {
+    const keys = Object.keys(item);
+    for (const name of possibleNames) {
+      const normalizedName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const match = keys.find(k => {
+        const normalizedKey = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        return normalizedKey === normalizedName || normalizedKey.includes(normalizedName);
+      });
+      if (match && item[match]) return item[match];
+    }
+    return null;
+  };
+
   const handleImport = async () => {
     if (fullData.length === 0) return;
 
@@ -166,15 +180,15 @@ export default function ImportClientsDialog() {
           } else {
             // New record
             const newItem = {
-              full_name: item.full_name || item.nome || item['Nome'] || item['Nome do Cliente'] || item['Nome Completo'] || 'Sem nome',
-              email: item.email || item['E-mail'] || null,
-              phone: item.phone || item.telefone || item.cel || item.celular || item['Telefone'] || item['WhatsApp'] || null,
-              whatsapp: item.whatsapp || item.telefone || item.cel || item.celular || item['WhatsApp'] || item['Telefone'] || null,
-              cpf: item.cpf || item['CPF'] || null,
-              income: (item.income || item['Renda'] || item['Renda Mensal']) ? parseFloat(item.income || item['Renda'] || item['Renda Mensal']) : null,
-              city: item.city || item.cidade || item['Cidade'] || null,
-              state: item.state || item.estado || item['Estado'] || null,
-              notes: item.notes || item.observacao || item['Observações'] || item['Observação'] || null,
+              full_name: findColumnValue(item, ['nome', 'full name', 'completo', 'cliente', 'interessado', 'lead']) || 'Sem nome',
+              email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
+              phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
+              whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
+              cpf: findColumnValue(item, ['cpf', 'documento']) || null,
+              income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
+              city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
+              state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
+              notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
               pipeline: 'inicial' as any,
               stage: 'chegada_lead' as any,
               temperature: 'quente' as any
@@ -183,8 +197,8 @@ export default function ImportClientsDialog() {
             const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();
             
             if (!insError && inserted) {
-              // Extract codes from various possible fields (including "etiquetas")
-              const rawCodes = item.etiquetas || item.tags || item['Etiquetas'] || item.property_code || item.codigo_imovel || "";
+              // Extract codes from various possible fields
+              const rawCodes = findColumnValue(item, ['etiquetas', 'tags', 'property_code', 'codigo', 'imovel', 'ref', 'sku', 'imovelcod']) || "";
               const codes = String(rawCodes).match(/\d{4}/g) || [];
               
               let firstPropFound = false;
@@ -222,15 +236,15 @@ export default function ImportClientsDialog() {
         let insertedCount = 0;
         for (let i = 0; i < dataToImport.length; i += batchSize) {
           const batch = dataToImport.slice(i, i + batchSize).map((item: any) => ({
-            full_name: item.full_name || item.nome || item['Nome'] || item['Nome do Cliente'] || item['Nome Completo'] || 'Sem nome',
-            email: item.email || item['E-mail'] || null,
-            phone: item.phone || item.telefone || item.cel || item.celular || item['Telefone'] || item['WhatsApp'] || null,
-            whatsapp: item.whatsapp || item.telefone || item.cel || item.celular || item['WhatsApp'] || item['Telefone'] || null,
-            cpf: item.cpf || item['CPF'] || null,
-            income: (item.income || item['Renda'] || item['Renda Mensal']) ? parseFloat(item.income || item['Renda'] || item['Renda Mensal']) : null,
-            city: item.city || item.cidade || item['Cidade'] || null,
-            state: item.state || item.estado || item['Estado'] || null,
-            notes: item.notes || item.observacao || item['Observações'] || item['Observação'] || null,
+            full_name: findColumnValue(item, ['nome', 'full name', 'completo', 'cliente', 'interessado', 'lead']) || 'Sem nome',
+            email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
+            phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
+            whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
+            cpf: findColumnValue(item, ['cpf', 'documento']) || null,
+            income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
+            city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
+            state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
+            notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
             pipeline: 'inicial' as any,
             stage: 'chegada_lead' as any,
             temperature: 'quente' as any
