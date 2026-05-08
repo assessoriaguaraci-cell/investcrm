@@ -45,7 +45,7 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
       try {
         let query = supabase
           .from("pre_auction_properties")
-          .select("*, responsible:profiles!responsible_id(full_name), operation_responsible:profiles!operation_responsible_id(full_name)")
+          .select("*")
           .order("created_at", { ascending: false })
           .limit(5000);
         
