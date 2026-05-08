@@ -12,6 +12,7 @@ import { UsersRound, Check, X, ShieldCheck, UserPlus, Pencil, Trash2, Search, Fi
 import { toast } from "sonner";
 import { useTeamMembers, type TeamMember } from "@/hooks/useTeamMembers";
 import { useIsManagerOrAdmin } from "@/hooks/useCurrentUserRole";
+import { useAuth } from "@/hooks/useAuth";
 import MultiSelectFilter from "@/components/properties/MultiSelectFilter";
 import { SavedFiltersButton } from "@/components/ui/saved-filters-button";
 
@@ -131,10 +132,11 @@ export default function TeamSettings() {
 
   if (isLoading) return <div className="text-muted-foreground text-sm">Carregando...</div>;
 
-  const isAdmin = members.some(m => m.user_id === supabase.auth.getUser() && m.roles.includes('admin'));
+  const { user } = useAuth();
+  const isAdmin = members.some(m => m.user_id === user?.id && m.roles.includes('admin'));
   // If no members have roles yet, allow first user to manage
   const hasAnyAdmin = members.some(m => m.roles.includes('admin') || m.roles.includes('gestor'));
-  const effectiveCanManage = canManage || !hasAnyAdmin;
+  const effectiveCanManage = canManage || isAdmin || !hasAnyAdmin;
 
   const pending = members.filter((m) => m.status === "pending");
   
