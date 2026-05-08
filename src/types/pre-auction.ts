@@ -84,4 +84,7 @@ export interface PreAuctionProperty {
   
   created_at: string;
   updated_at: string;
+  
+  responsible?: { full_name: string };
+  operation_responsible?: { full_name: string };
 }
