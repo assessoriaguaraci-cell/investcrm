@@ -202,11 +202,11 @@ export default function TeamSettings() {
         
         {effectiveCanManage && (
           <Dialog>
-            <Button asChild size="sm" className="gap-2 font-black uppercase tracking-tight shadow-md">
-              <DialogTrigger>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-2 font-black uppercase tracking-tight shadow-md">
                 <UserPlus className="h-4 w-4" /> Convidar Membro
-              </DialogTrigger>
-            </Button>
+              </Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle className="font-black uppercase tracking-tight">Autorizar Novo Acesso</DialogTitle>
@@ -506,9 +506,11 @@ function EditMemberDialog({ member }: { member: TeamMember }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setOpen(true)}>
-        <Pencil className="h-4 w-4" />
-      </Button>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
