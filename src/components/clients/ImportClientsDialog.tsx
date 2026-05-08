@@ -235,36 +235,59 @@ export default function ImportClientsDialog() {
         }
         toast.success(`${updatedCount} registros enriquecidos e ${insertedCount} novos importados!`);
       } else {
-        // Standard batch import
-        const batchSize = 100;
+        // Standard import row-by-row to handle property links correctly
         let insertedCount = 0;
-        for (let i = 0; i < dataToImport.length; i += batchSize) {
-          const batch = dataToImport.slice(i, i + batchSize).map((item: any) => {
-            const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
-            const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
-            const fullName = (firstName + ' ' + lastName).trim() || 'Sem nome';
+        toast.info(`Iniciando importação de ${dataToImport.length} leads...`);
 
-            return {
-              full_name: fullName,
-              email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
-              phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
-              whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
-              cpf: findColumnValue(item, ['cpf', 'documento']) || null,
-              income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
-              city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
-              state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
-              notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
-              pipeline: 'inicial' as any,
-              stage: 'chegada_lead' as any,
-              temperature: 'quente' as any
-            };
-          });
+        for (const item of dataToImport) {
+          const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
+          const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
+          const fullName = (firstName + ' ' + lastName).trim() || 'Sem nome';
 
-          const { error } = await supabase.from("clients").insert(batch);
-          if (error) throw error;
-          insertedCount += batch.length;
+          const newItem = {
+            full_name: fullName,
+            email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
+            phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
+            whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
+            cpf: findColumnValue(item, ['cpf', 'documento']) || null,
+            income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
+            city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
+            state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
+            notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
+            pipeline: 'inicial' as any,
+            stage: 'chegada_lead' as any,
+            temperature: 'quente' as any
+          };
+
+          const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();
+          
+          if (!insError && inserted) {
+            const rawCodes = findColumnValue(item, ['etiquetas', 'tags', 'property_code', 'codigo', 'imovel', 'ref', 'sku', 'imovelcod']) || "";
+            const codes = String(rawCodes).match(/\d{4}/g) || [];
+            
+            let firstPropFound = false;
+            for (const code of [...new Set(codes)]) {
+              const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+              if (prop) {
+                await supabase.from("client_property_links").insert({
+                  client_id: inserted.id,
+                  property_id: prop.id,
+                  status: 'interessado'
+                });
+                if (!firstPropFound) {
+                  await supabase.from("clients").update({
+                    responsible_user_id: prop.responsible_user_id,
+                    city: prop.city || newItem.city,
+                    state: prop.state || newItem.state
+                  }).eq('id', inserted.id);
+                  firstPropFound = true;
+                }
+              }
+            }
+            insertedCount++;
+          }
         }
-        toast.success(`${insertedCount} clientes importados com sucesso!`);
+        toast.success(`${insertedCount} clientes importados e vinculados com sucesso!`);
       }
 
       await qc.invalidateQueries({ queryKey: ["clients"] });
