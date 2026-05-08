@@ -133,7 +133,7 @@ export default function TeamSettings() {
   if (isLoading) return <div className="text-muted-foreground text-sm">Carregando...</div>;
 
   const { user } = useAuth();
-  const isAdmin = members.some(m => m.user_id === user?.id && (m.roles || []).includes('admin'));
+  const isAdmin = !!user?.id && members.some(m => m.user_id === user.id && (m.roles || []).includes('admin'));
   // Emergency bypass: if the user is one of the main leads (Annalu or Douglas) or if no admin exists
   const isProjectOwner = user?.email?.includes('annalu') || user?.email?.includes('guaraci') || !members.some(m => (m.roles || []).includes('admin'));
   const effectiveCanManage = canManage || isAdmin || isProjectOwner;
@@ -152,8 +152,10 @@ export default function TeamSettings() {
     // Search filter
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      const matchName = m.full_name?.toLowerCase().includes(q);
-      const matchEmail = (m as any).email?.toLowerCase().includes(q) || m.user_id.toLowerCase().includes(q);
+      const matchName = (m.full_name || "").toLowerCase().includes(q);
+      const mEmail = (m as any).email || "";
+      const mUserId = m.user_id || "";
+      const matchEmail = mEmail.toLowerCase().includes(q) || mUserId.toLowerCase().includes(q);
       if (!matchName && !matchEmail) return false;
     }
 
