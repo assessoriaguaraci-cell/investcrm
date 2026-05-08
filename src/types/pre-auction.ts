@@ -74,6 +74,14 @@ export interface PreAuctionProperty {
   conclusion: string | null;
   group_created: boolean;
   
+  // New Analysis Fields
+  bill_due_date: string | null;
+  property_conditions: string | null;
+  registry_analysis: string | null;
+  legal_analysis: string | null;
+  occupant_contact: string | null;
+  syndic_contact: string | null;
+  
   created_at: string;
   updated_at: string;
 }

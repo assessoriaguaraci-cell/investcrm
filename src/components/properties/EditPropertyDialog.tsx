@@ -601,7 +601,7 @@ ${origin || "QUITADA"} e ${sale_type || "ESCRITURADA"}!
                       <FormItem><FormLabel>Código</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="registration_number" render={({ field }) => (
-                      <FormItem><FormLabel>Matrícula</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormMessage></FormItem>
+                      <FormItem><FormLabel>Matrícula</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="property_type" render={({ field }) => (
                       <FormItem>
