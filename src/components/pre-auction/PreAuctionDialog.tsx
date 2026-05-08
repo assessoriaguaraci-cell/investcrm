@@ -229,64 +229,76 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                  <h3 className="font-black uppercase text-xs tracking-widest text-primary flex items-center gap-2">
                      <div className="h-1.5 w-1.5 rounded-full bg-primary" /> Relatório de Pré-Arrematação
                  </h3>
-                 <p className="text-sm text-muted-foreground">Clique no botão abaixo para gerar a ficha de análise para copiar.</p>
-                 <Button 
-                   className="w-full font-black uppercase tracking-tight gap-2 h-12 text-lg shadow-xl shadow-primary/20"
-                   onClick={() => {
-                     const vals = form.getValues();
-                     const formatCurrency = (val: any) => 
-                        val ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : "---";
-                     const formatDate = (date: any) => date ? format(new Date(date + "T12:00:00"), "dd/MM/yyyy") : "---";
+                 <p className="text-sm text-muted-foreground">Confira a prévia abaixo e clique em copiar para compartilhar.</p>
+                 
+                 {(() => {
+                    const vals = form.watch();
+                    const formatCurrency = (val: any) => 
+                       val ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : "---";
+                    const formatDate = (date: any) => date ? format(new Date(date + "T12:00:00"), "dd/MM/yyyy") : "---";
 
-                     const report = [
-                        `📊 *ANÁLISE PRÉ-ARREMATAÇÃO – INVEST LAR*`,
-                        ``,
-                        `📆 Data vencimento do boleto: *${formatDate(vals.bill_due_date)}*`,
-                        ``,
-                        `🏠 Código do imóvel: *${vals.code}*`,
-                        ``,
-                        `📍 Endereço: *${vals.address || "---"}*`,
-                        `Link do Localização (Maps): ${vals.maps_url || "---"}`,
-                        ``,
-                        `💰 Lance atual: *${formatCurrency(vals.current_bid || vals.purchase_price)}*`,
-                        ``,
-                        `📈 Valor de mercado: *${formatCurrency(vals.market_value || vals.listed_price)}*`,
-                        ``,
-                        `📅 Data de Validade do laudo: *${formatDate(vals.appraisal_validity)}*`,
-                        ``,
-                        `📄 Débitos`,
-                        `•  IPTU: *${formatCurrency(vals.iptu)}*`,
-                        `•  Condomínio: *${formatCurrency(vals.condo_fees)}*`,
-                        ``,
-                        `🧱 Condicoes do imóvel:`,
-                        `${vals.property_conditions || "---"}`,
-                        ``,
-                        `📄 Analise da Matricula:`,
-                        `${vals.registry_analysis || "---"}`,
-                        ``,
-                        `🗃️ Analise juridica:`,
-                        `${vals.legal_analysis || "---"}`,
-                        ``,
-                        `🔐 Segurança da região:`,
-                        `${vals.security_analysis || "---"}`,
-                        ``,
-                        `🏪 Comércios, transporte e serviços:`,
-                        `${vals.transport_analysis || "---"}`,
-                        ``,
-                        `📞 Contato do ocupante: *${vals.occupant_contact || "---"}*`,
-                        ``,
-                        `📞 Contato do síndico: *${vals.syndic_contact || "---"}*`,
-                        ``,
-                        `🏢 Contato Administradora: *${vals.manager_contact || "---"}*`
-                     ].join("\n");
+                    const reportText = [
+                       `📊 *ANÁLISE PRÉ-ARREMATAÇÃO – INVEST LAR*`,
+                       ``,
+                       `📆 Data vencimento do boleto: *${formatDate(vals.bill_due_date)}*`,
+                       ``,
+                       `🏠 Código do imóvel: *${vals.code}*`,
+                       ``,
+                       `📍 Endereço: *${vals.address || "---"}*`,
+                       `Link do Localização (Maps): ${vals.maps_url || "---"}`,
+                       ``,
+                       `💰 Lance atual: *${formatCurrency(vals.current_bid || vals.purchase_price)}*`,
+                       ``,
+                       `📈 Valor de mercado: *${formatCurrency(vals.market_value || vals.listed_price)}*`,
+                       ``,
+                       `📅 Data de Validade do laudo: *${formatDate(vals.appraisal_validity)}*`,
+                       ``,
+                       `📄 Débitos`,
+                       `•  IPTU: *${formatCurrency(vals.iptu)}*`,
+                       `•  Condomínio: *${formatCurrency(vals.condo_fees)}*`,
+                       ``,
+                       `🧱 Condicoes do imóvel:`,
+                       `${vals.property_conditions || "---"}`,
+                       ``,
+                       `📄 Analise da Matricula:`,
+                       `${vals.registry_analysis || "---"}`,
+                       ``,
+                       `🗃️ Analise juridica:`,
+                       `${vals.legal_analysis || "---"}`,
+                       ``,
+                       `🔐 Segurança da região:`,
+                       `${vals.security_analysis || "---"}`,
+                       ``,
+                       `🏪 Comércios, transporte e serviços:`,
+                       `${vals.transport_analysis || "---"}`,
+                       ``,
+                       `📞 Contato do ocupante: *${vals.occupant_contact || "---"}*`,
+                       ``,
+                       `📞 Contato do síndico: *${vals.syndic_contact || "---"}*`,
+                       ``,
+                       `🏢 Contato Administradora: *${vals.manager_contact || "---"}*`
+                    ].join("\n");
 
-                     navigator.clipboard.writeText(report);
-                     toast.success("Relatório copiado com sucesso!");
-                   }}
-                 >
-                   <ClipboardList className="h-5 w-5" />
-                   GERAR E COPIAR RELATÓRIO
-                 </Button>
+                    return (
+                      <>
+                        <Textarea 
+                          value={reportText} 
+                          readOnly 
+                          className="min-h-[300px] font-mono text-xs bg-muted/30" 
+                        />
+                        <Button 
+                          className="w-full font-black uppercase tracking-tight gap-2 h-12 text-lg shadow-xl shadow-primary/20"
+                          onClick={() => {
+                            navigator.clipboard.writeText(reportText);
+                            toast.success("Relatório copiado para o WhatsApp!");
+                          }}
+                        >
+                          <ClipboardList className="h-5 w-5" />
+                          COPIAR RELATÓRIO FORMATADO
+                        </Button>
+                      </>
+                    );
+                 })()}
                </div>
             </TabsContent>
 
