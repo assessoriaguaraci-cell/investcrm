@@ -16,34 +16,43 @@ export function useTeamMembers() {
   return useQuery({
     queryKey: ["team_members"],
     queryFn: async () => {
-      // Fetch profiles directly from the profiles table
-      const { data: profiles, error: pError } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("full_name");
-      
-      if (pError) throw pError;
-
-      // We still use this RPC because it should return the email of the users
-      // which is stored in auth.users and joined in this function
-      const { data: teamData } = await (supabase.rpc as any)("get_team_members");
-      const teamList = Array.isArray(teamData) ? teamData : [];
-
-      return profiles.map((p: any) => {
-        // Since emails only exist in auth.users, try to get it from the RPC
-        const authUser = teamList.find((u: any) => (u.id === p.id) || (u.id === p.user_id));
+      try {
+        // 1. Fetch profiles
+        const { data: profiles, error: pError } = await supabase
+          .from("profiles")
+          .select("*")
+          .order("full_name");
         
-        return {
-          id: p.id,
-          user_id: p.user_id, // Use the real auth user id
-          full_name: p.full_name || "Sem nome",
-          phone: p.phone,
-          status: "approved", // Hardcode to approved since column doesn't exist yet
-          roles: authUser?.roles || ["investor"],
-          is_registered: !!p.full_name && p.full_name !== "EMPTY",
-          email: authUser?.email
-        };
-      }) as TeamMember[];
+        if (pError) throw pError;
+
+        // 2. Try to get emails and roles from RPC
+        let teamList: any[] = [];
+        try {
+          const { data: teamData } = await (supabase.rpc as any)("get_team_members");
+          teamList = Array.isArray(teamData) ? teamData : [];
+        } catch (rpcErr) {
+          console.error("RPC Error:", rpcErr);
+        }
+
+        // 3. Merge data safely
+        return (profiles || []).map((p: any) => {
+          const authUser = teamList.find((u: any) => u.id === p.id || u.user_id === p.user_id || u.id === p.user_id);
+          
+          return {
+            id: p.id,
+            user_id: p.user_id || p.id,
+            full_name: p.full_name || "Sem nome",
+            phone: p.phone,
+            status: p.status || "approved",
+            roles: authUser?.roles || [],
+            is_registered: !!p.full_name && p.full_name !== "EMPTY",
+            email: authUser?.email || p.email
+          };
+        }) as TeamMember[];
+      } catch (err) {
+        console.error("useTeamMembers Error:", err);
+        return []; // Return empty array instead of crashing
+      }
     },
   });
 }
