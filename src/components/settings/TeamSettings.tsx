@@ -159,17 +159,18 @@ export default function TeamSettings() {
 
     // Role filter
     if (filters.roles.length > 0) {
-      const hasRole = m.roles.some(r => filters.roles.includes(r));
-      if (!hasRole && !(filters.roles.length === 1 && filters.roles[0] === "__none__" && m.roles.length === 0)) {
+      const memberRoles = m.roles || [];
+      const hasRole = memberRoles.some(r => filters.roles.includes(r));
+      if (!hasRole && !(filters.roles.length === 1 && filters.roles[0] === "__none__" && memberRoles.length === 0)) {
          if (filters.roles.length === 1 && filters.roles[0] === "__none__") return false;
          if (!hasRole) return false;
       }
       // Re-implementing role logic more clearly
       const isNoneSelected = filters.roles.length === 1 && filters.roles[0] === "__none__";
       if (isNoneSelected) {
-        if (m.roles.length > 0) return false;
+        if (memberRoles.length > 0) return false;
       } else {
-        const hasAnyRoleMatch = m.roles.some(r => filters.roles.includes(r));
+        const hasAnyRoleMatch = memberRoles.some(r => filters.roles.includes(r));
         if (!hasAnyRoleMatch) return false;
       }
     }
@@ -395,7 +396,8 @@ function MemberRow({ member, canManage, onRoleChange, onStatusChange, onDelete }
   const { user } = useAuth();
   const isMe = member.user_id === user?.id;
   const statusInfo = STATUS_BADGES[member.status] ?? STATUS_BADGES.pending;
-  const currentRole = member.roles[0] ?? "";
+  const memberRoles = member.roles || [];
+  const currentRole = memberRoles[0] ?? "";
   const roleLabel = ROLE_OPTIONS.find(r => r.value === currentRole)?.label ?? "Sem papel";
 
   return (
