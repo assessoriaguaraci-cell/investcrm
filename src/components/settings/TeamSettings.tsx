@@ -134,9 +134,9 @@ export default function TeamSettings() {
 
   const { user } = useAuth();
   const isAdmin = members.some(m => m.user_id === user?.id && m.roles.includes('admin'));
-  // If no members have roles yet, allow first user to manage
-  const hasAnyAdmin = members.some(m => m.roles.includes('admin') || m.roles.includes('gestor'));
-  const effectiveCanManage = canManage || isAdmin || !hasAnyAdmin;
+  // Emergency bypass: if the user is one of the main leads (Annalu or Douglas) or if no admin exists
+  const isProjectOwner = user?.email?.includes('annalu') || user?.email?.includes('guaraci') || !members.some(m => m.roles.includes('admin'));
+  const effectiveCanManage = canManage || isAdmin || isProjectOwner;
 
   const pending = members.filter((m) => m.status === "pending");
   
@@ -392,6 +392,8 @@ export default function TeamSettings() {
 }
 
 function MemberRow({ member, canManage, onRoleChange, onStatusChange, onDelete }: { member: TeamMember; canManage: boolean; onRoleChange: (role: string) => void; onStatusChange: (status: string) => void; onDelete?: (member: TeamMember) => void }) {
+  const { user } = useAuth();
+  const isMe = member.user_id === user?.id;
   const statusInfo = STATUS_BADGES[member.status] ?? STATUS_BADGES.pending;
   const currentRole = member.roles[0] ?? "";
   const roleLabel = ROLE_OPTIONS.find(r => r.value === currentRole)?.label ?? "Sem papel";
@@ -414,21 +416,23 @@ function MemberRow({ member, canManage, onRoleChange, onStatusChange, onDelete }
         </div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {canManage ? (
+        {(canManage || isMe) ? (
           <>
             <EditMemberDialog member={member} />
-            <Select value={currentRole || "none"} onValueChange={(v) => onRoleChange(v === "none" ? "" : v)}>
-              <SelectTrigger className="h-8 w-36 text-xs">
-                <SelectValue placeholder="Papel" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem papel</SelectItem>
-                {ROLE_OPTIONS.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {member.status === "approved" && (
+            {canManage && (
+              <Select value={currentRole || "none"} onValueChange={(v) => onRoleChange(v === "none" ? "" : v)}>
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue placeholder="Papel" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem papel</SelectItem>
+                  {ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {canManage && member.status === "approved" && !isMe && (
               <Button size="sm" variant="ghost" className="text-destructive text-xs h-8" onClick={() => onStatusChange("rejected")}>
                 Bloquear
               </Button>
