@@ -79,6 +79,14 @@ const schema = z.object({
   conclusion: z.string().optional().nullable(),
   group_created: z.boolean().default(false),
   funnel_id: z.string().optional().nullable(),
+  
+  // New Analysis Fields
+  bill_due_date: z.string().optional().nullable(),
+  property_conditions: z.string().optional().nullable(),
+  registry_analysis: z.string().optional().nullable(),
+  legal_analysis: z.string().optional().nullable(),
+  occupant_contact: z.string().optional().nullable(),
+  syndic_contact: z.string().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -201,7 +209,9 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
           <Tabs defaultValue="dados" className="w-full">
             <TabsList className="w-full mb-6">
               <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
+              <TabsTrigger value="analise" className="flex-1">Análise</TabsTrigger>
               <TabsTrigger value="checklist" className="flex-1">Checklist</TabsTrigger>
+              <TabsTrigger value="relatorio" className="flex-1">Relatório</TabsTrigger>
             </TabsList>
 
             <TabsContent value="checklist" className="mt-0 space-y-6">
@@ -212,6 +222,136 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                     {updateMutation.isPending || createMutation.isPending ? "SALVANDO..." : "SALVAR CHECKLIST"}
                   </Button>
                </div>
+            </TabsContent>
+
+            <TabsContent value="relatorio" className="mt-0">
+               <div className="space-y-4">
+                 <h3 className="font-black uppercase text-xs tracking-widest text-primary flex items-center gap-2">
+                     <div className="h-1.5 w-1.5 rounded-full bg-primary" /> Relatório de Pré-Arrematação
+                 </h3>
+                 <p className="text-sm text-muted-foreground">Clique no botão abaixo para gerar a ficha de análise para copiar.</p>
+                 <Button 
+                   className="w-full font-black uppercase tracking-tight gap-2 h-12 text-lg shadow-xl shadow-primary/20"
+                   onClick={() => {
+                     const vals = form.getValues();
+                     const formatCurrency = (val: any) => 
+                        val ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : "---";
+                     const formatDate = (date: any) => date ? format(new Date(date + "T12:00:00"), "dd/MM/yyyy") : "---";
+
+                     const report = [
+                        `📊 *ANÁLISE PRÉ-ARREMATAÇÃO – INVEST LAR*`,
+                        ``,
+                        `📆 Data vencimento do boleto: *${formatDate(vals.bill_due_date)}*`,
+                        ``,
+                        `🏠 Código do imóvel: *${vals.code}*`,
+                        ``,
+                        `📍 Endereço: *${vals.address || "---"}*`,
+                        `Link do Localização (Maps): ${vals.maps_url || "---"}`,
+                        ``,
+                        `💰 Lance atual: *${formatCurrency(vals.current_bid || vals.purchase_price)}*`,
+                        ``,
+                        `📈 Valor de mercado: *${formatCurrency(vals.market_value || vals.listed_price)}*`,
+                        ``,
+                        `📅 Data de Validade do laudo: *${formatDate(vals.appraisal_validity)}*`,
+                        ``,
+                        `📄 Débitos`,
+                        `•  IPTU: *${formatCurrency(vals.iptu)}*`,
+                        `•  Condomínio: *${formatCurrency(vals.condo_fees)}*`,
+                        ``,
+                        `🧱 Condicoes do imóvel:`,
+                        `${vals.property_conditions || "---"}`,
+                        ``,
+                        `📄 Analise da Matricula:`,
+                        `${vals.registry_analysis || "---"}`,
+                        ``,
+                        `🗃️ Analise juridica:`,
+                        `${vals.legal_analysis || "---"}`,
+                        ``,
+                        `🔐 Segurança da região:`,
+                        `${vals.security_analysis || "---"}`,
+                        ``,
+                        `🏪 Comércios, transporte e serviços:`,
+                        `${vals.transport_analysis || "---"}`,
+                        ``,
+                        `📞 Contato do ocupante: *${vals.occupant_contact || "---"}*`,
+                        ``,
+                        `📞 Contato do síndico: *${vals.syndic_contact || "---"}*`,
+                        ``,
+                        `🏢 Contato Administradora: *${vals.manager_contact || "---"}*`
+                     ].join("\n");
+
+                     navigator.clipboard.writeText(report);
+                     toast.success("Relatório copiado com sucesso!");
+                   }}
+                 >
+                   <ClipboardList className="h-5 w-5" />
+                   GERAR E COPIAR RELATÓRIO
+                 </Button>
+               </div>
+            </TabsContent>
+
+            <TabsContent value="analise" className="mt-0">
+              <Form {...form}>
+                <form className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4 rounded-md border p-4 bg-muted/10">
+                      <h3 className="font-black uppercase text-[10px] tracking-widest text-primary">Análise Técnica</h3>
+                      <FormField control={form.control} name="bill_due_date" render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Data vencimento do boleto</FormLabel>
+                          <FormControl><SmartDatePicker value={field.value || ""} onChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="appraisal_validity" render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Data de Validade do laudo</FormLabel>
+                          <FormControl><SmartDatePicker value={field.value || ""} onChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="space-y-4 rounded-md border p-4 bg-muted/10">
+                      <h3 className="font-black uppercase text-[10px] tracking-widest text-primary">Contatos Adicionais</h3>
+                      <FormField control={form.control} name="occupant_contact" render={({ field }) => (
+                        <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Contato do ocupante</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="syndic_contact" render={({ field }) => (
+                        <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Contato do síndico</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="manager_contact" render={({ field }) => (
+                        <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Contato Administradora</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
+                      )} />
+                    </div>
+
+                    <div className="md:col-span-2 space-y-4 rounded-md border p-4 bg-muted/10">
+                      <h3 className="font-black uppercase text-[10px] tracking-widest text-primary">Relatórios e Vistorias</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="property_conditions" render={({ field }) => (
+                          <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Condições do imóvel</FormLabel><FormControl><Textarea {...field} value={field.value || ""} rows={3} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="registry_analysis" render={({ field }) => (
+                          <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Analise da Matricula</FormLabel><FormControl><Textarea {...field} value={field.value || ""} rows={3} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="legal_analysis" render={({ field }) => (
+                          <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Analise juridica</FormLabel><FormControl><Textarea {...field} value={field.value || ""} rows={3} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="security_analysis" render={({ field }) => (
+                          <FormItem><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Segurança da região</FormLabel><FormControl><Textarea {...field} value={field.value || ""} rows={3} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="transport_analysis" render={({ field }) => (
+                          <FormItem className="md:col-span-2"><FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Comércios, transporte e serviços</FormLabel><FormControl><Textarea {...field} value={field.value || ""} rows={2} /></FormControl></FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-6 border-t">
+                    <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2" disabled={updateMutation.isPending || createMutation.isPending}>
+                      <Save className="h-4 w-4" />
+                      {updateMutation.isPending || createMutation.isPending ? "SALVANDO..." : "SALVAR ANÁLISE"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </TabsContent>
 
             <TabsContent value="dados" className="mt-0">
