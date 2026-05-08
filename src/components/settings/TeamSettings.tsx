@@ -131,6 +131,11 @@ export default function TeamSettings() {
 
   if (isLoading) return <div className="text-muted-foreground text-sm">Carregando...</div>;
 
+  const isAdmin = members.some(m => m.user_id === supabase.auth.getUser() && m.roles.includes('admin'));
+  // If no members have roles yet, allow first user to manage
+  const hasAnyAdmin = members.some(m => m.roles.includes('admin') || m.roles.includes('gestor'));
+  const effectiveCanManage = canManage || !hasAnyAdmin;
+
   const pending = members.filter((m) => m.status === "pending");
   
   const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
@@ -185,69 +190,85 @@ export default function TeamSettings() {
 
   return (
     <div className="space-y-6 max-w-2xl text-foreground">
-      {canManage && (
-        <Card className="border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserPlus className="h-4 w-4" /> Adicionar membro à equipe
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-name" className="text-xs">Nome completo</Label>
-                <Input id="invite-name" placeholder="Nome do membro" value={inviteName} onChange={(e) => setInviteName(e.target.value)} className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-email" className="text-xs">Email institucional</Label>
-                <Input id="invite-email" type="email" placeholder="email@exemplo.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-phone" className="text-xs">Telefone / WhatsApp</Label>
-                <Input id="invite-phone" placeholder="(00) 00000-0000" value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-foreground">Ocupação / Cargo</Label>
-                <Select value={inviteOccupation} onValueChange={setInviteOccupation}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Selecione o cargo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OCCUPATION_OPTIONS.map(o => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-foreground">Papel / Permissões CRM</Label>
-                <Select value={inviteRole || "none"} onValueChange={(v) => setInviteRole(v === "none" ? "" : v)}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Selecione um papel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sem papel</SelectItem>
-                    {ROLE_OPTIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+          <UsersRound className="h-5 w-5 text-primary" /> Gestão de Equipe
+        </h2>
+        
+        {effectiveCanManage && (
+          <Dialog>
+            <Button asChild size="sm" className="gap-2 font-black uppercase tracking-tight shadow-md">
+              <DialogTrigger>
+                <UserPlus className="h-4 w-4" /> Convidar Membro
+              </DialogTrigger>
+            </Button>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="font-black uppercase tracking-tight">Autorizar Novo Acesso</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  O e-mail autorizado poderá criar uma conta e entrar automaticamente na equipe.
+                </p>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase">Nome Completo</Label>
+                    <Input placeholder="Ex: João Silva" value={inviteName} onChange={(e) => setInviteName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase">E-mail</Label>
+                    <Input type="email" placeholder="email@empresa.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase">Telefone</Label>
+                    <Input placeholder="(00) 00000-0000" value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase">Cargo</Label>
+                    <Select value={inviteOccupation} onValueChange={setInviteOccupation}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OCCUPATION_OPTIONS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase">Permissões CRM</Label>
+                  <Select value={inviteRole || "none"} onValueChange={(v) => setInviteRole(v === "none" ? "" : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o papel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sem papel (Apenas leitura)</SelectItem>
+                      {ROLE_OPTIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button
-                  size="sm"
-                  className="h-9 w-full gap-1.5 bg-primary text-primary-foreground font-bold shadow-md hover:shadow-lg active:scale-95 transition-all"
+                  className="w-full mt-4 font-black uppercase tracking-tight"
                   disabled={!inviteEmail.trim() || !inviteName.trim() || inviteMember.isPending}
                   onClick={() => inviteMember.mutate()}
                 >
-                  <UserPlus className="h-3.5 w-3.5" />
-                  {inviteMember.isPending ? "Processando..." : "Autorizar e Criar Login"}
+                  {inviteMember.isPending ? "Processando..." : "Enviar Convite e Autorizar"}
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
 
       {canManage && pending.length > 0 && (
         <Card className="border-amber-500/50">
