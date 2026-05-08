@@ -173,15 +173,15 @@ export default function ImportClientsDialog() {
           } else {
             // New record
             const newItem = {
-              full_name: item.full_name || item.nome || 'Sem nome',
-              email: item.email || null,
-              phone: item.phone || item.telefone || null,
-              whatsapp: item.whatsapp || item.telefone || null,
-              cpf: item.cpf || null,
-              income: item.income ? parseFloat(item.income) : null,
-              city: item.city || item.cidade || null,
-              state: item.state || item.estado || null,
-              notes: item.notes || item.observacao || null,
+              full_name: item.full_name || item.nome || item['Nome'] || item['Nome do Cliente'] || item['Nome Completo'] || 'Sem nome',
+              email: item.email || item['E-mail'] || null,
+              phone: item.phone || item.telefone || item.cel || item.celular || item['Telefone'] || item['WhatsApp'] || null,
+              whatsapp: item.whatsapp || item.telefone || item.cel || item.celular || item['WhatsApp'] || item['Telefone'] || null,
+              cpf: item.cpf || item['CPF'] || null,
+              income: (item.income || item['Renda'] || item['Renda Mensal']) ? parseFloat(item.income || item['Renda'] || item['Renda Mensal']) : null,
+              city: item.city || item.cidade || item['Cidade'] || null,
+              state: item.state || item.estado || item['Estado'] || null,
+              notes: item.notes || item.observacao || item['Observações'] || item['Observação'] || null,
               pipeline: 'inicial' as any,
               stage: 'chegada_lead' as any,
               temperature: 'quente' as any
@@ -191,7 +191,7 @@ export default function ImportClientsDialog() {
             
             if (!insError && inserted) {
               // Extract codes from various possible fields (including "etiquetas")
-              const rawCodes = item.etiquetas || item.tags || item.property_code || item.codigo_imovel || "";
+              const rawCodes = item.etiquetas || item.tags || item['Etiquetas'] || item.property_code || item.codigo_imovel || "";
               const codes = String(rawCodes).match(/\d{4}/g) || [];
               
               let firstPropFound = false;
@@ -226,27 +226,28 @@ export default function ImportClientsDialog() {
       } else {
         // Standard batch import
         const batchSize = 100;
+        let insertedCount = 0;
         for (let i = 0; i < preview.length; i += batchSize) {
-          const batch = preview.slice(i, i + batchSize);
-          const cleanBatch = batch.map(item => ({
-            full_name: item.full_name || 'Sem nome',
-            email: item.email || null,
-            phone: item.phone || null,
-            whatsapp: item.whatsapp || null,
-            cpf: item.cpf || null,
-            income: item.income ? parseFloat(item.income) : null,
-            city: item.city || null,
-            state: item.state || null,
-            notes: item.notes || null,
+          const batch = preview.slice(i, i + batchSize).map((item: any) => ({
+            full_name: item.full_name || item.nome || item['Nome'] || item['Nome do Cliente'] || item['Nome Completo'] || 'Sem nome',
+            email: item.email || item['E-mail'] || null,
+            phone: item.phone || item.telefone || item.cel || item.celular || item['Telefone'] || item['WhatsApp'] || null,
+            whatsapp: item.whatsapp || item.telefone || item.cel || item.celular || item['WhatsApp'] || item['Telefone'] || null,
+            cpf: item.cpf || item['CPF'] || null,
+            income: (item.income || item['Renda'] || item['Renda Mensal']) ? parseFloat(item.income || item['Renda'] || item['Renda Mensal']) : null,
+            city: item.city || item.cidade || item['Cidade'] || null,
+            state: item.state || item.estado || item['Estado'] || null,
+            notes: item.notes || item.observacao || item['Observações'] || item['Observação'] || null,
             pipeline: 'inicial' as any,
             stage: 'chegada_lead' as any,
-            temperature: 'morno' as any
+            temperature: 'quente' as any
           }));
 
-          const { error } = await supabase.from("clients").insert(cleanBatch);
+          const { error } = await supabase.from("clients").insert(batch);
           if (error) throw error;
+          insertedCount += batch.length;
         }
-        toast.success(`${preview.length} clientes importados com sucesso!`);
+        toast.success(`${insertedCount} clientes importados com sucesso!`);
       }
 
       await qc.invalidateQueries({ queryKey: ["clients"] });
