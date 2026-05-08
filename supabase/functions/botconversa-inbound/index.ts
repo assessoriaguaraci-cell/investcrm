@@ -143,6 +143,9 @@ serve(async (req) => {
       }
     }
 
+    // Tenta capturar o ID do BotConversa em várias camadas
+    const botconversaId = findValue(['chat_id', 'subscriber_id', 'id', 'id_contato', 'contact_id', 'subscriber.id', 'contact.id']) || ""
+
     const cleanPhone = leadPhone ? String(leadPhone).replace(/\D/g, '') : null
     const finalName = (leadName && !String(leadName).startsWith("@") && leadName !== "Lead WhatsApp") 
                       ? leadName 

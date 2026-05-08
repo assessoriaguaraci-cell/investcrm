@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import LinkedProperties from "./LinkedProperties";
 import type { Database } from "@/integrations/supabase/types";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, ExternalLink, ClipboardList, CheckCircle2, Trash2 } from "lucide-react";
+import { Plus, X, ExternalLink, ClipboardList, CheckCircle2, Trash2, MessageSquare } from "lucide-react";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
@@ -256,6 +256,45 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                         <Input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
                       </div>
                     </div>
+
+                    {/* Botão de Link Direto BotConversa */}
+                    {(() => {
+                        const targetPhone = whatsapp || phone;
+                        const cleanPhone = targetPhone ? targetPhone.replace(/\D/g, '') : null;
+                        const bcIdMatch = notes?.match(/BC_ID:\s*(\d+)/);
+                        const bcId = bcIdMatch ? bcIdMatch[1] : null;
+
+                        if (cleanPhone) {
+                            const bcLink = bcId 
+                                ? `https://app.botconversa.com.br/201807/inbox?tab=all&status=all&chat_id=${bcId}`
+                                : `https://app.botconversa.com.br/201807/inbox?tab=all&status=all&search=${cleanPhone}`;
+
+                            return (
+                                <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-blue-600 p-2 rounded-lg">
+                                            <MessageSquare className="h-4 w-4 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-blue-700 leading-none">Chat BotConversa</p>
+                                            <p className="text-[11px] font-bold text-blue-600/70">Abrir conversa deste cliente</p>
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white font-black uppercase text-[10px] h-8 px-4"
+                                        onClick={() => window.open(bcLink, '_blank')}
+                                    >
+                                        <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                                        Abrir Chat
+                                    </Button>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()}
+
                     <div className="space-y-1">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">E-mail</Label>
                       <Input value={email} onChange={e => setEmail(e.target.value)} />
