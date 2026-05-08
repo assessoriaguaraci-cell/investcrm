@@ -184,7 +184,7 @@ export default function ImportClientsDialog() {
               notes: item.notes || item.observacao || null,
               pipeline: 'inicial' as any,
               stage: 'chegada_lead' as any,
-              temperature: 'morno' as any
+              temperature: 'quente' as any
             };
 
             const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();

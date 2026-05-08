@@ -183,7 +183,7 @@ serve(async (req) => {
           whatsapp: cleanPhone,
           pipeline: 'inicial',
           stage: 'chegada_lead',
-          temperature: 'morno',
+          temperature: 'quente',
           notes: `BotConversa: ${rawMessage}\nImóvel Ref: ${searchCode}`
         })
         .select('id')

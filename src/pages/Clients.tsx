@@ -211,7 +211,11 @@ export default function Clients() {
 
     const newStageId = destination.droppableId;
     const newStage = newStageId.includes("---") ? newStageId.split("---")[0] : newStageId;
-    updateClient.mutate({ id: draggableId, stage: newStage as any });
+    updateClient.mutate({ 
+        id: draggableId, 
+        stage: newStage as any,
+        updated_at: new Date().toISOString() 
+    });
   };
 
   const handleSelect = (id: string, selected: boolean) => {
