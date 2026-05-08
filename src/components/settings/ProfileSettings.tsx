@@ -33,12 +33,14 @@ export default function ProfileSettings() {
   const [occupation, setOccupation] = useState("");
   const [initialized, setInitialized] = useState(false);
 
-  if (profile && !initialized) {
-    setFullName(profile.full_name || "");
-    setPhone(profile.phone || "");
-    setOccupation((profile as any).occupation || "");
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (profile && !initialized) {
+      setFullName(profile.full_name || "");
+      setPhone(profile.phone || "");
+      setOccupation((profile as any).occupation || "");
+      setInitialized(true);
+    }
+  }, [profile, initialized]);
 
   const OCCUPATION_OPTIONS = [
     { value: "gestor", label: "Gestor" },
