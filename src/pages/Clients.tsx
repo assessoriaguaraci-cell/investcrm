@@ -593,7 +593,19 @@ export default function Clients() {
       />
 
       {selectedIds.length > 0 && (
-        <div className="mt-4 border-t border-slate-100/50">
+        <div className="mt-4 border-t border-slate-100/50 space-y-2">
+          {selectedIds.length < filtered.length && (
+            <div className="flex justify-center pt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSelectedIds(filtered.map(c => c.id))}
+                className="text-[10px] font-black uppercase h-7 px-4 border-primary/30 text-primary hover:bg-primary/5 animate-bounce"
+              >
+                Selecionar absolutamente todos os {filtered.length} leads
+              </Button>
+            </div>
+          )}
           <BulkActionBar
             selectedCount={selectedIds.length}
             onClear={() => setSelectedIds([])}
