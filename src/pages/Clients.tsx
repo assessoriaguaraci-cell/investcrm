@@ -242,28 +242,22 @@ export default function Clients() {
     if (!confirm(confirmMessage)) return;
 
     try {
-      console.log("Iniciando limpeza de dependências para IDs:", selectedIds);
+      console.log(`Iniciando exclusão em massa de ${selectedIds.length} leads em lotes...`);
       
-      // 1. Limpeza exaustiva de dependências
-      const { error: linkErr } = await supabase.from("client_property_links").delete().in("client_id", selectedIds);
-      if (linkErr) console.warn("Aviso ao deletar links:", linkErr);
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < selectedIds.length; i += CHUNK_SIZE) {
+        const chunk = selectedIds.slice(i, i + CHUNK_SIZE);
+        console.log(`Processando lote ${Math.floor(i / CHUNK_SIZE) + 1}...`);
 
-      const { error: actErr } = await supabase.from("activities").delete().in("client_id", selectedIds);
-      if (actErr) console.warn("Aviso ao deletar atividades:", actErr);
+        // 1. Limpeza de dependências por lote
+        await supabase.from("client_property_links").delete().in("client_id", chunk);
+        await supabase.from("activities").delete().in("client_id", chunk);
+        await supabase.from("client_documents").delete().in("client_id", chunk);
+        await supabase.from("properties").update({ buyer_client_id: null }).in("buyer_client_id", chunk);
 
-      const { error: docErr } = await supabase.from("client_documents").delete().in("client_id", selectedIds);
-      if (docErr) console.warn("Aviso ao deletar documentos:", docErr);
-
-      const { error: propErr } = await supabase.from("properties").update({ buyer_client_id: null }).in("buyer_client_id", selectedIds);
-      if (propErr) console.warn("Aviso ao desvincular imóveis:", propErr);
-
-      // 2. Tentar excluir o cliente
-      console.log("Tentando excluir registros principais...");
-      const { error } = await supabase.from("clients").delete().in("id", selectedIds);
-
-      if (error) {
-        console.error("Erro fatal na exclusão:", error);
-        throw error;
+        // 2. Exclusão dos registros principais por lote
+        const { error } = await supabase.from("clients").delete().in("id", chunk);
+        if (error) throw error;
       }
 
       setSelectedIds([]);
