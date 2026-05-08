@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PreAuctionProperty, PreAuctionStage, PreAuctionFunnel } from "@/types/pre-auction";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/property-constants";
+import { runPreAuctionAutoChecklist } from "@/lib/pre-auction-automation";
 
 export function usePreAuctionFunnels() {
   return useQuery({
@@ -97,6 +98,8 @@ export function useUpdatePreAuctionProperty() {
         await handleArrematadoAutomation(data as PreAuctionProperty);
       }
 
+      await runPreAuctionAutoChecklist(id, updates as any);
+
       return data;
     },
     onSuccess: () => {
@@ -117,6 +120,9 @@ export function useCreatePreAuctionProperty() {
         .select()
         .single();
       if (error) throw error;
+      
+      await runPreAuctionAutoChecklist(data.id, property as any);
+      
       return data;
     },
     onSuccess: () => {

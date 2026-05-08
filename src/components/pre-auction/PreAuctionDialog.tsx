@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PreAuctionFiles } from "./PreAuctionFiles";
 
 const schema = z.object({
   code: z.string().min(1, "Código obrigatório"),
@@ -255,6 +256,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                        ``,
                        `📄 Débitos`,
                        `•  IPTU: *${formatCurrency(vals.iptu)}*`,
+                       `•  ITBI: *${formatCurrency((vals as any).itbi)}*`,
                        `•  Condomínio: *${formatCurrency(vals.condo_fees)}*`,
                        ``,
                        `🧱 Condicoes do imóvel:`,
@@ -320,6 +322,12 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                           <FormControl><SmartDatePicker value={field.value || ""} onChange={field.onChange} /></FormControl>
                         </FormItem>
                       )} />
+                      <FormField control={form.control} name="itbi" render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Débito ITBI (R$)</FormLabel>
+                          <FormControl><CurrencyInput value={field.value || undefined} onChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
                     </div>
 
                     <div className="space-y-4 rounded-md border p-4 bg-muted/10">
@@ -356,6 +364,11 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                       </div>
                     </div>
                   </div>
+
+                  <div className="pt-6 border-t">
+                    <PreAuctionFiles propertyId={property?.id || ""} />
+                  </div>
+
                   <div className="flex justify-end pt-6 border-t">
                     <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2" disabled={updateMutation.isPending || createMutation.isPending}>
                       <Save className="h-4 w-4" />

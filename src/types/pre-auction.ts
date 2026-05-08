@@ -81,6 +81,7 @@ export interface PreAuctionProperty {
   legal_analysis: string | null;
   occupant_contact: string | null;
   syndic_contact: string | null;
+  itbi: number | null;
   
   created_at: string;
   updated_at: string;
