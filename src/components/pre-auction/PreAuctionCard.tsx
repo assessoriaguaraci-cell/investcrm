@@ -5,6 +5,7 @@ import { Calendar, MapPin, User, Home, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
 interface PreAuctionCardProps {
   property: PreAuctionProperty;
@@ -12,6 +13,7 @@ interface PreAuctionCardProps {
 }
 
 export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
+  const { data: members } = useApprovedMembers();
   const isCancelled = property.stage === 'cancelado';
   const isWon = property.stage === 'arrematado';
 
@@ -88,7 +90,11 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
             <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Responsável</span>
             <div className="flex items-center gap-1 text-[11px] font-bold truncate">
               <User className="h-3 w-3 text-primary" />
-              {(property as any).responsible?.full_name || property.responsible_id || "N/A"}
+              {(() => {
+                if (property.responsible_id === 'mentoria') return "MENTORIA";
+                const member = members?.find(m => m.user_id === property.responsible_id);
+                return member?.full_name || property.responsible_id || "N/A";
+              })()}
             </div>
           </div>
         </div>
