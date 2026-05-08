@@ -242,11 +242,13 @@ export default function Clients() {
     if (!confirm(confirmMessage)) return;
 
     try {
-      // 1. Limpar dependências (se houver)
+      // 1. Limpar dependências manuais que podem travar a exclusão
       await Promise.all([
         supabase.from("client_property_links").delete().in("client_id", selectedIds),
         supabase.from("activities").delete().in("client_id", selectedIds),
-        supabase.from("client_documents").delete().in("client_id", selectedIds)
+        supabase.from("client_documents").delete().in("client_id", selectedIds),
+        // Se o cliente for o "comprador" de algum imóvel, desvinculamos antes de excluir
+        supabase.from("properties").update({ buyer_client_id: null }).in("buyer_client_id", selectedIds)
       ]);
 
       // 2. Excluir os clientes
