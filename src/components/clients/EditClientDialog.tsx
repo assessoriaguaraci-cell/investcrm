@@ -350,32 +350,57 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                       <div className="space-y-1">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Estado Civil</Label>
                         <Select value={maritalStatus} onValueChange={setMaritalStatus}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                           <SelectContent>
-                            {MARITAL_STATUSES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                            {MARITAL_STATUSES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
 
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center gap-2">
-                        <Switch checked={hasFgts} onCheckedChange={setHasFgts} />
-                        <Label className="text-[10px] font-black uppercase">Possui FGTS</Label>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Possui FGTS</Label>
+                        <Select value={hasFgts ? "true" : "false"} onValueChange={v => setHasFgts(v === "true")}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Sim</SelectItem>
+                            <SelectItem value="false">Não</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                          {hasFgts && (
-                            <div className="flex items-center gap-2 pl-8">
-                              <Switch checked={fgtsAbove300} onCheckedChange={setFgtsAbove300} />
-                              <Label className="text-[10px] font-black uppercase opacity-70">FGTS &gt; 3 Anos</Label>
-                            </div>
-                          )}
-                      <div className="flex items-center gap-2">
-                        <Switch checked={canComposeIncome} onCheckedChange={setCanComposeIncome} />
-                        <Label className="text-[10px] font-black uppercase">Compõe Renda</Label>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">FGTS &gt; 3 Anos</Label>
+                        <Select value={fgtsAbove300 ? "true" : "false"} onValueChange={v => setFgtsAbove300(v === "true")} disabled={!hasFgts}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Sim</SelectItem>
+                            <SelectItem value="false">Não</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Switch checked={hasFinancialPending} onCheckedChange={setHasFinancialPending} />
-                        <Label className="text-[10px] font-black uppercase">Pendência Financeira</Label>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Compõe Renda</Label>
+                        <Select value={canComposeIncome ? "true" : "false"} onValueChange={v => setCanComposeIncome(v === "true")}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Sim</SelectItem>
+                            <SelectItem value="false">Não</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pendência Financeira</Label>
+                        <Select value={hasFinancialPending ? "true" : "false"} onValueChange={v => setHasFinancialPending(v === "true")}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">Sim</SelectItem>
+                            <SelectItem value="false">Não</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 

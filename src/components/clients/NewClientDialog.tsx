@@ -410,25 +410,49 @@ export default function NewClientDialog() {
               </Select>
             </div>
 
-            {/* Toggles */}
-            <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-2">
-                <Switch checked={hasFgts} onCheckedChange={setHasFgts} />
-                <Label className="text-sm">Tem FGTS</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Possui FGTS</Label>
+                <Select value={hasFgts ? "true" : "false"} onValueChange={v => setHasFgts(v === "true")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Não</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {hasFgts && (
-                <div className="flex items-center gap-2">
-                  <Switch checked={fgtsAbove300} onCheckedChange={setFgtsAbove300} />
-                  <Label className="text-sm">FGTS &gt; R$300</Label>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Switch checked={canComposeIncome} onCheckedChange={setCanComposeIncome} />
-                <Label className="text-sm">Compõe renda</Label>
+              <div className="space-y-1">
+                <Label>FGTS &gt; 3 Anos</Label>
+                <Select value={fgtsAbove300 ? "true" : "false"} onValueChange={v => setFgtsAbove300(v === "true")} disabled={!hasFgts}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Não</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={hasFinancialPending} onCheckedChange={setHasFinancialPending} />
-                <Label className="text-sm">Pendência financeira</Label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Compõe Renda</Label>
+                <Select value={canComposeIncome ? "true" : "false"} onValueChange={v => setCanComposeIncome(v === "true")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Pendência Financeira</Label>
+                <Select value={hasFinancialPending ? "true" : "false"} onValueChange={v => setHasFinancialPending(v === "true")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sim</SelectItem>
+                    <SelectItem value="false">Não</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
