@@ -235,59 +235,86 @@ export default function ImportClientsDialog() {
         }
         toast.success(`${updatedCount} registros enriquecidos e ${insertedCount} novos importados!`);
       } else {
-        // Standard import row-by-row to handle property links correctly
-        let insertedCount = 0;
+        // Optimized standard import in batches of 50
+        let insertedTotal = 0;
+        const BATCH_SIZE = 50;
+        
         toast.info(`Iniciando importação de ${dataToImport.length} leads...`);
 
-        for (const item of dataToImport) {
-          const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
-          const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
-          const fullName = (firstName + ' ' + lastName).trim() || 'Sem nome';
+        for (let i = 0; i < dataToImport.length; i += BATCH_SIZE) {
+          const chunk = dataToImport.slice(i, i + BATCH_SIZE);
+          const batchToInsert = chunk.map(item => {
+            const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
+            const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
+            return {
+              full_name: (firstName + ' ' + lastName).trim() || 'Sem nome',
+              email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
+              phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
+              whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
+              cpf: findColumnValue(item, ['cpf', 'documento']) || null,
+              income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
+              city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
+              state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
+              notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
+              pipeline: 'inicial' as any,
+              stage: 'chegada_lead' as any,
+              temperature: 'quente' as any
+            };
+          });
 
-          const newItem = {
-            full_name: fullName,
-            email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
-            phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
-            whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
-            cpf: findColumnValue(item, ['cpf', 'documento']) || null,
-            income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
-            city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
-            state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
-            notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
-            pipeline: 'inicial' as any,
-            stage: 'chegada_lead' as any,
-            temperature: 'quente' as any
-          };
+          // Insert batch and get IDs back for property linking
+          const { data: insertedRows, error: insError } = await supabase
+            .from("clients")
+            .insert(batchToInsert)
+            .select('id, full_name');
 
-          const { data: inserted, error: insError } = await supabase.from("clients").insert(newItem).select('id').single();
-          
-          if (!insError && inserted) {
-            const rawCodes = findColumnValue(item, ['etiquetas', 'tags', 'property_code', 'codigo', 'imovel', 'ref', 'sku', 'imovelcod']) || "";
-            const codes = String(rawCodes).match(/\d{4}/g) || [];
-            
-            let firstPropFound = false;
-            for (const code of [...new Set(codes)]) {
-              const { data: prop } = await supabase.from("properties").select("id, responsible_user_id, city, state").filter('code', 'ilike', `%${code}%`).maybeSingle();
-              if (prop) {
-                await supabase.from("client_property_links").insert({
-                  client_id: inserted.id,
-                  property_id: prop.id,
-                  status: 'interessado'
-                });
-                if (!firstPropFound) {
-                  await supabase.from("clients").update({
-                    responsible_user_id: prop.responsible_user_id,
-                    city: prop.city || newItem.city,
-                    state: prop.state || newItem.state
-                  }).eq('id', inserted.id);
-                  firstPropFound = true;
+          if (insError) {
+            console.error("Erro no lote:", insError);
+            continue;
+          }
+
+          if (insertedRows) {
+            // Process property links for this batch
+            for (let j = 0; j < chunk.length; j++) {
+              const item = chunk[j];
+              const insertedClient = insertedRows[j];
+              
+              if (!insertedClient) continue;
+
+              const rawCodes = findColumnValue(item, ['etiquetas', 'tags', 'property_code', 'codigo', 'imovel', 'ref', 'sku', 'imovelcod']) || "";
+              const codes = String(rawCodes).match(/\d{4}/g) || [];
+              
+              let firstPropFound = false;
+              for (const code of [...new Set(codes)]) {
+                const { data: prop } = await supabase.from("properties").select("id, responsible_user_id, city, state").filter('code', 'ilike', `%${code}%`).maybeSingle();
+                
+                if (prop) {
+                  await supabase.from("client_property_links").insert({
+                    client_id: insertedClient.id,
+                    property_id: prop.id,
+                    status: 'interessado'
+                  });
+
+                  if (!firstPropFound) {
+                    await supabase.from("clients").update({
+                      responsible_user_id: prop.responsible_user_id,
+                      city: prop.city || (batchToInsert[j] as any).city,
+                      state: prop.state || (batchToInsert[j] as any).state
+                    }).eq('id', insertedClient.id);
+                    firstPropFound = true;
+                  }
                 }
               }
             }
-            insertedCount++;
+            insertedTotal += insertedRows.length;
+          }
+          
+          // Feedback progress
+          if (i % 100 === 0 && i > 0) {
+             toast.info(`Progresso: ${i} de ${dataToImport.length} leads processados...`);
           }
         }
-        toast.success(`${insertedCount} clientes importados e vinculados com sucesso!`);
+        toast.success(`${insertedTotal} clientes importados e vinculados com sucesso!`);
       }
 
       await qc.invalidateQueries({ queryKey: ["clients"] });

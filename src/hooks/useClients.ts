@@ -32,7 +32,7 @@ export function useClients() {
         .from("clients")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(5000);
+        .range(0, 9999);
       if (error) throw error;
       return data as Client[];
     },
