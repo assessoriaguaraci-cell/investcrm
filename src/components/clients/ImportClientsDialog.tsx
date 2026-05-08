@@ -208,7 +208,7 @@ export default function ImportClientsDialog() {
               let firstPropFound = false;
 
               for (const code of [...new Set(codes)]) {
-                const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+                const { data: prop } = await supabase.from("properties").select("id, responsible_user_id, city, state").filter('code', 'ilike', `%${code}%`).maybeSingle();
                 
                 if (prop) {
                   // Link the property
@@ -267,7 +267,7 @@ export default function ImportClientsDialog() {
             
             let firstPropFound = false;
             for (const code of [...new Set(codes)]) {
-              const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+              const { data: prop } = await supabase.from("properties").select("id, responsible_user_id, city, state").filter('code', 'ilike', `%${code}%`).maybeSingle();
               if (prop) {
                 await supabase.from("client_property_links").insert({
                   client_id: inserted.id,
