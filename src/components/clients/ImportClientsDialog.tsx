@@ -179,8 +179,12 @@ export default function ImportClientsDialog() {
             }
           } else {
             // New record
+            const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
+            const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
+            const fullName = (firstName + ' ' + lastName).trim() || 'Sem nome';
+
             const newItem = {
-              full_name: findColumnValue(item, ['nome', 'full name', 'completo', 'cliente', 'interessado', 'lead']) || 'Sem nome',
+              full_name: fullName,
               email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
               phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
               whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
@@ -235,20 +239,26 @@ export default function ImportClientsDialog() {
         const batchSize = 100;
         let insertedCount = 0;
         for (let i = 0; i < dataToImport.length; i += batchSize) {
-          const batch = dataToImport.slice(i, i + batchSize).map((item: any) => ({
-            full_name: findColumnValue(item, ['nome', 'full name', 'completo', 'cliente', 'interessado', 'lead']) || 'Sem nome',
-            email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
-            phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
-            whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
-            cpf: findColumnValue(item, ['cpf', 'documento']) || null,
-            income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
-            city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
-            state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
-            notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
-            pipeline: 'inicial' as any,
-            stage: 'chegada_lead' as any,
-            temperature: 'quente' as any
-          }));
+          const batch = dataToImport.slice(i, i + batchSize).map((item: any) => {
+            const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
+            const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
+            const fullName = (firstName + ' ' + lastName).trim() || 'Sem nome';
+
+            return {
+              full_name: fullName,
+              email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
+              phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
+              whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
+              cpf: findColumnValue(item, ['cpf', 'documento']) || null,
+              income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
+              city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
+              state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
+              notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
+              pipeline: 'inicial' as any,
+              stage: 'chegada_lead' as any,
+              temperature: 'quente' as any
+            };
+          });
 
           const { error } = await supabase.from("clients").insert(batch);
           if (error) throw error;
