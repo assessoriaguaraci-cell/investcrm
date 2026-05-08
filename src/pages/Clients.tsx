@@ -242,19 +242,29 @@ export default function Clients() {
     if (!confirm(confirmMessage)) return;
 
     try {
-      // 1. Limpar dependências manuais que podem travar a exclusão
-      await Promise.all([
-        supabase.from("client_property_links").delete().in("client_id", selectedIds),
-        supabase.from("activities").delete().in("client_id", selectedIds),
-        supabase.from("client_documents").delete().in("client_id", selectedIds),
-        // Se o cliente for o "comprador" de algum imóvel, desvinculamos antes de excluir
-        supabase.from("properties").update({ buyer_client_id: null }).in("buyer_client_id", selectedIds)
-      ]);
+      console.log("Iniciando limpeza de dependências para IDs:", selectedIds);
+      
+      // 1. Limpeza exaustiva de dependências
+      const { error: linkErr } = await supabase.from("client_property_links").delete().in("client_id", selectedIds);
+      if (linkErr) console.warn("Aviso ao deletar links:", linkErr);
 
-      // 2. Excluir os clientes
+      const { error: actErr } = await supabase.from("activities").delete().in("client_id", selectedIds);
+      if (actErr) console.warn("Aviso ao deletar atividades:", actErr);
+
+      const { error: docErr } = await supabase.from("client_documents").delete().in("client_id", selectedIds);
+      if (docErr) console.warn("Aviso ao deletar documentos:", docErr);
+
+      const { error: propErr } = await supabase.from("properties").update({ buyer_client_id: null }).in("buyer_client_id", selectedIds);
+      if (propErr) console.warn("Aviso ao desvincular imóveis:", propErr);
+
+      // 2. Tentar excluir o cliente
+      console.log("Tentando excluir registros principais...");
       const { error } = await supabase.from("clients").delete().in("id", selectedIds);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro fatal na exclusão:", error);
+        throw error;
+      }
 
       setSelectedIds([]);
       toast({ 
@@ -262,14 +272,13 @@ export default function Clients() {
         description: `${selectedIds.length} lead(s) excluído(s) com sucesso.` 
       });
       
-      // Invalidar cache do React Query
       qc.invalidateQueries({ queryKey: ["clients"] });
       
     } catch (e: any) {
-      console.error("Erro ao excluir leads:", e);
+      console.error("Erro completo:", e);
       toast({ 
         title: "Erro ao excluir", 
-        description: "Não foi possível excluir alguns leads. Verifique se eles possuem dados vinculados que impedem a exclusão.", 
+        description: `Falha técnica: ${e.message || "Verifique se você tem permissão de Admin."}`, 
         variant: "destructive" 
       });
     }
