@@ -14,11 +14,13 @@ import { exportToCSV } from "@/utils/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import Papa from "papaparse";
 
 export default function ImportClientsDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
+  const [fullData, setFullData] = useState<any[]>([]);
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [mergeMode, setMergeMode] = useState(false);
@@ -49,37 +51,28 @@ export default function ImportClientsDialog() {
     setLoading(true);
     try {
       const data = await parseCSV(file);
+      setFullData(data); // SALVA O ARQUIVO COMPLETO AQUI
       
       // Fetch existing clients to check for duplicates
       const { data: existingClients } = await supabase
         .from("clients")
-        .select("email, cpf, full_name");
+        .select("email, cpf, phone");
 
       const dupes: any[] = [];
-      const uniques: any[] = [];
-
       data.forEach(item => {
         const isDuplicate = existingClients?.some(existing => 
           (item.email && existing.email === item.email) || 
-          (item.cpf && existing.cpf === item.cpf)
+          (item.cpf && existing.cpf === item.cpf) ||
+          (item.phone && existing.phone === item.phone.replace(/\D/g, ''))
         );
-
-        if (isDuplicate) {
-          dupes.push(item);
-        } else {
-          uniques.push(item);
-        }
+        if (isDuplicate) dupes.push(item);
       });
 
-      setPreview(data);
+      setPreview(data.slice(0, 10)); // MOSTRA SÓ 10 NA TELA PARA FICAR RÁPIDO
       setDuplicates(dupes);
       setShowDuplicates(false);
       
-      if (dupes.length > 0) {
-        toast.warning(`${data.length} registros detectados, sendo ${dupes.length} possíveis duplicatas.`);
-      } else {
-        toast.success(`${data.length} contatos detectados no arquivo.`);
-      }
+      toast.success(`${data.length} contatos detectados no arquivo.`);
     } catch (error) {
       toast.error("Erro ao ler arquivo CSV.");
     } finally {
@@ -88,32 +81,32 @@ export default function ImportClientsDialog() {
   };
 
   const handleRemoveDuplicates = () => {
-    const uniques = preview.filter(item => !duplicates.includes(item));
-    setPreview(uniques);
+    const uniques = fullData.filter(item => !duplicates.includes(item));
+    setFullData(uniques);
+    setPreview(uniques.slice(0, 10));
     setDuplicates([]);
     setShowDuplicates(false);
-    toast.info("Duplicatas removidas da lista de importação.");
+    toast.info("Duplicatas removidas.");
   };
 
   const handleIgnoreDuplicates = () => {
     setDuplicates([]);
     setShowDuplicates(false);
     setMergeMode(false);
-    toast.info("Duplicatas serão importadas normalmente (registros repetidos).");
   };
 
   const handleMergeDuplicates = () => {
     setMergeMode(true);
     setDuplicates([]);
     setShowDuplicates(false);
-    toast.info("Modo Enriquecimento Ativado: Campos vazios serão preenchidos.");
   };
 
   const handleImport = async () => {
-    if (preview.length === 0) return;
+    if (fullData.length === 0) return;
 
     setLoading(true);
     try {
+      const dataToImport = fullData; // USA OS DADOS COMPLETOS
       if (mergeMode) {
         // Enrichment Logic
         toast.info("Iniciando enriquecimento de dados...");
@@ -124,7 +117,7 @@ export default function ImportClientsDialog() {
         let updatedCount = 0;
         let insertedCount = 0;
 
-        for (const item of preview) {
+        for (const item of dataToImport) {
           const duplicate = existing?.find(ex => 
             (item.email && ex.email === item.email) || 
             (item.cpf && ex.cpf === item.cpf)
@@ -227,8 +220,8 @@ export default function ImportClientsDialog() {
         // Standard batch import
         const batchSize = 100;
         let insertedCount = 0;
-        for (let i = 0; i < preview.length; i += batchSize) {
-          const batch = preview.slice(i, i + batchSize).map((item: any) => ({
+        for (let i = 0; i < dataToImport.length; i += batchSize) {
+          const batch = dataToImport.slice(i, i + batchSize).map((item: any) => ({
             full_name: item.full_name || item.nome || item['Nome'] || item['Nome do Cliente'] || item['Nome Completo'] || 'Sem nome',
             email: item.email || item['E-mail'] || null,
             phone: item.phone || item.telefone || item.cel || item.celular || item['Telefone'] || item['WhatsApp'] || null,
@@ -381,7 +374,7 @@ export default function ImportClientsDialog() {
               <div className="bg-primary/5 p-4 rounded-lg flex items-center justify-between border border-primary/10">
                 <div className="flex items-center gap-3">
                   <Check className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-bold">{preview.length} Clientes prontos</span>
+                  <span className="text-sm font-bold">{fullData.length} Clientes prontos</span>
                 </div>
                 <Button onClick={handleImport} disabled={loading || (duplicates.length > 0 && !mergeMode)} size="sm" className="font-black uppercase text-xs">
                   {loading ? "Processando..." : mergeMode ? "Confirmar Mesclagem" : "Confirmar Importação"}
