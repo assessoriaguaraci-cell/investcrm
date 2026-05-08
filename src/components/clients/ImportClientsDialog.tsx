@@ -147,6 +147,29 @@ export default function ImportClientsDialog() {
               await supabase.from("clients").update(updates).eq("id", duplicate.id);
               updatedCount++;
             }
+            
+            // PROCESS PROPERTY LINKS FOR EXISTING CLIENT
+            const rawCodes = item.etiquetas || item.tags || item.property_code || item.codigo_imovel || "";
+            const codes = String(rawCodes).match(/\d{4}/g) || [];
+            for (const code of [...new Set(codes)]) {
+              const { data: prop } = await supabase.from("properties").ilike('code', `%${code}%`).maybeSingle();
+              if (prop) {
+                // Try to link (will ignore if already linked thanks to check or DB constraint)
+                const { data: existingLink } = await supabase.from("client_property_links")
+                  .select('id')
+                  .eq('client_id', duplicate.id)
+                  .eq('property_id', prop.id)
+                  .maybeSingle();
+                
+                if (!existingLink) {
+                  await supabase.from("client_property_links").insert({
+                    client_id: duplicate.id,
+                    property_id: prop.id,
+                    status: 'interessado'
+                  });
+                }
+              }
+            }
           } else {
             // New record
             const newItem = {

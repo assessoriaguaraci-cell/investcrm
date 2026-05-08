@@ -151,22 +151,47 @@ serve(async (req) => {
                       ? leadName 
                       : (cleanPhone || "Lead WhatsApp")
 
-    // 2. Criar Cliente
-    const { data: client, error: clientError } = await supabaseClient
-      .from('clients')
-      .insert({
-        full_name: finalName,
-        phone: cleanPhone,
-        whatsapp: cleanPhone,
-        pipeline: 'inicial',
-        stage: 'chegada_lead',
-        temperature: 'morno',
-        notes: `BotConversa: ${rawMessage}\nImóvel Ref: ${searchCode}`
-      })
-      .select('id')
-      .single()
+    // 2. BUSCAR CLIENTE EXISTENTE (Pelo Telefone)
+    let client: any = null;
+    if (cleanPhone) {
+      const { data: existingClient } = await supabaseClient
+        .from('clients')
+        .select('id, notes')
+        .eq('phone', cleanPhone)
+        .maybeSingle()
+      
+      client = existingClient
+    }
 
-    if (clientError) throw clientError
+    if (client) {
+      // ATUALIZA CLIENTE EXISTENTE (Adiciona nova nota se necessário)
+      const newNotes = client.notes?.includes(rawMessage) 
+        ? client.notes 
+        : `${client.notes}\n\nNova Mensagem: ${rawMessage}\nRef: ${searchCode}`
+
+      await supabaseClient
+        .from('clients')
+        .update({ notes: newNotes })
+        .eq('id', client.id)
+    } else {
+      // CRIA NOVO CLIENTE
+      const { data: newClient, error: clientError } = await supabaseClient
+        .from('clients')
+        .insert({
+          full_name: finalName,
+          phone: cleanPhone,
+          whatsapp: cleanPhone,
+          pipeline: 'inicial',
+          stage: 'chegada_lead',
+          temperature: 'morno',
+          notes: `BotConversa: ${rawMessage}\nImóvel Ref: ${searchCode}`
+        })
+        .select('id')
+        .single()
+
+      if (clientError) throw clientError
+      client = newClient
+    }
 
     // 3. Vincular Imóvel (se houver código)
     if (client && searchCode) {
