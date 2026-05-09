@@ -216,7 +216,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
             </TabsList>
 
             <TabsContent value="checklist" className="mt-0 space-y-6">
-               <PropertyChecklist propertyId={property?.id || ""} stage={(property as any)?.stage || "pre_arrematacao"} />
+               <PropertyChecklist propertyId={property?.id || ""} stage="pre_arrematacao" />
                <div className="flex justify-end pt-6 border-t">
                   <Button onClick={form.handleSubmit(onSubmit)} className="font-black uppercase tracking-tight gap-2" disabled={updateMutation.isPending || createMutation.isPending}>
                     <Save className="h-4 w-4" />
