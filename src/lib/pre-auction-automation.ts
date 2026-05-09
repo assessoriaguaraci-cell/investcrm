@@ -6,7 +6,7 @@ export async function runPreAuctionAutoChecklist(propertyId: string, values: Par
   const { data: items } = await supabase
     .from("property_checklist_items")
     .select("id, task_name, completed")
-    .eq("property_id", propertyId)
+    .eq("pre_auction_property_id", propertyId)
     .eq("stage", "pre_arrematacao");
 
   if (!items || items.length === 0) return;

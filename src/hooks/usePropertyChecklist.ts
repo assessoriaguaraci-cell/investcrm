@@ -13,11 +13,16 @@ export function usePropertyChecklist(propertyId: string | undefined) {
     queryKey: ["property-checklist", propertyId],
     enabled: !!propertyId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("property_checklist_items")
-        .select("*")
-        .eq("property_id", propertyId!)
-        .order("sort_order", { ascending: true });
+      const isPreAuction = window.location.pathname.includes('pre-auction');
+      const query = supabase.from("property_checklist_items").select("*");
+      
+      if (isPreAuction) {
+        query.eq("pre_auction_property_id", propertyId!);
+      } else {
+        query.eq("property_id", propertyId!);
+      }
+
+      const { data, error } = await query.order("sort_order", { ascending: true });
       if (error) throw error;
       
       // Filter out obsolete groups or tasks that should no longer exist
@@ -52,13 +57,16 @@ export function useCreateChecklistForStage() {
         .eq("property_id", propertyId)
         .in("group_name", ["Estratégia Definida", "Execução"]);
 
-      // 1. Check if we already have items for this stage
-      const { data: existing } = await supabase
-        .from("property_checklist_items")
-        .select("id")
-        .eq("property_id", propertyId)
-        .eq("stage", stage)
-        .limit(1);
+      const isPreAuction = window.location.pathname.includes('pre-auction');
+      const query = supabase.from("property_checklist_items").select("id").eq("stage", stage).limit(1);
+
+      if (isPreAuction) {
+        query.eq("pre_auction_property_id", propertyId);
+      } else {
+        query.eq("property_id", propertyId);
+      }
+
+      const { data: existing } = await query;
 
       if (existing && existing.length > 0) return existing;
 
@@ -68,7 +76,8 @@ export function useCreateChecklistForStage() {
 
       if (templates.length > 0) {
         rows = templates.map(t => ({
-          property_id: propertyId,
+          property_id: isPreAuction ? null : propertyId,
+          pre_auction_property_id: isPreAuction ? propertyId : null,
           stage: t.stage,
           group_name: t.group,
           task_name: t.task,
