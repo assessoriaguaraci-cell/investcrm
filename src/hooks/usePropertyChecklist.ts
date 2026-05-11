@@ -22,19 +22,32 @@ export function usePropertyChecklist(propertyId: string | undefined) {
         query.eq("property_id", propertyId!);
       }
 
-      const { data, error } = await query.order("sort_order", { ascending: true });
-      if (error) throw error;
-      
-      // Filter out obsolete groups or tasks that should no longer exist
-      const filteredData = (data as ChecklistItem[] || []).filter(
-        item => {
-          if (["Estratégia Definida", "Execução"].includes(item.group_name || "")) return false;
-          if (["Histórico de pagamento conhecido", "Risco jurídico avaliado"].includes(item.task_name || "")) return false;
-          return true;
+      try {
+        const { data, error } = await query.order("sort_order", { ascending: true });
+        
+        if (error) {
+          // If the column doesn't exist yet, don't crash the whole app
+          if (error.message.includes('column') && error.message.includes('pre_auction_property_id')) {
+            console.warn("Checklist column for pre-auction not found yet. Please run the SQL migration.");
+            return [];
+          }
+          throw error;
         }
-      );
-      
-      return filteredData;
+        
+        // Filter out obsolete groups or tasks that should no longer exist
+        const filteredData = (data as ChecklistItem[] || []).filter(
+          item => {
+            if (["Estratégia Definida", "Execução"].includes(item.group_name || "")) return false;
+            if (["Histórico de pagamento conhecido", "Risco jurídico avaliado"].includes(item.task_name || "")) return false;
+            return true;
+          }
+        );
+        
+        return filteredData;
+      } catch (err) {
+        console.error("Error fetching checklist:", err);
+        return [];
+      }
     },
   });
 }
