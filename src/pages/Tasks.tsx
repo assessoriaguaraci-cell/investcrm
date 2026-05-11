@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { CheckSquare, ListFilter, Search, CalendarDays, Kanban as KanbanIcon } from "lucide-react";
+import { CheckSquare, ListFilter, Search, CalendarDays, Kanban as KanbanIcon, Trash2, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ export default function Tasks() {
   const [filters, setFilters] = useState<TaskFilterValues>(EMPTY_TASK_FILTERS);
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionModeActive, setSelectionModeActive] = useState(false);
 
   const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
     if (selected.length === 0) return true; // "all"
@@ -251,7 +252,24 @@ export default function Tasks() {
             onLoadFilter={setFilters}
           />
         </div>
-        <NewTaskDialog />
+        <div className="flex items-center gap-3">
+          <Button 
+            variant={selectionModeActive ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setSelectionModeActive(!selectionModeActive);
+              if (!selectionModeActive) setSelectedIds([]);
+            }}
+            className={cn(
+              "gap-1.5 font-black uppercase tracking-tight shadow-sm transition-all",
+              selectionModeActive ? "bg-[#002B44] hover:bg-[#003d61]" : "border-primary/20 hover:bg-primary/5"
+            )}
+          >
+            <CheckSquare className="h-4 w-4" />
+            {selectionModeActive ? "Sair da Seleção" : "Seleção em Massa"}
+          </Button>
+          <NewTaskDialog />
+        </div>
       </div>
 
       {selectedIds.length > 0 && (
@@ -315,6 +333,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  selectable={selectionModeActive}
                 />
                 <TaskKanbanColumn
                   columnId="todo"
@@ -326,6 +345,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  selectable={selectionModeActive}
                 />
                 <TaskKanbanColumn
                   columnId="inProgress"
@@ -337,6 +357,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  selectable={selectionModeActive}
                 />
                 <TaskKanbanColumn
                   columnId="done"
@@ -348,6 +369,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  selectable={selectionModeActive}
                 />
               </div>
             </DragDropContext>

@@ -24,9 +24,10 @@ interface Props {
   onDelete: (id: string) => void;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  selectable?: boolean;
 }
 
-export default function TaskCard({ activity, onToggle, onEdit, onDelete, selected, onSelect }: Props) {
+export default function TaskCard({ activity, onToggle, onEdit, onDelete, selected, onSelect, selectable }: Props) {
   const isDone = activity.status === "feito";
   const isInProgress = activity.status === "em_andamento";
   const isOverdue =
@@ -41,15 +42,17 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
       selected && "border-primary ring-2 ring-primary/20 bg-primary/5 shadow-md"
     )}>
       <div className="flex flex-col gap-2 mt-1 shrink-0">
-        <button 
-          onClick={() => onSelect?.(activity.id)} 
-          className={cn(
-            "h-4 w-4 rounded-full border transition-all duration-200 flex items-center justify-center",
-            selected ? "bg-primary border-primary" : "border-muted-foreground/30 hover:border-primary/50 bg-background"
-          )}
-        >
-          {selected && <div className="h-1.5 w-1.5 rounded-full bg-white animate-in zoom-in" />}
-        </button>
+        {selectable && (
+          <button 
+            onClick={() => onSelect?.(activity.id)} 
+            className={cn(
+              "h-4 w-4 rounded-full border transition-all duration-200 flex items-center justify-center",
+              selected ? "bg-primary border-primary" : "border-muted-foreground/30 hover:border-primary/50 bg-background"
+            )}
+          >
+            {selected && <div className="h-1.5 w-1.5 rounded-full bg-white animate-in zoom-in" />}
+          </button>
+        )}
 
         <button onClick={() => onToggle(activity)} className="shrink-0 transition-transform active:scale-90">
           {isDone ? (
