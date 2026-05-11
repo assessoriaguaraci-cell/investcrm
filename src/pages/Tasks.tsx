@@ -161,35 +161,47 @@ export default function Tasks() {
   const handleBulkDelete = async () => {
     if (!confirm(`Excluir ${selectedIds.length} tarefas selecionadas?`)) return;
     
-    let count = 0;
-    for (const id of selectedIds) {
-      await deleteActivity.mutateAsync(id);
-      count++;
+    try {
+      const { error } = await supabase
+        .from("activities")
+        .delete()
+        .in("id", selectedIds);
+      
+      if (error) throw error;
+      
+      setSelectedIds([]);
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      toast.success(`${selectedIds.length} tarefas excluídas com sucesso`);
+    } catch (e: any) {
+      console.error("Error bulk deleting:", e);
+      toast.error("Erro ao excluir tarefas: " + (e.message || "Erro desconhecido"));
     }
-    setSelectedIds([]);
-    toast.success(`${count} tarefas excluídas com sucesso`);
   };
 
   const handleBulkMarkDone = async () => {
-    let count = 0;
-    for (const id of selectedIds) {
-      await updateActivity.mutateAsync({
-        id,
-        status: "feito",
-        completed_at: new Date().toISOString()
-      });
-      count++;
+    try {
+      const { error } = await supabase
+        .from("activities")
+        .update({
+          status: "feito",
+          completed_at: new Date().toISOString()
+        })
+        .in("id", selectedIds);
+      
+      if (error) throw error;
+      
+      setSelectedIds([]);
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      toast.success(`${selectedIds.length} tarefas marcadas como concluídas`);
+    } catch (e: any) {
+      console.error("Error bulk completing:", e);
+      toast.error("Erro ao concluir tarefas: " + (e.message || "Erro desconhecido"));
     }
-    setSelectedIds([]);
-    toast.success(`${count} tarefas marcadas como concluídas`);
   };
 
   const handleBulkMove = async (destColumnId: string) => {
-    let count = 0;
-    const today = new Date().toISOString().split('T')[0];
-    
-    for (const id of selectedIds) {
-      let updates: any = { id };
+    try {
+      let updates: any = {};
       
       if (destColumnId === "done") {
         updates.status = "feito";
@@ -202,11 +214,20 @@ export default function Tasks() {
         updates.completed_at = null;
       }
       
-      await updateActivity.mutateAsync(updates);
-      count++;
+      const { error } = await supabase
+        .from("activities")
+        .update(updates)
+        .in("id", selectedIds);
+      
+      if (error) throw error;
+      
+      setSelectedIds([]);
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      toast.success(`${selectedIds.length} tarefas movidas com sucesso`);
+    } catch (e: any) {
+      console.error("Error bulk moving:", e);
+      toast.error("Erro ao mover tarefas: " + (e.message || "Erro desconhecido"));
     }
-    setSelectedIds([]);
-    toast.success(`${count} tarefas movidas com sucesso`);
   };
 
   return (
