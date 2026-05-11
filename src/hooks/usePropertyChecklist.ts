@@ -151,14 +151,17 @@ export function useToggleChecklistItem() {
 
       // Check if all items for this stage are now completed
       if (nowCompleted) {
-        const { data: stageItems } = await supabase
-          .from("property_checklist_items")
-          .select("completed")
-          .eq("property_id", item.property_id)
-          .eq("stage", item.stage);
+        const query = supabase.from("property_checklist_items").select("completed").eq("stage", item.stage);
+        
+        if (item.pre_auction_property_id) {
+          query.eq("pre_auction_property_id", item.pre_auction_property_id);
+        } else {
+          query.eq("property_id", item.property_id!);
+        }
 
+        const { data: stageItems } = await query;
         const allDone = stageItems?.every(i => i.completed) ?? false;
-        if (allDone) {
+        if (allDone && !item.pre_auction_property_id) {
           const nextStage = getNextStage(item.stage as PropertyStage);
           if (nextStage) {
             // Advance the property
@@ -199,7 +202,7 @@ export function useToggleChecklistItem() {
       return { nowCompleted };
     },
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ["property-checklist", vars.item.property_id] });
+      qc.invalidateQueries({ queryKey: ["property-checklist", vars.item.pre_auction_property_id || vars.item.property_id] });
     },
     onError: (error: any) => {
       console.error("Error toggling checklist item:", error);
@@ -305,19 +308,22 @@ export function useAddChecklistStrategy() {
       strategyName: string;
       tasks: string[];
     }) => {
-      // Find max sort_order to append
-      const { data: items } = await supabase
-        .from("property_checklist_items")
-        .select("sort_order")
-        .eq("property_id", propertyId)
-        .eq("stage", stage)
-        .order("sort_order", { ascending: false })
-        .limit(1);
+      const isPreAuction = window.location.pathname.includes('pre-auction');
+      const queryItems = supabase.from("property_checklist_items").select("sort_order").eq("stage", stage).limit(1);
+      
+      if (isPreAuction) {
+        queryItems.eq("pre_auction_property_id", propertyId);
+      } else {
+        queryItems.eq("property_id", propertyId);
+      }
+
+      const { data: items } = await queryItems.order("sort_order", { ascending: false });
       
       const maxSort = items?.[0]?.sort_order ?? 0;
 
       const rows: TablesInsert<"property_checklist_items">[] = tasks.map((task, idx) => ({
-        property_id: propertyId,
+        property_id: isPreAuction ? null : propertyId,
+        pre_auction_property_id: isPreAuction ? propertyId : null,
         stage: stage,
         group_name: strategyName,
         task_name: task,
