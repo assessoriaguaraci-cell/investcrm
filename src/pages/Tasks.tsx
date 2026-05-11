@@ -57,6 +57,7 @@ export default function Tasks() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<TaskFilterValues>(EMPTY_TASK_FILTERS);
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
     if (selected.length === 0) return true; // "all"
@@ -150,6 +151,63 @@ export default function Tasks() {
     updateActivity.mutate(updates);
   };
 
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Excluir ${selectedIds.length} tarefas selecionadas?`)) return;
+    
+    let count = 0;
+    for (const id of selectedIds) {
+      await deleteActivity.mutateAsync(id);
+      count++;
+    }
+    setSelectedIds([]);
+    toast.success(`${count} tarefas excluídas com sucesso`);
+  };
+
+  const handleBulkMarkDone = async () => {
+    let count = 0;
+    for (const id of selectedIds) {
+      await updateActivity.mutateAsync({
+        id,
+        status: "feito",
+        completed_at: new Date().toISOString()
+      });
+      count++;
+    }
+    setSelectedIds([]);
+    toast.success(`${count} tarefas marcadas como concluídas`);
+  };
+
+  const handleBulkMove = async (destColumnId: string) => {
+    let count = 0;
+    const today = new Date().toISOString().split('T')[0];
+    
+    for (const id of selectedIds) {
+      let updates: any = { id };
+      
+      if (destColumnId === "done") {
+        updates.status = "feito";
+        updates.completed_at = new Date().toISOString();
+      } else if (destColumnId === "inProgress") {
+        updates.status = "em_andamento";
+        updates.completed_at = null;
+      } else if (destColumnId === "todo") {
+        updates.status = "pendente";
+        updates.completed_at = null;
+      }
+      
+      await updateActivity.mutateAsync(updates);
+      count++;
+    }
+    setSelectedIds([]);
+    toast.success(`${count} tarefas movidas com sucesso`);
+  };
+
   return (
     <div className="p-4 md:p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4 shrink-0">
@@ -196,6 +254,37 @@ export default function Tasks() {
         <NewTaskDialog />
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-6 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <Badge variant="default" className="bg-primary text-white font-black px-3 py-1">
+              {selectedIds.length} SELECIONADAS
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} className="text-xs font-black uppercase tracking-tight">
+              Desmarcar Todas
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleBulkMarkDone} className="gap-2 text-[10px] font-black uppercase">
+              <CheckSquare className="h-3.5 w-3.5" /> Concluir
+            </Button>
+            <Select onValueChange={handleBulkMove}>
+              <SelectTrigger className="w-[140px] h-9 text-[10px] font-black uppercase">
+                <SelectValue placeholder="MOVER PARA..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todo">A FAZER</SelectItem>
+                <SelectItem value="inProgress">EM ANDAMENTO</SelectItem>
+                <SelectItem value="done">CONCLUÍDAS</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="destructive" size="sm" onClick={handleBulkDelete} className="gap-2 text-[10px] font-black uppercase">
+              <Trash2 className="h-3.5 w-3.5" /> Excluir
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0">
         <TabsList className="bg-muted/50 p-1 border border-border mb-6 self-start">
           <TabsTrigger value="kanban" className="gap-2 px-6 py-2 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
@@ -224,6 +313,8 @@ export default function Tasks() {
                   onToggle={handleToggle}
                   onEdit={setEditActivity}
                   onDelete={handleDelete}
+                  selectedIds={selectedIds}
+                  onToggleSelection={toggleSelection}
                 />
                 <TaskKanbanColumn
                   columnId="todo"
@@ -233,6 +324,8 @@ export default function Tasks() {
                   onToggle={handleToggle}
                   onEdit={setEditActivity}
                   onDelete={handleDelete}
+                  selectedIds={selectedIds}
+                  onToggleSelection={toggleSelection}
                 />
                 <TaskKanbanColumn
                   columnId="inProgress"
@@ -242,6 +335,8 @@ export default function Tasks() {
                   onToggle={handleToggle}
                   onEdit={setEditActivity}
                   onDelete={handleDelete}
+                  selectedIds={selectedIds}
+                  onToggleSelection={toggleSelection}
                 />
                 <TaskKanbanColumn
                   columnId="done"
@@ -251,6 +346,8 @@ export default function Tasks() {
                   onToggle={handleToggle}
                   onEdit={setEditActivity}
                   onDelete={handleDelete}
+                  selectedIds={selectedIds}
+                  onToggleSelection={toggleSelection}
                 />
               </div>
             </DragDropContext>

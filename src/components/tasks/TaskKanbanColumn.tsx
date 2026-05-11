@@ -11,6 +11,8 @@ interface Props {
     onEdit: (activity: Activity) => void;
     onDelete: (id: string) => void;
     colorClass: string;
+    selectedIds: string[];
+    onToggleSelection: (id: string) => void;
 }
 
 export default function TaskKanbanColumn({
@@ -20,7 +22,9 @@ export default function TaskKanbanColumn({
     onToggle,
     onEdit,
     onDelete,
-    colorClass
+    colorClass,
+    selectedIds,
+    onToggleSelection
 }: Props) {
     // Map tailwind color classes to CSS variables if possible
     const colorVarMap: Record<string, string> = {
@@ -84,6 +88,8 @@ export default function TaskKanbanColumn({
                                                 onToggle={onToggle}
                                                 onEdit={onEdit}
                                                 onDelete={onDelete}
+                                                selected={selectedIds.includes(task.id)}
+                                                onSelect={onToggleSelection}
                                             />
                                         </div>
                                     )}

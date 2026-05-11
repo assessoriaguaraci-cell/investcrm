@@ -22,9 +22,11 @@ interface Props {
   onToggle: (activity: Activity) => void;
   onEdit: (activity: Activity) => void;
   onDelete: (id: string) => void;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
-export default function TaskCard({ activity, onToggle, onEdit, onDelete }: Props) {
+export default function TaskCard({ activity, onToggle, onEdit, onDelete, selected, onSelect }: Props) {
   const isDone = activity.status === "feito";
   const isInProgress = activity.status === "em_andamento";
   const isOverdue =
@@ -33,19 +35,32 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete }: Props
 
   return (
     <Card className={cn(
-      "p-3 flex items-start gap-3 transition-colors border",
+      "p-3 flex items-start gap-3 transition-all duration-200 border relative group",
       isDone && "opacity-60 bg-slate-50",
-      isInProgress && "border-blue-200 bg-blue-50/30 shadow-sm"
+      isInProgress && "border-blue-200 bg-blue-50/30 shadow-sm",
+      selected && "border-primary ring-2 ring-primary/20 bg-primary/5 shadow-md"
     )}>
-      <button onClick={() => onToggle(activity)} className="mt-0.5 shrink-0">
-        {isDone ? (
-          <CheckCircle2 className="h-5 w-5 text-primary" />
-        ) : isInProgress ? (
-          <Play className="h-5 w-5 text-blue-500 fill-blue-500" />
-        ) : (
-          <Circle className="h-5 w-5 text-muted-foreground" />
-        )}
-      </button>
+      <div className="flex flex-col gap-2 mt-1 shrink-0">
+        <button 
+          onClick={() => onSelect?.(activity.id)} 
+          className={cn(
+            "h-4 w-4 rounded-full border transition-all duration-200 flex items-center justify-center",
+            selected ? "bg-primary border-primary" : "border-muted-foreground/30 hover:border-primary/50 bg-background"
+          )}
+        >
+          {selected && <div className="h-1.5 w-1.5 rounded-full bg-white animate-in zoom-in" />}
+        </button>
+
+        <button onClick={() => onToggle(activity)} className="shrink-0 transition-transform active:scale-90">
+          {isDone ? (
+            <CheckCircle2 className="h-5 w-5 text-primary" />
+          ) : isInProgress ? (
+            <Play className="h-5 w-5 text-blue-500 fill-blue-500" />
+          ) : (
+            <Circle className="h-5 w-5 text-muted-foreground/50" />
+          )}
+        </button>
+      </div>
 
       <div className="flex-1 min-w-0 space-y-1">
         <p className={cn("text-sm font-medium leading-tight", isDone && "line-through text-muted-foreground")}>
