@@ -96,6 +96,15 @@ export default function Clients() {
   }, []);
 
   const boardSettings = useBoardSettings();
+  const [collapsedPhases, setCollapsedPhases] = useState<string[]>([]);
+
+  const togglePhaseCollapse = (phaseName: string) => {
+    setCollapsedPhases(prev => 
+      prev.includes(phaseName) 
+        ? prev.filter(p => p !== phaseName) 
+        : [...prev, phaseName]
+    );
+  };
 
   useEffect(() => {
     if (user) {
@@ -657,18 +666,49 @@ export default function Clients() {
             {/* Super Headers (Phases) */}
             <div className="flex gap-4 mb-3">
               {phasesWithStages && phasesWithStages.length > 0 && phasesWithStages.map((phase, pIdx) => {
-                const count = phase?.stagesInPhase?.length || 0;
+                const isCollapsed = collapsedPhases.includes(phase.name);
+                const count = isCollapsed ? 0 : (phase?.stagesInPhase?.length || 0);
+                
+                if (isCollapsed) {
+                  return (
+                    <div 
+                      key={`phase-${phase.name || pIdx}`}
+                      className="group relative flex flex-col gap-1.5 transition-all duration-300 w-10 cursor-pointer"
+                      onClick={() => togglePhaseCollapse(phase.name)}
+                    >
+                      <div className={`h-1.5 rounded-full ${phase.color || 'bg-slate-200'} shadow-sm border border-white/20 opacity-40 group-hover:opacity-100`} />
+                      <div className="flex items-center justify-center h-full pt-1">
+                        <span className="text-[9px] font-black uppercase text-slate-300 vertical-text origin-center transform rotate-90 whitespace-nowrap group-hover:text-primary transition-colors">
+                          {phase.name}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
                 if (count === 0) return null;
                 return (
                   <div 
                     key={`phase-${phase.name || pIdx}`} 
-                    className="flex flex-col gap-1.5"
+                    className="flex flex-col gap-1.5 transition-all duration-300"
                     style={{ width: `calc(${count} * 280px + (${count - 1} * 16px))` }}
                   >
-                    <div className={`h-1.5 rounded-full ${phase.color || 'bg-slate-200'} shadow-sm border border-white/20`} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1 truncate">
-                      {phase.name}
-                    </span>
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-1.5 w-full min-w-[20px] rounded-full ${phase.color || 'bg-slate-200'} shadow-sm border border-white/20`} />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 truncate">
+                          {phase.name}
+                        </span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-4 w-4 text-slate-300 hover:text-primary hover:bg-transparent"
+                        onClick={() => togglePhaseCollapse(phase.name)}
+                      >
+                        <ChevronDown className="h-3 w-3 transform rotate-90" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -682,7 +722,10 @@ export default function Clients() {
                     ref={provided.innerRef}
                     className="flex gap-4 h-full"
                   >
-                    {visibleStages.map((stage, index) => {
+                    {visibleStages.filter(s => {
+                      const phase = getPhaseForStage(s.value);
+                      return !phase || !collapsedPhases.includes(phase.name);
+                    }).map((stage, index) => {
                       if (!stage || !stage.value) return null;
                       const stageClients = grouped[stage.value] || [];
                       const uniqueDraggableId = stage.id || `draggable-${stage.value}-${index}`;
