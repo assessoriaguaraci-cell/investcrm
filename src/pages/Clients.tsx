@@ -105,36 +105,9 @@ export default function Clients() {
 
   const [activeListView, setActiveListView] = useState<string | null>(dashboardFilter);
 
-  const [stages, setStages] = useState<any[]>([]);
-  const [loadingStages, setLoadingStages] = useState(true);
-
-  // Fetch ALL client stages
-  useEffect(() => {
-    const fetchStages = async () => {
-      try {
-        setLoadingStages(true);
-        const { data, error } = await supabase
-          .from("kanban_stages")
-          .select("*")
-          .eq("funnel_type", "client")
-          .order("sort_order", { ascending: true });
-        
-        if (error) {
-          console.error("Error fetching stages:", error);
-          setStages([]);
-        } else if (data) {
-          // Deduplicate stages by value just in case
-          const uniqueStages = data.filter((v, i, a) => a.findIndex(t => (t.value === v.value)) === i);
-          setStages(uniqueStages);
-        }
-      } catch (e) {
-        console.error("Fatal error fetching stages:", e);
-      } finally {
-        setLoadingStages(false);
-      }
-    };
-    fetchStages();
-  }, []);
+  // Source of truth for stages is dynamicStages from the hook
+  const stages = (dynamicStages && Array.isArray(dynamicStages)) ? dynamicStages : [];
+  const loadingStages = isStagesLoading;
 
   // Dashboard drill-down: active leads
   const activeLeads = useMemo(() => {
@@ -212,7 +185,7 @@ export default function Clients() {
 
         if (type === 'column') {
             if (!stages || stages.length === 0) return;
-            const newStages = Array.from(stages);
+            const newStages = Array.from(stages || []);
             const [removed] = newStages.splice(source.index, 1);
             if (!removed) return;
             newStages.splice(destination.index, 0, removed);
