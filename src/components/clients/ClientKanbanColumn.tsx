@@ -25,13 +25,14 @@ interface Props {
 export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, stageColor, pipeline, clients, selectable, selectedIds, onSelect, onSelectAll, dragHandleProps }: Props) {
   const { data: links = [] } = useClientPropertyLinks();
 
-  // Calculate total final_sale_price for all clients in this column
-  const totalValue = clients.reduce((sum, client) => {
+  // Calculate total final_sale_price for all clients in this column with extra safety
+  const totalValue = (clients || []).reduce((sum, client) => {
+    if (!client || !client.id) return sum;
     // Get all links for this client
-    const clientLinks = links.filter(l => l.client_id === client.id);
+    const clientLinks = (links || []).filter(l => l && l.client_id === client.id);
     // Sum final_sale_price from the properties associated with those links
     const clientTotal = clientLinks.reduce((cSum, link) => {
-      return cSum + (link.properties?.final_sale_price || 0);
+      return cSum + (link?.properties?.final_sale_price || 0);
     }, 0);
     return sum + clientTotal;
   }, 0);

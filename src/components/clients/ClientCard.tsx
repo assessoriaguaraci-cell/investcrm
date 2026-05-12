@@ -133,11 +133,14 @@ export default function ClientCard({ client, index, selectable, selected, onSele
                 <div className="flex flex-col gap-0.5 text-[10px] text-slate-500 leading-tight">
                   {settings.showPropertyLinks && clientLinks.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-0.5">
-                      {clientLinks.map(link => (
-                        <span key={link.id} className="text-[9px] px-1 py-0 bg-slate-50 text-slate-400 rounded border border-slate-100 truncate" title={link.properties?.code || ''}>
-                          🏢 {link.properties?.code?.slice(-4)}
-                        </span>
-                      ))}
+                      {clientLinks.map(link => {
+                        const code = String(link?.properties?.code || "");
+                        return (
+                          <span key={link.id} className="text-[9px] px-1 py-0 bg-slate-50 text-slate-400 rounded border border-slate-100 truncate" title={code}>
+                            🏢 {code.length > 4 ? code.slice(-4) : code}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
 
