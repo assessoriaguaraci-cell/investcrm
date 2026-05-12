@@ -118,7 +118,11 @@ export default function Clients() {
         .eq("funnel_type", "client")
         .order("sort_order", { ascending: true });
       
-      if (data) setStages(data);
+      if (data) {
+        setStages(data);
+      } else {
+        setStages([]);
+      }
       setLoadingStages(false);
     };
     fetchStages();
@@ -464,20 +468,23 @@ export default function Clients() {
     );
   }
 
-  // Filtrar etapas visíveis
+  // Filtrar etapas visíveis (com segurança extra)
   const visibleStages = useMemo(() => {
-    return stages.filter(s => !hiddenStages.includes(s.value));
+    if (!stages) return [];
+    const hidden = Array.isArray(hiddenStages) ? hiddenStages : [];
+    return stages.filter(s => s && s.value && !hidden.includes(s.value));
   }, [stages, hiddenStages]);
 
   // Agrupar etapas visíveis por fase
   const phasesWithStages = useMemo(() => {
+    if (!visibleStages.length) return [];
     return CLIENT_PHASES.map(phase => {
-      const stagesInPhase = visibleStages.filter(s => phase.stages.includes(s.value));
+      const stagesInPhase = visibleStages.filter(s => s && phase.stages?.includes(s.value));
       return {
         ...phase,
         stagesInPhase
       };
-    }).filter(p => p.stagesInPhase.length > 0);
+    }).filter(p => p.stagesInPhase && p.stagesInPhase.length > 0);
   }, [visibleStages]);
 
   const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
@@ -535,7 +542,8 @@ export default function Clients() {
               <ScrollArea className="h-[400px]">
                 <div className="p-2 space-y-4">
                   {CLIENT_PHASES.map(phase => {
-                    const stagesInPhase = stages.filter(s => phase.stages.includes(s.value));
+                    if (!stages || !Array.isArray(stages)) return null;
+                    const stagesInPhase = stages.filter(s => s && phase.stages?.includes(s.value));
                     if (stagesInPhase.length === 0) return null;
                     
                     return (
