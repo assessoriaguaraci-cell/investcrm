@@ -11,6 +11,7 @@ import { useClientPropertyLinks } from "@/hooks/useClientPropertyLinks";
 import { useBoardSettings } from "@/hooks/useBoardSettings";
 import { Checkbox } from "@/components/ui/checkbox";
 import TimeInStageBadge from "./TimeInStageBadge";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
 interface Props {
   client: Client;
@@ -29,10 +30,14 @@ const tempColors: Record<string, string> = {
 export default function ClientCard({ client, index, selectable, selected, onSelect }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const { data: links = [] } = useClientPropertyLinks();
+  const { data: members = [] } = useApprovedMembers();
   const settings = useBoardSettings();
 
   const clientLinks = links.filter(l => l.client_id === client.id);
   const tempLabel = TEMPERATURE_OPTIONS.find(t => t.value === client.temperature)?.label ?? "";
+  
+  // Find responsible name from members list
+  const responsible = members.find(m => m.user_id === client.responsible_user_id);
 
   return (
     <>
@@ -168,11 +173,11 @@ export default function ClientCard({ client, index, selectable, selected, onSele
                       {client.city}/{client.state}
                     </div>
                   )}
-                  
-                  {(client as any).responsible?.full_name && (
+
+                  {responsible && (
                     <div className="flex items-center gap-1.5 text-slate-400 font-medium">
                       <span className="w-1 h-1 rounded-full bg-slate-200" />
-                      👤 {(client as any).responsible.full_name}
+                      👤 {responsible.full_name || "Sem nome"}
                     </div>
                   )}
                 </div>
