@@ -203,23 +203,17 @@ export default function Clients() {
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
     if (type === 'column') {
+        if (!stages || stages.length === 0) return;
         const newStages = Array.from(stages);
         const [removed] = newStages.splice(source.index, 1);
+        if (!removed) return;
         newStages.splice(destination.index, 0, removed);
         
         for (let i = 0; i < newStages.length; i++) {
             const s = newStages[i];
+            if (!s) continue;
             if ((s as any).id) {
                 await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
-            } else {
-                await addStage({
-                    funnel_type: "client",
-                    value: s.value,
-                    label: s.label,
-                    color: s.color,
-                    pipeline: "inicial",
-                    sort_order: i * 10
-                } as any);
             }
         }
         return;

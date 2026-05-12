@@ -79,37 +79,48 @@ export const useClientFiltersStore = create<ClientFiltersState>()(
           : [...state.hiddenStages, stageValue]
       })),
       loadFromCloud: async (userId) => {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('ui_settings')
-          .eq('user_id', userId)
-          .single();
+        try {
+          if (!userId) return;
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('ui_settings')
+            .eq('user_id', userId)
+            .single();
 
-        if (!error && data?.ui_settings && typeof data.ui_settings === 'object') {
-          const cloudFilters = (data.ui_settings as any).active_client_filters;
-          if (cloudFilters) {
-            set({ activeFilters: sanitizeClientFilters(cloudFilters) });
+          if (!error && data?.ui_settings && typeof data.ui_settings === 'object') {
+            const settings = data.ui_settings as any;
+            const cloudFilters = settings.active_client_filters;
+            if (cloudFilters) {
+              set({ activeFilters: sanitizeClientFilters(cloudFilters) });
+            }
+            if (Array.isArray(settings.hidden_client_stages)) {
+              set({ hiddenStages: settings.hidden_client_stages });
+            }
           }
-          if ((data.ui_settings as any).hidden_client_stages) {
-            set({ hiddenStages: (data.ui_settings as any).hidden_client_stages });
-          }
+        } catch (e) {
+          console.error("Error loading filters from cloud:", e);
         }
       },
       saveToCloud: async (userId: string) => {
-        const { activeFilters, hiddenStages } = get();
-        const { data: profile } = await supabase.from('profiles').select('ui_settings').eq('user_id', userId).single();
-        const currentCloud = (profile?.ui_settings as any) || {};
+        try {
+          if (!userId) return;
+          const { activeFilters, hiddenStages } = get();
+          const { data: profile } = await supabase.from('profiles').select('ui_settings').eq('user_id', userId).single();
+          const currentCloud = (profile?.ui_settings as any) || {};
 
-        await supabase
-          .from('profiles')
-          .update({ 
-            ui_settings: { 
-              ...currentCloud, 
-              active_client_filters: activeFilters,
-              hidden_client_stages: hiddenStages
-            } 
-          })
-          .eq('user_id', userId);
+          await supabase
+            .from('profiles')
+            .update({ 
+              ui_settings: { 
+                ...currentCloud, 
+                active_client_filters: activeFilters,
+                hidden_client_stages: hiddenStages
+              } 
+            })
+            .eq('user_id', userId);
+        } catch (e) {
+          console.error("Error saving filters to cloud:", e);
+        }
       },
     }),
     {

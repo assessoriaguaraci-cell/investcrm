@@ -11,7 +11,9 @@ interface TimeInStageBadgeProps {
 export default function TimeInStageBadge({ updatedAt, stage }: TimeInStageBadgeProps) {
   // Use stage_updated_at if it's available (as passed in 'updatedAt' from ClientCard), 
   // ensuring metadata changes don't reset the timer.
+  if (!updatedAt) return null;
   const lastUpdate = parseISO(updatedAt);
+  if (isNaN(lastUpdate.getTime())) return null;
   const now = new Date();
   
   const diffHours = differenceInHours(now, lastUpdate);
