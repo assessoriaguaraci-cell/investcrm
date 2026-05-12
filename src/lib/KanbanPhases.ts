@@ -13,7 +13,7 @@ export const CLIENT_PHASES: KanbanPhase[] = [
   {
     name: "Fase de Aprovação",
     color: "bg-purple-600",
-    stages: ["aguardando_documentos", "documentos_incompletos", "analise_de_credito", "credito_aprovado"]
+    stages: ["aguardando_documentos", "documentos_incompletos", "analise_de_credito", "credito_aprovado", "credito_aprovado_pipe"]
   },
   {
     name: "Fase de Vendas",

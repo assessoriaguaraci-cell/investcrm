@@ -465,41 +465,34 @@ export default function Clients() {
   }
 
   // Filtrar etapas visíveis
-  const visibleStages = stages.filter(s => !hiddenStages.includes(s.value));
+  const visibleStages = useMemo(() => {
+    return stages.filter(s => !hiddenStages.includes(s.value));
+  }, [stages, hiddenStages]);
 
   // Agrupar etapas visíveis por fase
-  const phasesWithStages = CLIENT_PHASES.map(phase => ({
-    ...phase,
-    stagesInPhase: visibleStages.filter(s => phase.stages.includes(s.value))
-  })).filter(p => p.stagesInPhase.length > 0);
+  const phasesWithStages = useMemo(() => {
+    return CLIENT_PHASES.map(phase => {
+      const stagesInPhase = visibleStages.filter(s => phase.stages.includes(s.value));
+      return {
+        ...phase,
+        stagesInPhase
+      };
+    }).filter(p => p.stagesInPhase.length > 0);
+  }, [visibleStages]);
 
   const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
-
   return (
-    <div className="p-4 md:p-6 h-full flex flex-col">
+    <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <Users className="h-8 w-8 text-primary shrink-0" />
             <div className="flex flex-col gap-0.5">
               <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
-                  FUNIL DE CLIENTES / UNIFICADO
+                  PIPELINE DE LEADS
               </h1>
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Gestão de Funis e Leads</p>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Gestão Unificada</p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 border-l pl-4">
-             <Badge variant="outline" className="bg-[#EDF0F4] dark:bg-[#016FAE] text-[#002B44] dark:text-white border-none font-black text-[10px] uppercase py-1 px-3 shadow-sm">Leads ativos</Badge>
-             <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary" />
-                <Input 
-                  placeholder="Busca e filtro" 
-                  value={filters.search}
-                  onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  className="h-8 w-48 pl-9 bg-muted/30 dark:bg-muted/10 border-none shadow-none text-xs focus-visible:ring-1 focus-visible:ring-primary/20 text-foreground"
-                />
-             </div>
           </div>
           
           <div className="hidden lg:flex items-center gap-4 border-l pl-6">
@@ -515,6 +508,83 @@ export default function Clients() {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="relative group mr-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary" />
+            <Input 
+              placeholder="Busca rápida..." 
+              value={filters.search}
+              onChange={e => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="h-8 w-40 pl-9 bg-muted/30 border-none shadow-none text-[10px] font-bold uppercase focus-visible:ring-1 focus-visible:ring-primary/20"
+            />
+          </div>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-2 border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                <Eye className="h-3.5 w-3.5 text-slate-500" />
+                Colunas
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px]">
+                  {visibleStages.length}/{stages.length}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0 shadow-2xl border-slate-200" align="end">
+              <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-500">Configurar Colunas</h3>
+              </div>
+              <ScrollArea className="h-[400px]">
+                <div className="p-2 space-y-4">
+                  {CLIENT_PHASES.map(phase => {
+                    const stagesInPhase = stages.filter(s => phase.stages.includes(s.value));
+                    if (stagesInPhase.length === 0) return null;
+                    
+                    return (
+                      <div key={phase.name} className="space-y-1.5">
+                        <div className="flex items-center gap-2 px-2 py-1">
+                          <div className={`w-2 h-2 rounded-full ${phase.color}`} />
+                          <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{phase.name}</span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-0.5">
+                          {stagesInPhase.map(stage => {
+                            const isHidden = hiddenStages.includes(stage.value);
+                            return (
+                              <button
+                                key={stage.value}
+                                onClick={() => toggleStageVisibility(stage.value)}
+                                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-left transition-all ${
+                                  isHidden 
+                                    ? "bg-slate-50/50 text-slate-400 hover:bg-slate-100" 
+                                    : "bg-white text-slate-700 hover:bg-slate-50 shadow-sm border border-slate-100/50"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-1 h-3 rounded-full ${stage.color || 'bg-slate-300'}`} />
+                                  <span className="text-[10px] font-bold uppercase truncate max-w-[180px]">{stage.label}</span>
+                                </div>
+                                {isHidden ? <EyeOff className="h-3 w-3" /> : <Check className="h-3 w-3 text-primary" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+              <div className="p-3 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <p className="text-[9px] text-muted-foreground font-medium italic">As mudanças são salvas automaticamente localmente.</p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 text-[9px] font-black uppercase tracking-tighter hover:bg-primary/5 text-primary"
+                  onClick={() => saveToCloud(user?.id || "")}
+                >
+                  Salvar na Nuvem
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <Button 
             variant={selectionModeActive ? "default" : "outline"}
             size="sm"
@@ -523,114 +593,17 @@ export default function Clients() {
               if (!selectionModeActive) setSelectedIds([]);
             }}
             className={cn(
-              "gap-1.5 font-black uppercase tracking-tight shadow-sm transition-all",
+              "h-8 gap-1.5 font-black uppercase text-[10px] tracking-tight shadow-sm transition-all",
               selectionModeActive ? "bg-[#002B44] hover:bg-[#003d61]" : "border-primary/20 hover:bg-primary/5"
             )}
           >
             <CheckSquare className="h-4 w-4" />
             {selectionModeActive 
-              ? (selectedIds.length > 0 ? `${selectedIds.length} Selecionados` : "Sair da Seleção") 
-              : "Seleção em Massa"}
+              ? (selectedIds.length > 0 ? `${selectedIds.length} Selecionados` : "Sair") 
+              : "Massa"}
           </Button>
-
           <DuplicateManagerDialog />
-
           <NewClientDialog />
-
-          <div className="h-6 w-px bg-border/50 mx-1" />
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 font-black uppercase text-[10px]">
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Colunas
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[8px]">{stages.length - hiddenStages.length}</Badge>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-0" align="end">
-              <div className="p-3 border-b bg-muted/20">
-                <p className="text-[10px] font-black uppercase tracking-tighter">Visibilidade das Colunas</p>
-              </div>
-              <ScrollArea className="h-72">
-                <div className="p-2 space-y-1">
-                  {stages.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => toggleStageVisibility(s.value)}
-                      className="w-full flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors text-left"
-                    >
-                      <span className="text-[11px] font-bold uppercase truncate">{s.label}</span>
-                      {hiddenStages.includes(s.value) ? (
-                        <EyeOff className="h-3 w-3 text-muted-foreground" />
-                      ) : (
-                        <Check className="h-3 w-3 text-primary" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground hover:bg-muted border border-border/20 shadow-sm" title="Mais opções (Visualização e Filtros)">
-                <MoreHorizontal className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-2 shadow-xl border-border/40">
-              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 pt-2 tracking-widest">Visualização</DropdownMenuLabel>
-              <DropdownMenuRadioGroup value={viewMode} onValueChange={v => setViewMode(v as ViewMode)} className="px-1">
-                <DropdownMenuRadioItem value="kanban" className="text-xs font-bold uppercase py-2 cursor-pointer transition-colors">
-                  <LayoutGrid className="h-4 w-4 mr-2" /> Modo Kanban (Cards)
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="table" className="text-xs font-bold uppercase py-2 cursor-pointer transition-colors">
-                  <TableIcon className="h-4 w-4 mr-2" /> Modo Tabela (Lista)
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              
-              {viewMode === "kanban" && (
-                <BoardSettingsMenu triggerAsMenuItem />
-              )}
-
-              <DropdownMenuSeparator className="my-2" />
-              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 tracking-widest">Operação</DropdownMenuLabel>
-              <div 
-                className="flex items-center gap-2 py-2 cursor-pointer hover:bg-muted/50 rounded px-2 transition-colors mx-1" 
-                onClick={() => {
-                  setSelectionModeActive(!selectionModeActive);
-                  if (!selectionModeActive) setSelectedIds([]);
-                }}
-              >
-                <div className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${selectionModeActive ? 'bg-[#002B44] border-[#002B44] text-white' : 'border-muted-foreground/30'}`}>
-                  {selectionModeActive && <CheckSquare className="h-2.5 w-2.5" />}
-                </div>
-                <span className="text-[11px] font-bold uppercase leading-none">Seleção em Massa (Editar)</span>
-              </div>
-              
-              <DropdownMenuSeparator className="my-2" />
-              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 tracking-widest">Dados</DropdownMenuLabel>
-              <div className="px-1 space-y-1">
-                <ImportClientsDialog />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full justify-start gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5 transition-all"
-                  onClick={() => exportToCSV('clientes_invest_crm', filtered)}
-                >
-                  <Download className="h-3.5 w-3.5 text-primary" /> Exportar CSV
-                </Button>
-                <Button 
-                  variant="outline" 
-                   size="sm" 
-                  className="w-full justify-start gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5 transition-all"
-                  onClick={() => exportToExcel('clientes_invest_crm', filtered)}
-                >
-                  <Download className="h-3.5 w-3.5 text-primary" /> Exportar Excel (XLSX)
-                </Button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
