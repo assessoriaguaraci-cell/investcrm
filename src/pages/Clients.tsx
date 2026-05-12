@@ -205,34 +205,41 @@ export default function Clients() {
   }, [filtered, stages]);
 
   const onDragEnd = async (result: DropResult) => {
-    const { draggableId, destination, source, type } = result;
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+    try {
+        const { draggableId, destination, source, type } = result;
+        if (!destination) return;
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    if (type === 'column') {
-        if (!stages || stages.length === 0) return;
-        const newStages = Array.from(stages);
-        const [removed] = newStages.splice(source.index, 1);
-        if (!removed) return;
-        newStages.splice(destination.index, 0, removed);
-        
-        for (let i = 0; i < newStages.length; i++) {
-            const s = newStages[i];
-            if (!s) continue;
-            if ((s as any).id) {
-                await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
+        if (type === 'column') {
+            if (!stages || stages.length === 0) return;
+            const newStages = Array.from(stages);
+            const [removed] = newStages.splice(source.index, 1);
+            if (!removed) return;
+            newStages.splice(destination.index, 0, removed);
+            
+            for (let i = 0; i < newStages.length; i++) {
+                const s = newStages[i];
+                if (s && (s as any).id) {
+                    await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
+                }
             }
+            return;
         }
-        return;
-    }
 
-    const newStageId = destination.droppableId;
-    const newStage = newStageId.includes("---") ? newStageId.split("---")[0] : newStageId;
-    updateClient.mutate({ 
-        id: draggableId, 
-        stage: newStage as any,
-        updated_at: new Date().toISOString() 
-    });
+        const newStageId = destination.droppableId;
+        const newStage = newStageId.includes("---") ? newStageId.split("---")[0] : newStageId;
+        
+        // draggableId is the client ID in our case
+        if (draggableId) {
+            updateClient.mutate({ 
+                id: draggableId, 
+                stage: newStage as any,
+                updated_at: new Date().toISOString() 
+            });
+        }
+    } catch (e) {
+        console.error("Error in onDragEnd:", e);
+    }
   };
 
   const handleSelect = (id: string, selected: boolean) => {
@@ -665,18 +672,22 @@ export default function Clients() {
             
             {/* Super Headers (Phases) */}
             <div className="flex gap-4 mb-3">
-              {phasesWithStages.map(phase => (
-                <div 
-                  key={phase.name} 
-                  className="flex flex-col gap-1.5"
-                  style={{ width: `calc(${phase.stagesInPhase.length} * 280px + (${phase.stagesInPhase.length - 1} * 16px))` }}
-                >
-                  <div className={`h-1.5 rounded-full ${phase.color} shadow-sm border border-white/20`} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">
-                    {phase.name}
-                  </span>
-                </div>
-              ))}
+              {phasesWithStages && phasesWithStages.length > 0 && phasesWithStages.map((phase, pIdx) => {
+                const count = phase?.stagesInPhase?.length || 0;
+                if (count === 0) return null;
+                return (
+                  <div 
+                    key={`phase-${phase.name || pIdx}`} 
+                    className="flex flex-col gap-1.5"
+                    style={{ width: `calc(${count} * 280px + (${count - 1} * 16px))` }}
+                  >
+                    <div className={`h-1.5 rounded-full ${phase.color || 'bg-slate-200'} shadow-sm border border-white/20`} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1 truncate">
+                      {phase.name}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
@@ -690,10 +701,10 @@ export default function Clients() {
                     {visibleStages.map((stage, index) => {
                       if (!stage || !stage.value) return null;
                       const stageClients = grouped[stage.value] || [];
-                      const uniqueKey = stage.id || `stage-${stage.value}-${index}`;
+                      const uniqueDraggableId = stage.id || `draggable-${stage.value}-${index}`;
                       
                       return (
-                        <Draggable key={uniqueKey} draggableId={String(uniqueKey)} index={index}>
+                        <Draggable key={uniqueDraggableId} draggableId={String(uniqueDraggableId)} index={index}>
                             {(draggableProvided) => (
                                 <div
                                     ref={draggableProvided.innerRef}
@@ -701,7 +712,6 @@ export default function Clients() {
                                     className="w-[280px] shrink-0 h-full"
                                 >
                                     <ClientKanbanColumn
-                                        key={stage.value}
                                         stageId={stage.id}
                                         stageValue={stage.value}
                                         stageLabel={stage.label}
