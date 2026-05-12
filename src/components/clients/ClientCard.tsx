@@ -168,6 +168,13 @@ export default function ClientCard({ client, index, selectable, selected, onSele
                       {client.city}/{client.state}
                     </div>
                   )}
+                  
+                  {(client as any).responsible?.full_name && (
+                    <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      👤 {(client as any).responsible.full_name}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

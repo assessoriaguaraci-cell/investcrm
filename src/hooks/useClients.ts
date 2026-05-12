@@ -46,7 +46,7 @@ export function useClients() {
         const to = from + BATCH_SIZE - 1;
         return supabase
           .from("clients")
-          .select("*")
+          .select("*, responsible:responsible_user_id(full_name)")
           .order("created_at", { ascending: false })
           .range(from, to);
       });
