@@ -194,18 +194,43 @@ serve(async (req) => {
 
     // 3. Vincular Imóvel (se houver código)
     if (client && searchCode) {
+      const cleanCode = String(searchCode).trim();
+      
+      // Busca exaustiva pelo imóvel: 
+      // 1. Busca exata pelo código
+      // 2. Busca pelo código terminando com o número (ex: IL-9152)
       const { data: prop } = await supabaseClient
         .from('properties')
-        .select('id')
-        .ilike('code', `%${searchCode}%`)
-        .maybeSingle()
+        .select('id, responsible_user_id')
+        .or(`code.eq.${cleanCode},code.ilike.%-${cleanCode},code.ilike.%${cleanCode}`)
+        .limit(1)
+        .maybeSingle();
 
       if (prop) {
-        await supabaseClient.from('client_property_links').insert({
-          client_id: client.id,
-          property_id: prop.id,
-          status: 'interessado'
-        })
+        // Verifica se o vínculo já existe para não dar erro
+        const { data: existingLink } = await supabaseClient
+          .from('client_property_links')
+          .select('id')
+          .eq('client_id', client.id)
+          .eq('property_id', prop.id)
+          .maybeSingle();
+
+        if (!existingLink) {
+          await supabaseClient.from('client_property_links').insert({
+            client_id: client.id,
+            property_id: prop.id,
+            status: 'interessado'
+          });
+        }
+
+        // Garante que o responsável do cliente seja o mesmo do imóvel
+        if (prop.responsible_user_id) {
+          await supabaseClient
+            .from('clients')
+            .update({ responsible_user_id: prop.responsible_user_id })
+            .eq('id', client.id)
+            .is('responsible_user_id', null);
+        }
       }
     }
 
