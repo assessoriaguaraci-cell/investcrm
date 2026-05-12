@@ -304,10 +304,13 @@ export default function Clients() {
 
   const handleBulkMove = async (targetStage: string) => {
     try {
-      // Find pipeline for target stage
-      const allStages = dynamicStages.length > 0 ? dynamicStages : CLIENT_STAGES;
-      const stageObj = allStages.find(s => s.value === targetStage);
-      const targetPipeline = stageObj?.pipeline as any;
+      // Find pipeline for target stage with safety
+      const allStages = (dynamicStages && dynamicStages.length > 0) ? dynamicStages : (CLIENT_STAGES || []);
+      const stageObj = allStages.find(s => s && s.value === targetStage);
+      
+      if (!stageObj) {
+        throw new Error("Etapa de destino não encontrada.");
+      }
 
       for (const id of selectedIds) {
         await supabase.from("clients").update({
@@ -315,7 +318,7 @@ export default function Clients() {
         }).eq("id", id);
       }
       setSelectedIds([]);
-      toast({ title: "Sucesso", description: `${selectedIds.length} clientes movidos para ${stageObj?.label}` });
+      toast({ title: "Sucesso", description: `${selectedIds.length} clientes movidos para ${stageObj.label}` });
       setTimeout(() => window.location.reload(), 500);
     } catch (e: any) {
       toast({ title: "Erro", description: e.message, variant: "destructive" });
@@ -451,8 +454,9 @@ export default function Clients() {
         ) : (
           <div className="space-y-2">
             {activeLeads.map(c => {
-              const stage = (dynamicStages.length > 0 ? dynamicStages : CLIENT_STAGES).find(s => s.value === c.stage);
-              const temp = TEMPERATURE_OPTIONS.find(t => t.value === c.temperature);
+              const allStages = (dynamicStages && dynamicStages.length > 0) ? dynamicStages : (CLIENT_STAGES || []);
+              const stage = allStages.find(s => s && s.value === c.stage);
+              const temp = TEMPERATURE_OPTIONS.find(t => t && t.value === c.temperature);
               return (
                 <Card key={c.id} className="hover:shadow-sm transition-shadow">
                   <CardContent className="p-4 flex items-center justify-between">
@@ -461,11 +465,11 @@ export default function Clients() {
                       <div>
                         <p className="font-semibold text-sm">{c.full_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatPhone(c.phone || c.whatsapp)} · {stage?.label}
+                          {formatPhone(c.phone || c.whatsapp)} · {stage?.label || "Sem etapa"}
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-xs">{temp?.label}</Badge>
+                    <Badge variant="outline" className="text-xs">{temp?.label || "Normal"}</Badge>
                   </CardContent>
                 </Card>
               );
