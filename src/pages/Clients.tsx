@@ -111,19 +111,27 @@ export default function Clients() {
   // Fetch ALL client stages
   useEffect(() => {
     const fetchStages = async () => {
-      setLoadingStages(true);
-      const { data } = await supabase
-        .from("kanban_stages")
-        .select("*")
-        .eq("funnel_type", "client")
-        .order("sort_order", { ascending: true });
-      
-      if (data) {
-        setStages(data);
-      } else {
-        setStages([]);
+      try {
+        setLoadingStages(true);
+        const { data, error } = await supabase
+          .from("kanban_stages")
+          .select("*")
+          .eq("funnel_type", "client")
+          .order("sort_order", { ascending: true });
+        
+        if (error) {
+          console.error("Error fetching stages:", error);
+          setStages([]);
+        } else if (data) {
+          // Deduplicate stages by value just in case
+          const uniqueStages = data.filter((v, i, a) => a.findIndex(t => (t.value === v.value)) === i);
+          setStages(uniqueStages);
+        }
+      } catch (e) {
+        console.error("Fatal error fetching stages:", e);
+      } finally {
+        setLoadingStages(false);
       }
-      setLoadingStages(false);
     };
     fetchStages();
   }, []);
@@ -471,9 +479,12 @@ export default function Clients() {
 
   // Agrupar etapas visíveis por fase
   const phasesWithStages = useMemo(() => {
-    if (!visibleStages.length) return [];
+    if (!visibleStages || visibleStages.length === 0) return [];
+    if (!CLIENT_PHASES || !Array.isArray(CLIENT_PHASES)) return [];
+    
     return CLIENT_PHASES.map(phase => {
-      const stagesInPhase = visibleStages.filter(s => s && phase.stages?.includes(s.value));
+      if (!phase || !phase.stages) return { ...phase, stagesInPhase: [] };
+      const stagesInPhase = visibleStages.filter(s => s && s.value && phase.stages.includes(s.value));
       return {
         ...phase,
         stagesInPhase
@@ -678,9 +689,12 @@ export default function Clients() {
                     className="flex gap-4 h-full"
                   >
                     {visibleStages.map((stage, index) => {
+                      if (!stage || !stage.value) return null;
                       const stageClients = grouped[stage.value] || [];
+                      const uniqueKey = stage.id || `stage-${stage.value}-${index}`;
+                      
                       return (
-                        <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                        <Draggable key={uniqueKey} draggableId={uniqueKey} index={index}>
                             {(draggableProvided) => (
                                 <div
                                     ref={draggableProvided.innerRef}
