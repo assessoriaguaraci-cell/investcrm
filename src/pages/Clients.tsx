@@ -680,13 +680,18 @@ export default function Clients() {
                           <div 
                             key={`collapsed-${phase.name}`}
                             onClick={() => togglePhaseCollapse(phase.name)}
-                            className="h-full w-12 flex flex-col items-center py-4 bg-white/40 border border-slate-200 rounded-xl cursor-pointer hover:bg-white/60 transition-all group shrink-0"
+                            className="h-full w-10 flex flex-col items-center py-6 bg-white/40 backdrop-blur-sm border border-slate-200/50 rounded-2xl cursor-pointer hover:bg-white/60 transition-all group shrink-0 shadow-sm relative overflow-hidden"
                           >
-                            <div className={cn("w-1.5 h-12 rounded-full mb-4 shadow-sm", phase.color)} />
-                            <span className="vertical-text font-black text-[10px] uppercase tracking-widest text-slate-400 group-hover:text-primary whitespace-nowrap rotate-180">
-                              {phase.name}
-                            </span>
-                            <div className="mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className={cn("w-1 h-12 rounded-full mb-6 shadow-sm shrink-0", phase.color)} />
+                            <div className="flex-1 flex items-center justify-center w-full">
+                              <span 
+                                className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400 group-hover:text-primary transition-colors whitespace-nowrap"
+                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                              >
+                                {phase.name}
+                              </span>
+                            </div>
+                            <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                               <Eye className="h-4 w-4 text-primary" />
                             </div>
                           </div>
