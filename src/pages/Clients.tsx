@@ -31,6 +31,7 @@ import { BulkTaskDialog } from "@/components/kanban/BulkTaskDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { BulkFieldDialog } from "@/components/kanban/BulkFieldDialog";
 import ImportClientsDialog from "@/components/clients/ImportClientsDialog";
+import DuplicateManagerDialog from "@/components/clients/DuplicateManagerDialog";
 import { useClientFiltersStore } from "@/hooks/useClientFiltersStore";
 import { exportToCSV, exportToExcel } from "@/utils/exportUtils";
 import {
@@ -522,6 +523,8 @@ export default function Clients() {
               : "Seleção em Massa"}
           </Button>
 
+          <DuplicateManagerDialog />
+
           <NewClientDialog />
 
           <div className="h-6 w-px bg-border/50 mx-1" />
@@ -638,31 +641,50 @@ export default function Clients() {
                 ref={provided.innerRef}
               >
                 <div className="flex gap-4" style={{ minWidth: "fit-content" }}>
-                  {stagesForPipeline.map((stage, index) => (
-                    <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={`col-${stage.value}-${(stage as any).id || index}`} index={index}>
-                        {(draggableProvided) => (
-                            <div
-                                ref={draggableProvided.innerRef}
-                                {...draggableProvided.draggableProps}
-                            >
-                                <ClientKanbanColumn
-                                    key={stage.value}
-                                    stageId={(stage as any).id}
-                                    stageValue={stage.value}
-                                    stageLabel={stage.label}
-                                    stageColor={stage.color}
-                                    clients={grouped[stage.value] || []}
-                                    selectable={selectionModeActive}
-                                    onSelect={handleSelect}
-                                    onSelectAll={handleSelectAll}
-                                    selectedIds={selectedIds}
-                                    dragHandleProps={draggableProvided.dragHandleProps}
-                                />
-                            </div>
-                        )}
-                    </Draggable>
-                  ))}
+                  {stagesForPipeline.map((stage, index) => {
+                    const stageClients = grouped[stage.value] || [];
+                    return (
+                      <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={`col-${stage.value}-${(stage as any).id || index}`} index={index}>
+                          {(draggableProvided) => (
+                              <div
+                                  ref={draggableProvided.innerRef}
+                                  {...draggableProvided.draggableProps}
+                              >
+                                  <ClientKanbanColumn
+                                      key={stage.value}
+                                      stageId={(stage as any).id}
+                                      stageValue={stage.value}
+                                      stageLabel={stage.label}
+                                      stageColor={stage.color}
+                                      clients={stageClients}
+                                      selectable={selectionModeActive}
+                                      onSelect={handleSelect}
+                                      onSelectAll={handleSelectAll}
+                                      selectedIds={selectedIds}
+                                      dragHandleProps={draggableProvided.dragHandleProps}
+                                  />
+                              </div>
+                          )}
+                      </Draggable>
+                    );
+                  })}
                   {provided.placeholder}
+                  {filtered.length === 0 && filters.search && (
+                    <div className="flex flex-col items-center justify-center py-20 px-4 text-center absolute left-0 right-0">
+                       <div className="bg-muted/20 p-8 rounded-2xl border-2 border-dashed border-muted max-w-md">
+                         <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                         <p className="text-sm font-black uppercase text-muted-foreground tracking-tighter">
+                           Nenhum lead encontrado para "{filters.search}"
+                         </p>
+                         <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2">
+                           Tente buscar por um telefone, nome ou e-mail diferente.
+                         </p>
+                         <Button variant="link" size="sm" onClick={() => setFilters({ ...filters, search: "" })} className="mt-4 font-black uppercase text-[10px]">
+                           Limpar busca
+                         </Button>
+                       </div>
+                    </div>
+                  )}
                   <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add">
                     <AddColumnDialog funnelType="client" pipeline={activePipeline} showLabel />
                     <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Coluna</p>

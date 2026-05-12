@@ -257,21 +257,29 @@ export default function ImportClientsDialog() {
         const BATCH_SIZE = 50;
         
         toast.info(`Iniciando importação de ${dataToImport.length} leads...`);
+        const { data: existing } = await supabase.from("clients").select("phone");
 
         for (let i = 0; i < dataToImport.length; i += BATCH_SIZE) {
           setProgress(prev => ({ ...prev, current: Math.min(i + BATCH_SIZE, dataToImport.length) }));
           const chunk = dataToImport.slice(i, i + BATCH_SIZE);
+          
+          // FILTRA DUPLICADOS DO BATCH ANTES DE INSERIR
           const batchToInsert = chunk.map(item => {
             const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
-            const lastName = findColumnValue(item, ['sobrenome', 'last name', 'segundo nome']) || '';
+            const lastName = findColumnValue(item, ['sobrenome', 'last name']) || '';
+            const fullName = findColumnValue(item, ['nome completo', 'full name']) || `${firstName} ${lastName}`.trim();
+            const phone = findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']);
+            const cleanPhone = phone ? String(phone).replace(/\D/g, '') : null;
+            
+            // VERIFICA SE JÁ EXISTE NO BANCO OU NO CSV (PARA EVITAR DUPLICAÇÃO INTERNA NO ARQUIVO)
+            const isExisting = existing?.some(ex => {
+              const cleanExPhone = ex.phone ? String(ex.phone).replace(/\D/g, '') : null;
+              return cleanPhone && cleanExPhone === cleanPhone;
+            });
+
+            if (isExisting) return null; // PULA ESTE LEAD
+
             return {
-              full_name: (firstName + ' ' + lastName).trim() || 'Sem nome',
-              email: findColumnValue(item, ['email', 'e-mail', 'correio']) || null,
-              phone: findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']) || null,
-              whatsapp: findColumnValue(item, ['whatsapp', 'telefone', 'celular', 'fone', 'phone']) || null,
-              cpf: findColumnValue(item, ['cpf', 'documento']) || null,
-              income: parseFloat(findColumnValue(item, ['income', 'renda', 'salario']) || "0") || null,
-              city: findColumnValue(item, ['city', 'cidade', 'municipio']) || null,
               state: findColumnValue(item, ['state', 'estado', 'uf']) || null,
               notes: findColumnValue(item, ['notes', 'observacao', 'obs', 'detalhes']) || null,
               pipeline: 'inicial' as any,
