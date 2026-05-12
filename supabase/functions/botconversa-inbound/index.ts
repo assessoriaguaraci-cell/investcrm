@@ -11,37 +11,31 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  )
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+  const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
   // DEBUG: Se for GET, retorna os últimos logs de auditoria
   if (req.method === 'GET') {
-    const { data: logs } = await supabaseClient
+    const { data: logs, error: logError } = await supabaseClient
       .from('audit_logs')
       .select('*')
       .eq('entity_type', 'botconversa_webhook')
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(20)
     
-    return new Response(JSON.stringify(logs), { 
+    if (logError) return new Response(JSON.stringify({ error: logError.message }), { headers: corsHeaders, status: 500 });
+    
+    return new Response(JSON.stringify({ 
+      count: logs?.length || 0,
+      last_logs: logs || [],
+      message: logs?.length ? "Logs encontrados" : "Nenhum log de webhook encontrado no banco ainda."
+    }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
     })
   }
 
-  if (req.method === 'GET') {
-    const { data: logs } = await supabaseClient
-      .from('audit_logs')
-      .select('*')
-      .eq('entity_type', 'botconversa_webhook')
-      .order('created_at', { ascending: false })
-      .limit(10)
-    
-    return new Response(JSON.stringify(logs), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    })
-  }
 
   try {
     const data = await req.json()
@@ -99,14 +93,16 @@ serve(async (req) => {
     leadName = findValue([
       'full_name', 'contact_name', 'nome', 'first_name', 'name', 
       'Nome_do_Cliente', 'nome_completo', 'first_name_contact', '@first_name',
-      'peopleName', 'contact.name', 'subscriber.name'
+      'peopleName', 'contact.name', 'subscriber.name', 'display_name',
+      'Nome', 'nomeCompleto', 'cliente_nome'
     ]) || leadName
     
     // Tenta capturar telefone
     leadPhone = findValue([
       'phone', 'telefone', 'id', 'wa_id', 'contact_phone', 'fone', 
       'subscriber_id', 'whatsapp', 'celular', 'phone_number', '@phone',
-      'peoplePhone', 'contact.phone', 'subscriber.phone'
+      'peoplePhone', 'contact.phone', 'subscriber.phone', 'key',
+      'Telefone', 'celular_cliente'
     ]) || ""
     
     // Tenta capturar mensagem/código
@@ -147,9 +143,12 @@ serve(async (req) => {
     const botconversaId = findValue(['chat_id', 'subscriber_id', 'id', 'id_contato', 'contact_id', 'subscriber.id', 'contact.id']) || ""
 
     const cleanPhone = leadPhone ? String(leadPhone).replace(/\D/g, '') : null
-    const finalName = (leadName && !String(leadName).startsWith("@") && leadName !== "Lead WhatsApp") 
+    
+    // Se o nome for uma variável do bot ou estiver vazio, usa o telefone como nome temporário
+    const isBotVariable = leadName && (leadName.includes('{') || leadName.includes('@'))
+    const finalName = (leadName && !isBotVariable && leadName !== "Lead WhatsApp") 
                       ? leadName 
-                      : (cleanPhone || "Lead WhatsApp")
+                      : (cleanPhone ? `Lead ${cleanPhone}` : "Lead WhatsApp")
 
     // 2. BUSCAR CLIENTE EXISTENTE (Pelo Telefone)
     let client: any = null;
@@ -197,6 +196,7 @@ serve(async (req) => {
     if (client && searchCode) {
       const { data: prop } = await supabaseClient
         .from('properties')
+        .select('id')
         .ilike('code', `%${searchCode}%`)
         .maybeSingle()
 

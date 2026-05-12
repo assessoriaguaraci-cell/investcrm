@@ -24,6 +24,7 @@ export default function ImportClientsDialog() {
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [mergeMode, setMergeMode] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const qc = useQueryClient();
 
   const handleDownloadTemplate = () => {
@@ -60,11 +61,17 @@ export default function ImportClientsDialog() {
 
       const dupes: any[] = [];
       data.forEach(item => {
-        const isDuplicate = existingClients?.some(existing => 
-          (item.email && existing.email === item.email) || 
-          (item.cpf && existing.cpf === item.cpf) ||
-          (item.phone && existing.phone === item.phone.replace(/\D/g, ''))
-        );
+        const itemPhone = findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']);
+        const cleanItemPhone = itemPhone ? String(itemPhone).replace(/\D/g, '') : null;
+        const itemEmail = findColumnValue(item, ['email', 'e-mail', 'correio']);
+        const itemCpf = findColumnValue(item, ['cpf', 'documento']);
+
+        const isDuplicate = existingClients?.some(existing => {
+          const cleanExistingPhone = existing.phone ? String(existing.phone).replace(/\D/g, '') : null;
+          return (itemEmail && existing.email === itemEmail) || 
+                 (itemCpf && existing.cpf === itemCpf) ||
+                 (cleanItemPhone && cleanExistingPhone === cleanItemPhone);
+        });
         if (isDuplicate) dupes.push(item);
       });
 
@@ -119,6 +126,7 @@ export default function ImportClientsDialog() {
     if (fullData.length === 0) return;
 
     setLoading(true);
+    setProgress({ current: 0, total: fullData.length });
     try {
       const dataToImport = fullData; // USA OS DADOS COMPLETOS
       if (mergeMode) {
@@ -131,11 +139,20 @@ export default function ImportClientsDialog() {
         let updatedCount = 0;
         let insertedCount = 0;
 
-        for (const item of dataToImport) {
-          const duplicate = existing?.find(ex => 
-            (item.email && ex.email === item.email) || 
-            (item.cpf && ex.cpf === item.cpf)
-          );
+        for (let i = 0; i < dataToImport.length; i++) {
+          const item = dataToImport[i];
+          setProgress(prev => ({ ...prev, current: i + 1 }));
+          const itemPhone = findColumnValue(item, ['telefone', 'whatsapp', 'celular', 'fone', 'phone']);
+          const cleanItemPhone = itemPhone ? String(itemPhone).replace(/\D/g, '') : null;
+          const itemEmail = findColumnValue(item, ['email', 'e-mail', 'correio']);
+          const itemCpf = findColumnValue(item, ['cpf', 'documento']);
+
+          const duplicate = existing?.find(ex => {
+            const cleanExPhone = ex.phone ? String(ex.phone).replace(/\D/g, '') : null;
+            return (itemEmail && ex.email === itemEmail) || 
+                   (itemCpf && ex.cpf === itemCpf) ||
+                   (cleanItemPhone && cleanExPhone === cleanItemPhone);
+          });
 
           if (duplicate) {
             const updates: any = {};
@@ -242,6 +259,7 @@ export default function ImportClientsDialog() {
         toast.info(`Iniciando importação de ${dataToImport.length} leads...`);
 
         for (let i = 0; i < dataToImport.length; i += BATCH_SIZE) {
+          setProgress(prev => ({ ...prev, current: Math.min(i + BATCH_SIZE, dataToImport.length) }));
           const chunk = dataToImport.slice(i, i + BATCH_SIZE);
           const batchToInsert = chunk.map(item => {
             const firstName = findColumnValue(item, ['primeiro nome', 'first name', 'nome']) || '';
@@ -445,14 +463,34 @@ export default function ImportClientsDialog() {
                 </div>
               )}
 
-              <div className="bg-primary/5 p-4 rounded-lg flex items-center justify-between border border-primary/10">
-                <div className="flex items-center gap-3">
-                  <Check className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-bold">{fullData.length} Clientes prontos</span>
+              <div className="bg-primary/5 p-4 rounded-lg flex flex-col gap-4 border border-primary/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Check className="h-5 w-5 text-green-600" />
+                    <span className="text-sm font-bold">{fullData.length} Clientes prontos</span>
+                  </div>
+                  <Button onClick={handleImport} disabled={loading || (duplicates.length > 0 && !mergeMode)} size="sm" className="font-black uppercase text-xs">
+                    {loading ? "Processando..." : mergeMode ? "Confirmar Mesclagem" : "Confirmar Importação"}
+                  </Button>
                 </div>
-                <Button onClick={handleImport} disabled={loading || (duplicates.length > 0 && !mergeMode)} size="sm" className="font-black uppercase text-xs">
-                  {loading ? "Processando..." : mergeMode ? "Confirmar Mesclagem" : "Confirmar Importação"}
-                </Button>
+                
+                {loading && (
+                  <div className="space-y-2 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="flex justify-between text-[10px] font-black uppercase text-primary">
+                      <span>Progresso da Importação</span>
+                      <span>{Math.round((progress.current / progress.total) * 100)}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all duration-300 ease-out"
+                        style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-[9px] text-center text-muted-foreground font-bold uppercase">
+                      Processando {progress.current} de {progress.total} leads...
+                    </p>
+                  </div>
+                )}
               </div>
               
               {duplicates.length > 0 && !mergeMode && (

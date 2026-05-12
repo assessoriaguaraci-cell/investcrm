@@ -28,14 +28,44 @@ export function useClients() {
   return useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const BATCH_SIZE = 1000;
+      
+      // Primeiro, pegamos a contagem total exata
+      const { count, error: countError } = await supabase
         .from("clients")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(0, 9999);
-      if (error) throw error;
-      return data as Client[];
+        .select("*", { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      
+      const total = count || 0;
+      const numPages = Math.ceil(total / BATCH_SIZE);
+      
+      // Criamos promessas para buscar todas as páginas em paralelo
+      const promises = Array.from({ length: numPages }, (_, i) => {
+        const from = i * BATCH_SIZE;
+        const to = from + BATCH_SIZE - 1;
+        return supabase
+          .from("clients")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, to);
+      });
+      
+      const results = await Promise.all(promises);
+      
+      let allClients: Client[] = [];
+      for (const res of results) {
+        if (res.error) throw res.error;
+        if (res.data) {
+          allClients = [...allClients, ...(res.data as Client[])];
+        }
+      }
+      
+      return allClients;
     },
+    // Forçamos o refetch para garantir que não use cache antigo
+    staleTime: 0,
+    gcTime: 0
   });
 }
 

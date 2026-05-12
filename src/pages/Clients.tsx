@@ -517,7 +517,9 @@ export default function Clients() {
             )}
           >
             <CheckSquare className="h-4 w-4" />
-            {selectionModeActive ? "Sair da Seleção" : "Seleção em Massa"}
+            {selectionModeActive 
+              ? (selectedIds.length > 0 ? `${selectedIds.length} Selecionados` : "Sair da Seleção") 
+              : "Seleção em Massa"}
           </Button>
 
           <NewClientDialog />
