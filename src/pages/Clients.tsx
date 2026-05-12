@@ -663,82 +663,78 @@ export default function Clients() {
         <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4 mt-2">
           <div className="flex flex-col h-full min-w-full">
             
-            {/* Super Headers (Phases) */}
-            <div className="flex gap-4 mb-3">
-              {phasesWithStages && phasesWithStages.length > 0 && phasesWithStages.map((phase, pIdx) => {
-                const isCollapsed = collapsedPhases.includes(phase.name);
-                const count = isCollapsed ? 0 : (phase?.stagesInPhase?.length || 0);
-                
-                if (isCollapsed) {
-                  return (
-                    <div 
-                      key={`phase-${phase.name || pIdx}`}
-                      className="group relative flex flex-col gap-1.5 transition-all duration-300 w-10 cursor-pointer"
-                      onClick={() => togglePhaseCollapse(phase.name)}
-                    >
-                      <div className={`h-1.5 rounded-full ${phase.color || 'bg-slate-200'} shadow-sm border border-white/20 opacity-40 group-hover:opacity-100`} />
-                      <div className="flex items-center justify-center h-full pt-1">
-                        <span className="text-[9px] font-black uppercase text-slate-300 vertical-text origin-center transform rotate-90 whitespace-nowrap group-hover:text-primary transition-colors">
-                          {phase.name}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (count === 0) return null;
-                return (
-                  <div 
-                    key={`phase-${phase.name || pIdx}`} 
-                    className="flex flex-col gap-1.5 transition-all duration-300"
-                    style={{ width: `calc(${count} * 280px + (${count - 1} * 16px))` }}
-                  >
-                    <div className="flex items-center justify-between px-1">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-1.5 w-full min-w-[20px] rounded-full ${phase.color || 'bg-slate-200'} shadow-sm border border-white/20`} />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 truncate">
-                          {phase.name}
-                        </span>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-4 w-4 text-slate-300 hover:text-primary hover:bg-transparent"
-                        onClick={() => togglePhaseCollapse(phase.name)}
-                      >
-                        <ChevronDown className="h-3 w-3 transform rotate-90" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
             <DragDropContext onDragEnd={onDragEnd}>
               <Droppable droppableId="board" type="column" direction="horizontal">
                 {(provided) => (
                   <div
                     {...provided.droppableProps}
                     ref={provided.innerRef}
-                    className="flex gap-4 h-full"
+                    className="flex gap-6 h-full items-start"
                   >
-                    {visibleStages.filter(s => {
-                      const phase = getPhaseForStage(s.value);
-                      return !phase || !collapsedPhases.includes(phase.name);
-                    }).map((stage, index) => {
-                      if (!stage || !stage.value) return null;
-                      const stageClients = grouped[stage.value] || [];
-                      const uniqueDraggableId = stage.id || `draggable-${stage.value}-${index}`;
+                    {phasesWithStages.map((phase, pIdx) => {
+                      const isCollapsed = collapsedPhases.includes(phase.name);
+                      const stagesInPhase = phase.stagesInPhase || [];
                       
+                      if (isCollapsed) {
+                        return (
+                          <div 
+                            key={`collapsed-${phase.name}`}
+                            onClick={() => togglePhaseCollapse(phase.name)}
+                            className="h-full w-12 flex flex-col items-center py-4 bg-white/40 border border-slate-200 rounded-xl cursor-pointer hover:bg-white/60 transition-all group shrink-0"
+                          >
+                            <div className={cn("w-1.5 h-12 rounded-full mb-4 shadow-sm", phase.color)} />
+                            <span className="vertical-text font-black text-[10px] uppercase tracking-widest text-slate-400 group-hover:text-primary whitespace-nowrap rotate-180">
+                              {phase.name}
+                            </span>
+                            <div className="mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Eye className="h-4 w-4 text-primary" />
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
-                        <Draggable key={uniqueDraggableId} draggableId={String(uniqueDraggableId)} index={index}>
-                            {(draggableProvided) => (
-                                <div
-                                    ref={draggableProvided.innerRef}
-                                    {...draggableProvided.draggableProps}
-                                    className="w-[280px] shrink-0 h-full"
-                                >
-                                    <ClientKanbanColumn
+                        <div 
+                          key={`phase-group-${phase.name}`}
+                          className="flex flex-col gap-4 p-4 rounded-2xl bg-white/30 border border-white/50 shadow-sm shrink-0"
+                          style={{ minWidth: `calc(${stagesInPhase.length} * 280px + (${stagesInPhase.length - 1} * 16px) + 32px)` }}
+                        >
+                          <div className="flex items-center justify-between px-2 mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className={cn("h-4 w-1.5 rounded-full shadow-sm", phase.color)} />
+                              <h2 className="text-sm font-black uppercase tracking-tighter text-foreground/80">
+                                {phase.name}
+                              </h2>
+                              <Badge variant="secondary" className="bg-white/50 text-[10px] h-5">
+                                {stagesInPhase.length} etapas
+                              </Badge>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => togglePhaseCollapse(phase.name)}
+                              className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-primary/5 gap-1.5"
+                            >
+                              <EyeOff className="h-3.5 w-3.5" />
+                              Ocultar
+                            </Button>
+                          </div>
+
+                          <div className="flex gap-4 h-full">
+                            {stagesInPhase.map((stage, sIdx) => {
+                              const stageClients = grouped[stage.value] || [];
+                              const globalIndex = visibleStages.findIndex(s => s.value === stage.value);
+                              const uniqueDraggableId = stage.id || `draggable-${stage.value}-${globalIndex}`;
+
+                              return (
+                                <Draggable key={uniqueDraggableId} draggableId={String(uniqueDraggableId)} index={globalIndex}>
+                                  {(draggableProvided) => (
+                                    <div
+                                      ref={draggableProvided.innerRef}
+                                      {...draggableProvided.draggableProps}
+                                      className="w-[280px] shrink-0 h-full"
+                                    >
+                                      <ClientKanbanColumn
                                         stageId={stage.id}
                                         stageValue={stage.value}
                                         stageLabel={stage.label}
@@ -749,17 +745,22 @@ export default function Clients() {
                                         onSelectAll={handleSelectAll}
                                         selectedIds={selectedIds}
                                         dragHandleProps={draggableProvided.dragHandleProps}
-                                    />
-                                </div>
-                            )}
-                        </Draggable>
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                          </div>
+                        </div>
                       );
                     })}
+                    
                     {provided.placeholder}
                     
-                    <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add bg-white/20 hover:bg-white/40 transition-colors">
+                    <div className="flex flex-col min-w-[200px] h-40 items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl group/add bg-white/20 hover:bg-white/40 transition-all shrink-0">
                       <AddColumnDialog funnelType="client" pipeline="inicial" showLabel />
-                      <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Coluna</p>
+                      <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest">Nova Etapa</p>
                     </div>
                   </div>
                 )}
