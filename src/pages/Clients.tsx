@@ -401,6 +401,33 @@ export default function Clients() {
     }
   };
 
+  // ALL HOOKS MUST BE DECLARED ABOVE THIS LINE
+  
+  // Filtrar etapas visíveis (com segurança extra)
+  const visibleStages = useMemo(() => {
+    if (!stages) return [];
+    const hidden = Array.isArray(hiddenStages) ? hiddenStages : [];
+    return stages.filter(s => s && s.value && !hidden.includes(s.value));
+  }, [stages, hiddenStages]);
+
+  // Agrupar etapas visíveis por fase
+  const phasesWithStages = useMemo(() => {
+    if (!visibleStages || visibleStages.length === 0) return [];
+    if (!CLIENT_PHASES || !Array.isArray(CLIENT_PHASES)) return [];
+    
+    return CLIENT_PHASES.map(phase => {
+      if (!phase || !phase.stages) return { ...phase, stagesInPhase: [] };
+      const stagesInPhase = visibleStages.filter(s => s && s.value && phase.stages.includes(s.value));
+      return {
+        ...phase,
+        stagesInPhase
+      };
+    }).filter(p => p.stagesInPhase && p.stagesInPhase.length > 0);
+  }, [visibleStages]);
+
+  const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
+
+  // NOW WE CAN DO CONDITIONAL RETURNS
   const isLoading = isClientsLoading || loadingStages;
 
   if (isLoading) {
@@ -453,29 +480,9 @@ export default function Clients() {
     );
   }
 
-  // Filtrar etapas visíveis (com segurança extra)
-  const visibleStages = useMemo(() => {
-    if (!stages) return [];
-    const hidden = Array.isArray(hiddenStages) ? hiddenStages : [];
-    return stages.filter(s => s && s.value && !hidden.includes(s.value));
-  }, [stages, hiddenStages]);
+  // Conditional return only for the JSX part, AFTER all hooks
+  if (!user) return null;
 
-  // Agrupar etapas visíveis por fase
-  const phasesWithStages = useMemo(() => {
-    if (!visibleStages || visibleStages.length === 0) return [];
-    if (!CLIENT_PHASES || !Array.isArray(CLIENT_PHASES)) return [];
-    
-    return CLIENT_PHASES.map(phase => {
-      if (!phase || !phase.stages) return { ...phase, stagesInPhase: [] };
-      const stagesInPhase = visibleStages.filter(s => s && s.value && phase.stages.includes(s.value));
-      return {
-        ...phase,
-        stagesInPhase
-      };
-    }).filter(p => p.stagesInPhase && p.stagesInPhase.length > 0);
-  }, [visibleStages]);
-
-  const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
   return (
     <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4">
