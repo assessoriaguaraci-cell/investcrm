@@ -18,7 +18,7 @@ export default function ResponsibleSelect({ value, onValueChange, className, sho
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="none">Sem responsável</SelectItem>
-        <SelectItem value="mentoria">MENTORIA</SelectItem>
+        <SelectItem value="00000000-0000-0000-0000-000000000001">MENTORIA</SelectItem>
         {members?.map((m) => (
           <SelectItem
             key={m.user_id}
