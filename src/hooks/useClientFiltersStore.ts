@@ -40,7 +40,10 @@ export const EMPTY_CLIENT_FILTERS: ClientFilterValues = {
 
 interface ClientFiltersState {
   activeFilters: ClientFilterValues;
+  hiddenStages: string[];
   setActiveFilters: (filters: ClientFilterValues) => void;
+  setHiddenStages: (stages: string[]) => void;
+  toggleStageVisibility: (stageValue: string) => void;
   loadFromCloud: (userId: string) => Promise<void>;
   saveToCloud: (userId: string) => Promise<void>;
 }
@@ -67,7 +70,14 @@ export const useClientFiltersStore = create<ClientFiltersState>()(
   persist(
     (set, get) => ({
       activeFilters: EMPTY_CLIENT_FILTERS,
+      hiddenStages: [],
       setActiveFilters: (filters) => set({ activeFilters: sanitizeClientFilters(filters) }),
+      setHiddenStages: (stages) => set({ hiddenStages: stages }),
+      toggleStageVisibility: (stageValue) => set((state) => ({
+        hiddenStages: state.hiddenStages.includes(stageValue)
+          ? state.hiddenStages.filter(s => s !== stageValue)
+          : [...state.hiddenStages, stageValue]
+      })),
       loadFromCloud: async (userId) => {
         const { data, error } = await supabase
           .from('profiles')
@@ -80,17 +90,23 @@ export const useClientFiltersStore = create<ClientFiltersState>()(
           if (cloudFilters) {
             set({ activeFilters: sanitizeClientFilters(cloudFilters) });
           }
+          if ((data.ui_settings as any).hidden_client_stages) {
+            set({ hiddenStages: (data.ui_settings as any).hidden_client_stages });
+          }
         }
       },
-      saveToCloud: async (userId) => {
-        const { activeFilters } = get();
+        const { activeFilters, hiddenStages } = get();
         const { data: profile } = await supabase.from('profiles').select('ui_settings').eq('user_id', userId).single();
         const currentCloud = (profile?.ui_settings as any) || {};
 
         await supabase
           .from('profiles')
           .update({ 
-            ui_settings: { ...currentCloud, active_client_filters: activeFilters } 
+            ui_settings: { 
+              ...currentCloud, 
+              active_client_filters: activeFilters,
+              hidden_client_stages: hiddenStages
+            } 
           })
           .eq('user_id', userId);
       },

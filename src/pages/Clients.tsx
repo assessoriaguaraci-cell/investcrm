@@ -44,6 +44,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { CLIENT_PHASES, getPhaseForStage } from "@/lib/KanbanPhases";
+import { Check, Eye, EyeOff, ScrollText } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -54,8 +58,7 @@ export default function Clients() {
   const { stages: dynamicStages, isLoading: isStagesLoading, updateStage, addStage } = useKanbanStages("client" as any);
   const updateClient = useUpdateClient();
   const qc = useQueryClient();
-  const { activeFilters: filters, setActiveFilters: setFilters, loadFromCloud, saveToCloud } = useClientFiltersStore();
-  const [activePipeline, setActivePipeline] = useState<ClientPipeline>("inicial");
+  const { activeFilters: filters, setActiveFilters: setFilters, loadFromCloud, saveToCloud, hiddenStages, toggleStageVisibility } = useClientFiltersStore();
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [selectionModeActive, setSelectionModeActive] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -102,13 +105,24 @@ export default function Clients() {
 
   const [activeListView, setActiveListView] = useState<string | null>(dashboardFilter);
 
-  const stagesForPipeline = useMemo(
-    () => {
-      const stages = dynamicStages.length > 0 ? dynamicStages : CLIENT_STAGES;
-      return stages.filter(s => s.pipeline === activePipeline);
-    },
-    [activePipeline, dynamicStages]
-  );
+  const [stages, setStages] = useState<any[]>([]);
+  const [loadingStages, setLoadingStages] = useState(true);
+
+  // Fetch ALL client stages
+  useEffect(() => {
+    const fetchStages = async () => {
+      setLoadingStages(true);
+      const { data } = await supabase
+        .from("kanban_stages")
+        .select("*")
+        .eq("funnel_type", "client")
+        .order("sort_order", { ascending: true });
+      
+      if (data) setStages(data);
+      setLoadingStages(false);
+    };
+    fetchStages();
+  }, []);
 
   // Dashboard drill-down: active leads
   const activeLeads = useMemo(() => {
@@ -126,7 +140,6 @@ export default function Clients() {
   const filtered = useMemo(() => {
     if (!clients) return [];
     return clients.filter(c => {
-      if (c.pipeline !== activePipeline) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
         const match = c.full_name.toLowerCase().includes(q) ||
@@ -156,30 +169,29 @@ export default function Clients() {
       }
       return true;
     });
-  }, [clients, filters, activePipeline]);
+  }, [clients, filters]);
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof filtered> = {};
-    if (!stagesForPipeline || stagesForPipeline.length === 0) return map;
+    if (!stages || stages.length === 0) return map;
     
-    stagesForPipeline.forEach(s => {
+    stages.forEach(s => {
       if (s && s.value) map[s.value] = [];
     });
 
-    const firstStageValue = stagesForPipeline[0]?.value;
+    const firstStageValue = stages[0]?.value;
 
     filtered.forEach(c => {
       if (c) {
         if (c.stage && map[c.stage]) {
           map[c.stage]!.push(c);
         } else if (firstStageValue) {
-          // Orphaned client: put in first stage of current pipeline
           map[firstStageValue]!.push(c);
         }
       }
     });
     return map;
-  }, [filtered, stagesForPipeline]);
+  }, [filtered, stages]);
 
   const onDragEnd = async (result: DropResult) => {
     const { draggableId, destination, source, type } = result;
@@ -187,7 +199,7 @@ export default function Clients() {
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
     if (type === 'column') {
-        const newStages = Array.from(stagesForPipeline);
+        const newStages = Array.from(stages);
         const [removed] = newStages.splice(source.index, 1);
         newStages.splice(destination.index, 0, removed);
         
@@ -196,13 +208,12 @@ export default function Clients() {
             if ((s as any).id) {
                 await updateStage({ id: (s as any).id, sort_order: i * 10 } as any);
             } else {
-                // Promote to dynamic to lock the order and exclude deleted ones
                 await addStage({
                     funnel_type: "client",
                     value: s.value,
                     label: s.label,
                     color: s.color,
-                    pipeline: activePipeline as any,
+                    pipeline: "inicial",
                     sort_order: i * 10
                 } as any);
             }
@@ -289,9 +300,6 @@ export default function Clients() {
       for (const id of selectedIds) {
         await supabase.from("clients").update({
           stage: targetStage as any,
-          pipeline: targetPipeline || activePipeline
-        }).eq("id", id);
-      }
       setSelectedIds([]);
       toast({ title: "Sucesso", description: `${selectedIds.length} clientes movidos para ${stageObj?.label}` });
       setTimeout(() => window.location.reload(), 500);
@@ -403,7 +411,7 @@ export default function Clients() {
     }
   };
 
-  const isLoading = isClientsLoading || isStagesLoading;
+  const isLoading = isClientsLoading || loadingStages;
 
   if (isLoading) {
     return (
@@ -463,18 +471,9 @@ export default function Clients() {
           <div className="flex items-center gap-3">
             <Users className="h-8 w-8 text-primary shrink-0" />
             <div className="flex flex-col gap-0.5">
-              <Select value={activePipeline} onValueChange={v => setActivePipeline(v as ClientPipeline)}>
-                <SelectTrigger className="border-none shadow-none bg-transparent p-0 h-auto focus:ring-0 w-auto gap-2 group flex items-center">
-                  <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
-                     FUNIL DE CLIENTES / {CLIENT_PIPELINES.find(p => p.value === activePipeline)?.label}
-                  </h1>
-                </SelectTrigger>
-                <SelectContent>
-                  {CLIENT_PIPELINES.map(p => (
-                    <SelectItem key={p.value} value={p.value} className="text-xs font-black uppercase text-foreground">{p.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
+                  FUNIL DE CLIENTES / UNIFICADO
+              </h1>
               <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider">Gestão de Funis e Leads</p>
             </div>
           </div>
@@ -528,6 +527,39 @@ export default function Clients() {
           <NewClientDialog />
 
           <div className="h-6 w-px bg-border/50 mx-1" />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 font-black uppercase text-[10px]">
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Colunas
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[8px]">{stages.length - hiddenStages.length}</Badge>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-0" align="end">
+              <div className="p-3 border-b bg-muted/20">
+                <p className="text-[10px] font-black uppercase tracking-tighter">Visibilidade das Colunas</p>
+              </div>
+              <ScrollArea className="h-72">
+                <div className="p-2 space-y-1">
+                  {stages.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => toggleStageVisibility(s.value)}
+                      className="w-full flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors text-left"
+                    >
+                      <span className="text-[11px] font-bold uppercase truncate">{s.label}</span>
+                      {hiddenStages.includes(s.value) ? (
+                        <EyeOff className="h-3 w-3 text-muted-foreground" />
+                      ) : (
+                        <Check className="h-3 w-3 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -594,7 +626,7 @@ export default function Clients() {
       <ClientFilters
         filters={filters}
         onFiltersChange={setFilters}
-        activePipeline={activePipeline}
+        activePipeline="inicial"
       />
 
       {selectedIds.length > 0 && (
@@ -631,28 +663,61 @@ export default function Clients() {
         </div>
       )}
 
-      {viewMode === "kanban" ? (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="board" type="column" direction="horizontal">
-            {(provided) => (
+  // Filtrar etapas visíveis
+  const visibleStages = stages.filter(s => !hiddenStages.includes(s.value));
+
+  // Agrupar etapas visíveis por fase
+  const phasesWithStages = CLIENT_PHASES.map(phase => ({
+    ...phase,
+    stagesInPhase: visibleStages.filter(s => phase.stages.includes(s.value))
+  })).filter(p => p.stagesInPhase.length > 0);
+
+  return (
+    <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4">
+        {/* ... (cabeçalho ja modificado acima) ... */}
+      </div>
+
+      <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4">
+        <div className="flex flex-col h-full min-w-full">
+          
+          {/* Super Headers (Phases) */}
+          <div className="flex gap-4 mb-3">
+            {phasesWithStages.map(phase => (
               <div 
-                className="flex-1 overflow-x-auto min-h-0 pb-4 mt-2"
-                {...provided.droppableProps}
-                ref={provided.innerRef}
+                key={phase.name} 
+                className="flex flex-col gap-1.5"
+                style={{ width: `calc(${phase.stagesInPhase.length} * 280px + (${phase.stagesInPhase.length - 1} * 16px))` }}
               >
-                <div className="flex gap-4" style={{ minWidth: "fit-content" }}>
-                  {stagesForPipeline.map((stage, index) => {
+                <div className={`h-1.5 rounded-full ${phase.color} shadow-sm border border-white/20`} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">
+                  {phase.name}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="board" type="column" direction="horizontal">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="flex gap-4 h-full"
+                >
+                  {visibleStages.map((stage, index) => {
                     const stageClients = grouped[stage.value] || [];
                     return (
-                      <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={`col-${stage.value}-${(stage as any).id || index}`} index={index}>
+                      <Draggable key={stage.id} draggableId={stage.id} index={index}>
                           {(draggableProvided) => (
                               <div
                                   ref={draggableProvided.innerRef}
                                   {...draggableProvided.draggableProps}
+                                  className="w-[280px] shrink-0 h-full"
                               >
                                   <ClientKanbanColumn
                                       key={stage.value}
-                                      stageId={(stage as any).id}
+                                      stageId={stage.id}
                                       stageValue={stage.value}
                                       stageLabel={stage.label}
                                       stageColor={stage.color}
@@ -669,31 +734,17 @@ export default function Clients() {
                     );
                   })}
                   {provided.placeholder}
-                  {filtered.length === 0 && filters.search && (
-                    <div className="flex flex-col items-center justify-center py-20 px-4 text-center absolute left-0 right-0">
-                       <div className="bg-muted/20 p-8 rounded-2xl border-2 border-dashed border-muted max-w-md">
-                         <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                         <p className="text-sm font-black uppercase text-muted-foreground tracking-tighter">
-                           Nenhum lead encontrado para "{filters.search}"
-                         </p>
-                         <p className="text-[10px] font-bold text-muted-foreground uppercase mt-2">
-                           Tente buscar por um telefone, nome ou e-mail diferente.
-                         </p>
-                         <Button variant="link" size="sm" onClick={() => setFilters({ ...filters, search: "" })} className="mt-4 font-black uppercase text-[10px]">
-                           Limpar busca
-                         </Button>
-                       </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add">
-                    <AddColumnDialog funnelType="client" pipeline={activePipeline} showLabel />
+                  
+                  <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add bg-white/20 hover:bg-white/40 transition-colors">
+                    <AddColumnDialog funnelType="client" pipeline="inicial" showLabel />
                     <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Coluna</p>
                   </div>
                 </div>
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+      </div>
       ) : (
         <div className="flex-1 overflow-hidden mt-4">
           <ClientTable clients={filtered} />
