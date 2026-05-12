@@ -184,25 +184,24 @@ export default function Clients() {
   }, [clients, filters]);
 
   const grouped = useMemo(() => {
-    const map: Record<string, typeof filtered> = {};
-    if (!stages || stages.length === 0) return map;
+    const g: Record<string, any[]> = {};
+    if (!stages || !Array.isArray(stages)) return g;
     
+    // Inicializar o mapa com arrays vazios para cada etapa
     stages.forEach(s => {
-      if (s && s.value) map[s.value] = [];
-    });
-
-    const firstStageValue = stages[0]?.value;
-
-    filtered.forEach(c => {
-      if (c) {
-        if (c.stage && map[c.stage]) {
-          map[c.stage]!.push(c);
-        } else if (firstStageValue) {
-          map[firstStageValue]!.push(c);
-        }
+      if (s && s.value) {
+        g[s.value] = [];
       }
     });
-    return map;
+
+    // Distribuir os clientes filtrados nas etapas correspondentes
+    filtered.forEach(c => {
+      if (c && c.stage && g[c.stage]) {
+        g[c.stage].push(c);
+      }
+    });
+    
+    return g;
   }, [filtered, stages]);
 
   const onDragEnd = async (result: DropResult) => {
@@ -694,7 +693,7 @@ export default function Clients() {
                       const uniqueKey = stage.id || `stage-${stage.value}-${index}`;
                       
                       return (
-                        <Draggable key={uniqueKey} draggableId={uniqueKey} index={index}>
+                        <Draggable key={uniqueKey} draggableId={String(uniqueKey)} index={index}>
                             {(draggableProvided) => (
                                 <div
                                     ref={draggableProvided.innerRef}
