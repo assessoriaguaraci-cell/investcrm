@@ -379,7 +379,9 @@ export default function NewClientDialog() {
               <Select value={stage} onValueChange={v => setStage(v as ClientStage)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {stagesForPipeline.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {stagesForPipeline
+                    .filter(s => s.value && s.value.trim() !== "")
+                    .map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

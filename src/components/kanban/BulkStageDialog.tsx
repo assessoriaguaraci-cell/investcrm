@@ -78,7 +78,7 @@ export function BulkStageDialog({ open, onOpenChange, selectedCount, onConfirm, 
                                             {pipe as string}
                                         </SelectLabel>
                                         {actualStages
-                                            .filter(s => s.pipeline === pipe)
+                                            .filter(s => s.pipeline === pipe && s.value && s.value.trim() !== "")
                                             .map((s) => (
                                                 <SelectItem key={s.value} value={s.value}>
                                                     <div className="flex items-center gap-2">
