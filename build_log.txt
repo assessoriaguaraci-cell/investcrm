@@ -1,0 +1,31 @@
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2191 modules transformed.
+x Build failed in 2.78s
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+/Users/annalupaiva/CRM INVEST/src/hooks/useClientFiltersStore.ts:98:14: ERROR: Expected ":" but found "{"
+file: /Users/annalupaiva/CRM INVEST/src/hooks/useClientFiltersStore.ts:98:14
+
+Expected ":" but found "{"
+96 |          }
+97 |        },
+98 |          const { activeFilters, hiddenStages } = get();
+   |                ^
+99 |          const { data: profile } = await supabase.from('profiles').select('ui_settings').eq('user_id', userId).single();
+100|          const currentCloud = (profile?.ui_settings as any) || {};
+
+    at failureErrorWithLog (/Users/annalupaiva/CRM INVEST/node_modules/vite/node_modules/esbuild/lib/main.js:1472:15)
+    at /Users/annalupaiva/CRM INVEST/node_modules/vite/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/Users/annalupaiva/CRM INVEST/node_modules/vite/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/Users/annalupaiva/CRM INVEST/node_modules/vite/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/Users/annalupaiva/CRM INVEST/node_modules/vite/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)

@@ -299,7 +299,9 @@ export default function Clients() {
 
       for (const id of selectedIds) {
         await supabase.from("clients").update({
-          stage: targetStage as any,
+          stage: targetStage as any
+        }).eq("id", id);
+      }
       setSelectedIds([]);
       toast({ title: "Sucesso", description: `${selectedIds.length} clientes movidos para ${stageObj?.label}` });
       setTimeout(() => window.location.reload(), 500);
@@ -461,6 +463,15 @@ export default function Clients() {
       </div>
     );
   }
+
+  // Filtrar etapas visíveis
+  const visibleStages = stages.filter(s => !hiddenStages.includes(s.value));
+
+  // Agrupar etapas visíveis por fase
+  const phasesWithStages = CLIENT_PHASES.map(phase => ({
+    ...phase,
+    stagesInPhase: visibleStages.filter(s => phase.stages.includes(s.value))
+  })).filter(p => p.stagesInPhase.length > 0);
 
   const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
 
@@ -663,88 +674,74 @@ export default function Clients() {
         </div>
       )}
 
-  // Filtrar etapas visíveis
-  const visibleStages = stages.filter(s => !hiddenStages.includes(s.value));
-
-  // Agrupar etapas visíveis por fase
-  const phasesWithStages = CLIENT_PHASES.map(phase => ({
-    ...phase,
-    stagesInPhase: visibleStages.filter(s => phase.stages.includes(s.value))
-  })).filter(p => p.stagesInPhase.length > 0);
-
-  return (
-    <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-4 border-b border-border/50 pb-4">
-        {/* ... (cabeçalho ja modificado acima) ... */}
-      </div>
-
-      <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4">
-        <div className="flex flex-col h-full min-w-full">
-          
-          {/* Super Headers (Phases) */}
-          <div className="flex gap-4 mb-3">
-            {phasesWithStages.map(phase => (
-              <div 
-                key={phase.name} 
-                className="flex flex-col gap-1.5"
-                style={{ width: `calc(${phase.stagesInPhase.length} * 280px + (${phase.stagesInPhase.length - 1} * 16px))` }}
-              >
-                <div className={`h-1.5 rounded-full ${phase.color} shadow-sm border border-white/20`} />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">
-                  {phase.name}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="board" type="column" direction="horizontal">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="flex gap-4 h-full"
+      {viewMode === "kanban" ? (
+        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4 mt-2">
+          <div className="flex flex-col h-full min-w-full">
+            
+            {/* Super Headers (Phases) */}
+            <div className="flex gap-4 mb-3">
+              {phasesWithStages.map(phase => (
+                <div 
+                  key={phase.name} 
+                  className="flex flex-col gap-1.5"
+                  style={{ width: `calc(${phase.stagesInPhase.length} * 280px + (${phase.stagesInPhase.length - 1} * 16px))` }}
                 >
-                  {visibleStages.map((stage, index) => {
-                    const stageClients = grouped[stage.value] || [];
-                    return (
-                      <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                          {(draggableProvided) => (
-                              <div
-                                  ref={draggableProvided.innerRef}
-                                  {...draggableProvided.draggableProps}
-                                  className="w-[280px] shrink-0 h-full"
-                              >
-                                  <ClientKanbanColumn
-                                      key={stage.value}
-                                      stageId={stage.id}
-                                      stageValue={stage.value}
-                                      stageLabel={stage.label}
-                                      stageColor={stage.color}
-                                      clients={stageClients}
-                                      selectable={selectionModeActive}
-                                      onSelect={handleSelect}
-                                      onSelectAll={handleSelectAll}
-                                      selectedIds={selectedIds}
-                                      dragHandleProps={draggableProvided.dragHandleProps}
-                                  />
-                              </div>
-                          )}
-                      </Draggable>
-                    );
-                  })}
-                  {provided.placeholder}
-                  
-                  <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add bg-white/20 hover:bg-white/40 transition-colors">
-                    <AddColumnDialog funnelType="client" pipeline="inicial" showLabel />
-                    <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Coluna</p>
-                  </div>
+                  <div className={`h-1.5 rounded-full ${phase.color} shadow-sm border border-white/20`} />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">
+                    {phase.name}
+                  </span>
                 </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+              ))}
+            </div>
+
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="board" type="column" direction="horizontal">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="flex gap-4 h-full"
+                  >
+                    {visibleStages.map((stage, index) => {
+                      const stageClients = grouped[stage.value] || [];
+                      return (
+                        <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                            {(draggableProvided) => (
+                                <div
+                                    ref={draggableProvided.innerRef}
+                                    {...draggableProvided.draggableProps}
+                                    className="w-[280px] shrink-0 h-full"
+                                >
+                                    <ClientKanbanColumn
+                                        key={stage.value}
+                                        stageId={stage.id}
+                                        stageValue={stage.value}
+                                        stageLabel={stage.label}
+                                        stageColor={stage.color}
+                                        clients={stageClients}
+                                        selectable={selectionModeActive}
+                                        onSelect={handleSelect}
+                                        onSelectAll={handleSelectAll}
+                                        selectedIds={selectedIds}
+                                        dragHandleProps={draggableProvided.dragHandleProps}
+                                    />
+                                </div>
+                            )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
+                    
+                    <div className="flex flex-col min-w-[200px] items-center justify-start pt-6 border-2 border-dashed border-muted rounded-lg group/add bg-white/20 hover:bg-white/40 transition-colors">
+                      <AddColumnDialog funnelType="client" pipeline="inicial" showLabel />
+                      <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Coluna</p>
+                    </div>
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
         </div>
-      </div>
       ) : (
         <div className="flex-1 overflow-hidden mt-4">
           <ClientTable clients={filtered} />

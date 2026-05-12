@@ -95,6 +95,7 @@ export const useClientFiltersStore = create<ClientFiltersState>()(
           }
         }
       },
+      saveToCloud: async (userId: string) => {
         const { activeFilters, hiddenStages } = get();
         const { data: profile } = await supabase.from('profiles').select('ui_settings').eq('user_id', userId).single();
         const currentCloud = (profile?.ui_settings as any) || {};
