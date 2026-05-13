@@ -123,7 +123,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
           <div 
             {...provided.droppableProps}
             ref={provided.innerRef}
-            className="flex gap-4 overflow-x-auto pb-6 h-full min-h-[calc(100vh-200px)]"
+            className="flex gap-4 overflow-x-auto overflow-y-hidden pb-6 h-full items-stretch"
           >
             {STAGES.map((stage, index) => {
               if (!stage || !stage.value) return null;
@@ -260,7 +260,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex-1 min-h-[120px] rounded-b-lg p-2 transition-all duration-200 ${snapshot.isDraggingOver ? "ring-2 ring-primary/20 ring-inset" : ""
+                    className={`flex-1 min-h-[120px] overflow-y-auto custom-scrollbar rounded-b-lg p-2 transition-all duration-200 ${snapshot.isDraggingOver ? "ring-2 ring-primary/20 ring-inset" : ""
                       }`}
                     style={{
                       backgroundColor: snapshot.isDraggingOver ? undefined : bgColor,

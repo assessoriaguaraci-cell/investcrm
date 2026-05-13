@@ -343,7 +343,7 @@ export default function Tasks() {
             </div>
           ) : (
             <DragDropContext onDragEnd={onDragEnd}>
-              <div className="flex gap-4 h-full overflow-x-auto pb-4">
+              <div className="flex gap-4 h-full overflow-x-auto overflow-y-auto pb-4 items-stretch custom-scrollbar">
                 <TaskKanbanColumn
                   columnId="overdue"
                   title="Atrasadas"

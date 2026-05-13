@@ -660,7 +660,7 @@ export default function Clients() {
       )}
 
       {viewMode === "kanban" ? (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4 mt-2">
+        <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4 mt-2">
           <div className="flex flex-col h-full min-w-full">
             
             <DragDropContext onDragEnd={onDragEnd}>
@@ -669,7 +669,7 @@ export default function Clients() {
                   <div
                     {...provided.droppableProps}
                     ref={provided.innerRef}
-                    className="flex gap-6 h-full items-start"
+                    className="flex gap-6 h-full items-stretch"
                   >
                     {phasesWithStages.map((phase, pIdx) => {
                       const isCollapsed = collapsedPhases.includes(phase.name);

@@ -80,7 +80,7 @@ export default function KanbanColumn({ stageId, stageValue, stageLabel, stageCol
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 min-h-[120px] rounded-b-lg p-2 transition-all duration-200 ${snapshot.isDraggingOver ? "ring-2 ring-primary/20 ring-inset" : ""
+            className={`flex-1 min-h-[120px] overflow-y-auto custom-scrollbar rounded-b-lg p-2 transition-all duration-200 ${snapshot.isDraggingOver ? "ring-2 ring-primary/20 ring-inset" : ""
               }`}
             style={{
               backgroundColor: snapshot.isDraggingOver ? undefined : bgColor,

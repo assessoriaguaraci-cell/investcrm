@@ -438,11 +438,11 @@ export default function Properties() {
           <Droppable droppableId="board" type="column" direction="horizontal">
             {(provided) => (
               <div 
-                className="flex-1 overflow-x-auto mt-4"
+                className="flex-1 overflow-x-auto overflow-y-auto mt-4 custom-scrollbar"
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
-                <div className="flex gap-4 min-h-0 pb-4" style={{ minWidth: "fit-content" }}>
+                <div className="flex gap-4 min-h-0 pb-4 h-full items-stretch" style={{ minWidth: "fit-content" }}>
                   {stages.map((stage, index) => (
                     <Draggable key={`${stage.value}-${(stage as any).id || index}`} draggableId={`col-${stage.value}-${(stage as any).id || index}`} index={index}>
                         {(draggableProvided) => (
