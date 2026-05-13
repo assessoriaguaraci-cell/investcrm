@@ -206,7 +206,8 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
               </Button>
             )}
           </div>
-               <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 scrollbar-track-transparent">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
               <Tabs defaultValue="dados" className="w-full">
