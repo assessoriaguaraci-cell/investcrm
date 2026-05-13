@@ -59,7 +59,11 @@ export default function AppLayout() {
           .select("*")
           .eq("id", user.id)
           .single()
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) {
+              console.warn("Profile fetch failed:", error.message);
+              return;
+            }
             if (data) setProfile(data);
           });
       }
@@ -74,7 +78,11 @@ export default function AppLayout() {
           .select("*")
           .eq("id", u.id)
           .single()
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) {
+              console.warn("Profile fetch failed in auth change:", error.message);
+              return;
+            }
             if (data) setProfile(data);
           });
       } else {

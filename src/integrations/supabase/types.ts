@@ -413,6 +413,45 @@ export type Database = {
           },
         ]
       }
+      kanban_stages: {
+        Row: {
+          checklist: Json | null
+          color: string
+          created_at: string
+          funnel_id: string | null
+          funnel_type: string
+          id: string
+          label: string
+          pipeline: string | null
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          checklist?: Json | null
+          color: string
+          created_at?: string
+          funnel_id?: string | null
+          funnel_type: string
+          id?: string
+          label: string
+          pipeline?: string | null
+          sort_order: number
+          value: string
+        }
+        Update: {
+          checklist?: Json | null
+          color?: string
+          created_at?: string
+          funnel_id?: string | null
+          funnel_type?: string
+          id?: string
+          label?: string
+          pipeline?: string | null
+          sort_order?: number
+          value?: string
+        }
+        Relationships: []
+      }
       lead_sources: {
         Row: {
           active: boolean
@@ -440,6 +479,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          occupation: string | null
           phone: string | null
           status: string
           updated_at: string
@@ -450,6 +490,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          occupation?: string | null
           phone?: string | null
           status?: string
           updated_at?: string
@@ -460,12 +501,255 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          occupation?: string | null
           phone?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      pre_auction_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          property_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id?: string
+          property_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_auction_files_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "pre_auction_properties"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      pre_auction_funnels: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pre_auction_properties: {
+        Row: {
+          address: string | null
+          appraisal_value: number | null
+          auction_date: string | null
+          auction_type: string | null
+          bill_due_date: string | null
+          city: string | null
+          code: string
+          complementary_analysis: string | null
+          conclusion: string | null
+          condo_fees: number | null
+          created_at: string
+          current_bid: number | null
+          diligence_date: string | null
+          diligence_professional_id: string | null
+          diligence_samples: string | null
+          drive_url: string | null
+          funnel_id: string | null
+          group_created: boolean
+          id: string
+          iptu: number | null
+          itbi: number | null
+          landmark: string | null
+          legal_analysis: string | null
+          listed_price: number | null
+          manager_contact: string | null
+          maps_url: string | null
+          market_value: number | null
+          neighborhood: string | null
+          notes: string | null
+          occupation_status: string | null
+          occupant_contact: string | null
+          operation_responsible_id: string | null
+          origin: string | null
+          photo_url: string | null
+          property_conditions: string | null
+          property_division: string | null
+          property_type: string | null
+          proposal_date: string | null
+          proposal_deadline: string | null
+          purchase_price: number | null
+          registration_number: string | null
+          registry_analysis: string | null
+          responsible_id: string | null
+          security_analysis: string | null
+          stage: string
+          state: string | null
+          status_debts: string
+          status_diligence: string
+          status_market_analysis: string
+          syndic_contact: string | null
+          tax_id: string | null
+          transport_analysis: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          appraisal_value?: number | null
+          auction_date?: string | null
+          auction_type?: string | null
+          bill_due_date?: string | null
+          city?: string | null
+          code: string
+          complementary_analysis?: string | null
+          conclusion?: string | null
+          condo_fees?: number | null
+          created_at?: string
+          current_bid?: number | null
+          diligence_date?: string | null
+          diligence_professional_id?: string | null
+          diligence_samples?: string | null
+          drive_url?: string | null
+          funnel_id?: string | null
+          group_created?: boolean
+          id?: string
+          iptu?: number | null
+          itbi?: number | null
+          landmark?: string | null
+          legal_analysis?: string | null
+          listed_price?: number | null
+          manager_contact?: string | null
+          maps_url?: string | null
+          market_value?: number | null
+          neighborhood?: string | null
+          notes?: string | null
+          occupation_status?: string | null
+          occupant_contact?: string | null
+          operation_responsible_id?: string | null
+          origin?: string | null
+          photo_url?: string | null
+          property_conditions?: string | null
+          property_division?: string | null
+          property_type?: string | null
+          proposal_date?: string | null
+          proposal_deadline?: string | null
+          purchase_price?: number | null
+          registration_number?: string | null
+          registry_analysis?: string | null
+          responsible_id?: string | null
+          security_analysis?: string | null
+          stage?: string
+          state?: string | null
+          status_debts?: string
+          status_diligence?: string
+          status_market_analysis?: string
+          syndic_contact?: string | null
+          tax_id?: string | null
+          transport_analysis?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          appraisal_value?: number | null
+          auction_date?: string | null
+          auction_type?: string | null
+          bill_due_date?: string | null
+          city?: string | null
+          code?: string
+          complementary_analysis?: string | null
+          conclusion?: string | null
+          condo_fees?: number | null
+          created_at?: string
+          current_bid?: number | null
+          diligence_date?: string | null
+          diligence_professional_id?: string | null
+          diligence_samples?: string | null
+          drive_url?: string | null
+          funnel_id?: string | null
+          group_created?: boolean
+          id?: string
+          iptu?: number | null
+          itbi?: number | null
+          landmark?: string | null
+          legal_analysis?: string | null
+          listed_price?: number | null
+          manager_contact?: string | null
+          maps_url?: string | null
+          market_value?: number | null
+          neighborhood?: string | null
+          notes?: string | null
+          occupation_status?: string | null
+          occupant_contact?: string | null
+          operation_responsible_id?: string | null
+          origin?: string | null
+          photo_url?: string | null
+          property_conditions?: string | null
+          property_division?: string | null
+          property_type?: string | null
+          proposal_date?: string | null
+          proposal_deadline?: string | null
+          purchase_price?: number | null
+          registration_number?: string | null
+          registry_analysis?: string | null
+          responsible_id?: string | null
+          security_analysis?: string | null
+          stage?: string
+          state?: string | null
+          status_debts?: string
+          status_diligence?: string
+          status_market_analysis?: string
+          syndic_contact?: string | null
+          tax_id?: string | null
+          transport_analysis?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_auction_properties_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "pre_auction_funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_auction_properties_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       properties: {
         Row: {
@@ -830,6 +1114,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      property_funnels: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       property_stage_history: {
         Row: {
