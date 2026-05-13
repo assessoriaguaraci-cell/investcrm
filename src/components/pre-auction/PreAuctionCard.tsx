@@ -81,9 +81,16 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
             <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Vencimento</span>
             <div className="flex items-center gap-1 text-[11px] font-bold tabular-nums">
               <Calendar className="h-3 w-3 text-primary" />
-              {property.proposal_deadline 
-                ? format(new Date(property.proposal_deadline), "dd/MM/yyyy") 
-                : "N/A"}
+              {(() => {
+                if (!property.proposal_deadline) return "N/A";
+                try {
+                  const date = new Date(property.proposal_deadline);
+                  if (isNaN(date.getTime())) return "N/A";
+                  return format(date, "dd/MM/yyyy");
+                } catch (e) {
+                  return "N/A";
+                }
+              })()}
             </div>
           </div>
           <div className="flex flex-col gap-0.5">

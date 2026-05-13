@@ -130,8 +130,8 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
               
               // Group properties for this stage
               // If it's the first stage, also include properties with invalid or missing stages
-              const stageProperties = properties.filter((p) => {
-                  if (!p) return false;
+              const stageProperties = (properties || []).filter((p) => {
+                  if (!p || !p.id) return false;
                   if (p.stage === stage.value) return true;
                   
                   // Orphaned property logic: if it's the first column and the property stage is invalid

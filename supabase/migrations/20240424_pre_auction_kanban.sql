@@ -67,7 +67,16 @@ CREATE TABLE IF NOT EXISTS public.pre_auction_properties (
     tax_id TEXT, -- Inscrição Imobiliária
     manager_contact TEXT, -- Contato Síndico/Adm
     iptu NUMERIC,
+    itbi NUMERIC, -- Added ITBI
     condo_fees NUMERIC,
+    
+    -- Additional Analysis Fields
+    bill_due_date DATE, -- Data vencimento boleto
+    property_conditions TEXT, -- Condições do imóvel
+    registry_analysis TEXT, -- Analise da Matricula
+    legal_analysis TEXT, -- Analise juridica
+    occupant_contact TEXT, -- Contato ocupante
+    syndic_contact TEXT, -- Contato síndico
     
     -- Conclusion
     notes TEXT,

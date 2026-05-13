@@ -88,6 +88,7 @@ const schema = z.object({
   legal_analysis: z.string().optional().nullable(),
   occupant_contact: z.string().optional().nullable(),
   syndic_contact: z.string().optional().nullable(),
+  itbi: z.coerce.number().optional().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -684,6 +685,12 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                     )} />
                     <FormField control={form.control} name="listed_price" render={({ field }) => (
                         <FormItem><FormLabel className="font-black text-[10px] uppercase">Venda Pretendida (R$)</FormLabel><FormControl><CurrencyInput value={field.value || undefined} onChange={field.onChange} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="registration_number" render={({ field }) => (
+                        <FormItem><FormLabel className="font-black text-[10px] uppercase">Matrícula</FormLabel><FormControl><Input {...field} value={field.value || ""} placeholder="Número da Matrícula" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="tax_id" render={({ field }) => (
+                        <FormItem><FormLabel className="font-black text-[10px] uppercase">Inscrição Imobiliária (IPTU)</FormLabel><FormControl><Input {...field} value={field.value || ""} placeholder="Ex: 12.345.678" /></FormControl></FormItem>
                     )} />
                 </div>
               </div>
