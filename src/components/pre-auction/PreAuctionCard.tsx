@@ -26,11 +26,10 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Concluído': return 'bg-green-500';
-      case 'Em Andamento': return 'bg-blue-500';
-      default: return 'bg-orange-500'; // Não Iniciado
-    }
+    const s = status?.toLowerCase() || '';
+    if (s.includes('concluí')) return 'bg-blue-500'; // Blue for Completed
+    if (s.includes('andamento')) return 'bg-orange-500'; // Orange for In Progress
+    return 'bg-red-500'; // Red for Not Started
   };
 
   const status = statusMap[property.stage] || { label: 'PENDENTE', color: 'bg-gray-400' };
@@ -84,7 +83,7 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
               {(() => {
                 if (!property.proposal_deadline) return "N/A";
                 try {
-                  const date = new Date(property.proposal_deadline);
+                  const date = new Date(property.proposal_deadline + "T12:00:00");
                   if (isNaN(date.getTime())) return "N/A";
                   return format(date, "dd/MM/yyyy");
                 } catch (e) {

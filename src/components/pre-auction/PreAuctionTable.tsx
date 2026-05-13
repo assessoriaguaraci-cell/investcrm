@@ -110,12 +110,10 @@ export function PreAuctionTable({ properties }: Props) {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Concluído': return 'bg-green-500';
-      case 'Concluída': return 'bg-green-500';
-      case 'Em Andamento': return 'bg-blue-500';
-      default: return 'bg-orange-500';
-    }
+    const s = status?.toLowerCase() || '';
+    if (s.includes('concluí')) return 'bg-blue-500'; // Blue for Completed
+    if (s.includes('andamento')) return 'bg-orange-500'; // Orange for In Progress
+    return 'bg-red-500'; // Red for Not Started
   };
 
   return (
