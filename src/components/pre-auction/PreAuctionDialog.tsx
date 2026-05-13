@@ -325,12 +325,6 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                             <FormControl><SmartDatePicker value={field.value || ""} onChange={field.onChange} /></FormControl>
                           </FormItem>
                         )} />
-                        <FormField control={form.control} name="itbi" render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Débito ITBI (R$)</FormLabel>
-                            <FormControl><CurrencyInput value={field.value || undefined} onChange={field.onChange} /></FormControl>
-                          </FormItem>
-                        )} />
                       </div>
 
                       <div className="space-y-4 rounded-md border p-4 bg-muted/10">
@@ -672,6 +666,9 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                           )} />
                           <FormField control={form.control} name="iptu" render={({ field }) => (
                               <FormItem><FormLabel className="font-black text-[10px] uppercase">IPTU (R$)</FormLabel><FormControl><CurrencyInput value={field.value || undefined} onChange={field.onChange} /></FormControl></FormItem>
+                          )} />
+                          <FormField control={form.control} name="itbi" render={({ field }) => (
+                              <FormItem><FormLabel className="font-black text-[10px] uppercase">ITBI (R$)</FormLabel><FormControl><CurrencyInput value={field.value || undefined} onChange={field.onChange} /></FormControl></FormItem>
                           )} />
                           <FormField control={form.control} name="condo_fees" render={({ field }) => (
                               <FormItem><FormLabel className="font-black text-[10px] uppercase">Condomínio (R$)</FormLabel><FormControl><CurrencyInput value={field.value || undefined} onChange={field.onChange} /></FormControl></FormItem>
