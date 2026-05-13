@@ -48,7 +48,7 @@ export default function ClientCard({ client, index, selectable, selected, onSele
             {...provided.draggableProps}
             {...provided.dragHandleProps}
             onClick={() => selectable && onSelect ? onSelect(client.id, !selected) : setEditOpen(true)}
-            className={`rounded-lg border bg-white shadow-sm transition-shadow cursor-pointer group 
+            className={`rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow cursor-pointer group 
               ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/30" : "hover:shadow-md"}
               ${selected ? "ring-2 ring-primary bg-primary/5" : ""}
               ${settings.cardSize === "small" ? "p-2 mb-1.5" : settings.cardSize === "large" ? "p-4 mb-3" : "p-3 mb-2"}
@@ -66,7 +66,7 @@ export default function ClientCard({ client, index, selectable, selected, onSele
                       />
                     </div>
                   )}
-                  <span className={`font-bold text-slate-800 truncate ${settings.cardSize === "small" ? "text-xs" : settings.cardSize === "large" ? "text-base" : "text-[13px]"}`}>
+                  <span className={`font-bold text-foreground truncate ${settings.cardSize === "small" ? "text-xs" : settings.cardSize === "large" ? "text-base" : "text-[13px]"}`}>
                     {client.full_name}
                   </span>
                 </div>
@@ -98,7 +98,7 @@ export default function ClientCard({ client, index, selectable, selected, onSele
                       <Badge
                         key={t}
                         variant="outline"
-                        className="text-[8px] h-3.5 px-1 font-bold border-blue-100 bg-blue-50/50 text-blue-600 rounded-sm"
+                        className="text-[8px] h-3.5 px-1 font-bold border-primary/10 bg-primary/5 text-primary rounded-sm"
                       >
                         {t}
                       </Badge>
@@ -107,14 +107,14 @@ export default function ClientCard({ client, index, selectable, selected, onSele
                   {client.has_financial_pending && (
                     <Badge
                       variant="outline"
-                      className="text-[8px] h-3.5 px-1 font-bold border-red-100 bg-red-50 text-red-600 rounded-sm uppercase"
+                      className="text-[8px] h-3.5 px-1 font-bold border-destructive/20 bg-destructive/10 text-destructive rounded-sm uppercase"
                     >
                       PENDÊNCIA
                     </Badge>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
-                    className="h-3.5 w-3.5 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-300 border border-slate-100"
+                    className="h-3.5 w-3.5 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground border border-border"
                     title="Gerenciar tags"
                   >
                     <Plus className="h-2 w-2" />
@@ -124,19 +124,19 @@ export default function ClientCard({ client, index, selectable, selected, onSele
 
               <div className="flex flex-col gap-1 mt-0.5">
                 {settings.showPhone && (client.whatsapp || client.phone) && (
-                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-[11px] mb-0.5">
+                  <div className="flex items-center gap-1.5 text-primary font-bold text-[11px] mb-0.5">
                     <Phone className="h-2.5 w-2.5" />
                     {client.whatsapp || client.phone}
                   </div>
                 )}
 
-                <div className="flex flex-col gap-0.5 text-[10px] text-slate-500 leading-tight">
+                <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground leading-tight">
                   {settings.showPropertyLinks && clientLinks.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-0.5">
                       {clientLinks.map(link => {
                         const code = String(link?.properties?.code || "");
                         return (
-                          <span key={link.id} className="text-[9px] px-1 py-0 bg-slate-50 text-slate-400 rounded border border-slate-100 truncate" title={code}>
+                          <span key={link.id} className="text-[9px] px-1 py-0 bg-muted text-muted-foreground rounded border border-border truncate" title={code}>
                             🏢 {code.length > 4 ? code.slice(-4) : code}
                           </span>
                         );
@@ -146,40 +146,40 @@ export default function ClientCard({ client, index, selectable, selected, onSele
 
                   {settings.showCpf && client.cpf && (
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                       CPF: <span className="font-mono">{client.cpf}</span>
                     </div>
                   )}
                   {settings.showMaritalStatus && client.marital_status && (
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                       Civil: {client.marital_status}
                     </div>
                   )}
                   {settings.showWorkRegime && client.work_regime && (
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                       Trab: {client.work_regime}
                     </div>
                   )}
 
                   {settings.showIncome && (
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                       Renda: {client.income ? formatCurrency(client.income) : "Não inf."}
                     </div>
                   )}
 
                   {settings.showLocation && client.city && (
                     <div className="flex items-center gap-1.5">
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                       {client.city}/{client.state}
                     </div>
                   )}
 
                   {responsible && (
-                    <div className="flex items-center gap-1.5 text-slate-400 font-medium">
-                      <span className="w-1 h-1 rounded-full bg-slate-200" />
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-medium">
+                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
                       👤 {responsible.full_name || "Sem nome"}
                     </div>
                   )}

@@ -37,8 +37,8 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
   return (
     <Card className={cn(
       "p-3 flex items-start gap-3 transition-all duration-200 border relative group",
-      isDone && "opacity-60 bg-slate-50",
-      isInProgress && "border-blue-200 bg-blue-50/30 shadow-sm",
+      isDone && "opacity-60 bg-muted/30",
+      isInProgress && "border-blue-500/30 bg-blue-500/10 shadow-sm",
       selected && "border-primary ring-2 ring-primary/20 bg-primary/5 shadow-md"
     )}>
       <div className="flex flex-col gap-2 mt-1 shrink-0">

@@ -69,8 +69,8 @@ export default function KanbanColumn({ stageId, stageValue, stageLabel, stageCol
             {properties.length}
           </span>
         </div>
-        <div className="mt-1 text-[11px] font-bold text-foreground/70 flex justify-between items-center">
-          <span className="opacity-80">VALOR DE VENDA</span>
+        <div className="mt-1 text-[11px] font-bold text-muted-foreground flex justify-between items-center">
+          <span className="opacity-90">VALOR DE VENDA</span>
           <span className="text-primary font-extrabold">{formatCurrency(totalValue)}</span>
         </div>
       </div>

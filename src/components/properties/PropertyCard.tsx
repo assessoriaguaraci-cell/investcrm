@@ -101,23 +101,24 @@ export default function PropertyCard({ property, index, cardSettings }: Props) {
               {/* Status Row */}
               <div className={`flex flex-wrap gap-2 ${cardSettings.size === 'small' ? 'pt-0' : 'pt-0.5'}`}>
                 {cardSettings.showStatus && (
-                  <div className={`flex items-center gap-1.5 text-[10px] ${
+                  <div className={cn(
+                    "flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-md shadow-sm font-black border uppercase tracking-tighter",
                     property.occupation_status === "desocupado" 
-                      ? "bg-emerald-50 text-emerald-600 border-emerald-200" 
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
                       : (property.occupation_status === "venda_para_ocupante" || property.occupation_status === "imissao_na_posse")
-                        ? "bg-amber-50 text-amber-600 border-amber-200"
-                        : "bg-destructive/5 text-destructive border-destructive/20"
-                  } px-2 py-1 rounded-md shadow-sm font-black border uppercase tracking-tighter`}>
+                        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                        : "bg-destructive/10 text-destructive border-destructive/20"
+                  )}>
                     <AlertTriangle className="h-3 w-3" />
                     <span>{cardSettings.size === 'small' ? (property.occupation_status === "desocupado" ? "Desocup." : "Ocupado") : occLabel}</span>
                   </div>
                 )}
                 
                 {cardSettings.showAuctionDate && auctionDate && (
-                  <div className={`flex items-center gap-1.5 text-[10px] bg-slate-50 text-slate-600 ${cardSettings.size === 'small' ? 'px-1 py-0.5' : 'px-2 py-1'} rounded-md font-extrabold border border-slate-200 shadow-sm uppercase tracking-tighter`}>
+                  <div className={`flex items-center gap-1.5 text-[10px] bg-muted text-muted-foreground ${cardSettings.size === 'small' ? 'px-1 py-0.5' : 'px-2 py-1'} rounded-md font-extrabold border border-border shadow-sm uppercase tracking-tighter`}>
                     <Calendar className="h-3 w-3 opacity-60" />
                     <span>{format(new Date(auctionDate + "T12:00:00"), "dd/MM")}</span>
-                    <span className="text-slate-300 mx-0.5">•</span>
+                    <span className="opacity-30 mx-0.5">•</span>
                     <Clock className="h-3 w-3 opacity-60" />
                     <span>{lifeDays}</span>
                   </div>
