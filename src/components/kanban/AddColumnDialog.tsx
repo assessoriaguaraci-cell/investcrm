@@ -116,9 +116,9 @@ export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLa
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("h-9 border-dashed font-bold text-[10px] uppercase", showLabel ? "px-3 gap-2" : "w-9 p-0 rounded-full")}>
-                    <Plus className="h-4 w-4" />
-                    {showLabel && "Nova Coluna"}
+                <Button variant="outline" size="sm" className={cn("h-9 border-dashed border-white/30 bg-white/10 hover:bg-white/20 text-white font-black text-[10px] uppercase shadow-sm transition-all", showLabel ? "px-3 gap-2" : "w-9 p-0 rounded-full")}>
+                    <Plus className="h-4 w-4 text-orange-500" />
+                    {showLabel && "Nova Etapa"}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col p-0 overflow-hidden">

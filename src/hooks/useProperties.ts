@@ -28,12 +28,12 @@ export function useProperties(funnelId?: string) {
   }, [qc, funnelId]);
 
   return useQuery({
-    queryKey: ["properties", funnelId],
+    queryKey: funnelId ? ["properties", funnelId] : ["properties"],
     queryFn: async () => {
       let query = supabase
         .from("properties")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
         .limit(5000);
 
       if (funnelId) {
@@ -113,7 +113,7 @@ export function useUpdateProperty() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: TablesUpdate<"properties"> & { id: string }) => {
-      const { data, error } = await supabase.from("properties").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("properties").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id).select().single();
       if (error) throw error;
 
       // If appraisal_expiry was updated, recreate reminders
@@ -128,14 +128,20 @@ export function useUpdateProperty() {
     },
     onMutate: async ({ id, ...updates }) => {
       await qc.cancelQueries({ queryKey: ["properties"] });
-      const previousProperties = qc.getQueryData<Property[]>(["properties"]);
-
-      qc.setQueryData<Property[]>(["properties"], (old) => {
-        if (!old) return [];
-        return old.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      
+      // Update all queries that start with "properties"
+      qc.getQueriesData({ queryKey: ["properties"] }).forEach(([queryKey, oldData]) => {
+        if (!oldData) return;
+        const old = oldData as Property[];
+        const item = old.find(p => p.id === id);
+        if (!item) return;
+        
+        const filtered = old.filter(p => p.id !== id);
+        const updated = { ...item, ...updates, updated_at: new Date().toISOString() };
+        qc.setQueryData(queryKey, [updated, ...filtered]);
       });
 
-      return { previousProperties };
+      return { };
     },
     onError: (err, variables, context) => {
       if (context?.previousProperties) {

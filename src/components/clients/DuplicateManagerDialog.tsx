@@ -140,11 +140,11 @@ export default function DuplicateManagerDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 border-orange-200 hover:bg-orange-50 text-orange-700 font-bold uppercase text-[10px]">
+        <Button variant="default" size="sm" className="gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold uppercase text-[10px] shadow-lg border-orange-500/20">
           <Copy className="h-3.5 w-3.5" />
           Gerenciar Duplicatas
           {duplicateGroups.length > 0 && (
-            <Badge variant="destructive" className="ml-1 h-4 min-w-4 p-0 px-1 text-[8px]">
+            <Badge variant="destructive" className="ml-1 h-4 min-w-4 p-0 px-1.5 text-[9px] bg-white text-orange-600 border-none font-black shadow-sm">
               {duplicateGroups.length}
             </Badge>
           )}
@@ -229,7 +229,7 @@ export default function DuplicateManagerDialog() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 border-t pt-3">
                     {getSortedMembers(members).map((m, i) => (
-                      <div key={m.id} className={`text-[10px] p-2 rounded flex justify-between items-center ${i === 0 ? 'bg-orange-50 border border-orange-100' : 'bg-muted/30'}`}>
+                      <div key={m.id} className={`text-[10px] p-2 rounded flex justify-between items-center ${i === 0 ? 'bg-orange-500/10 border border-orange-500/20 text-orange-100' : 'bg-muted/50 text-foreground'}`}>
                         <div className="truncate pr-2">
                           <span className="font-black uppercase">{m.full_name}</span>
                           {i === 0 && <Badge variant="default" className="ml-2 bg-orange-500 h-3.5 text-[7px]">PRINCIPAL</Badge>}

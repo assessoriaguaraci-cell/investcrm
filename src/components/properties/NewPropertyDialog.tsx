@@ -121,7 +121,7 @@ export default function NewPropertyDialog({ defaultFunnelId }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2 font-black shadow-lg bg-primary hover:bg-primary/90 text-white h-10 px-6 uppercase text-xs shadow-primary/20">
+        <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-tight shadow-lg border-b-2 border-primary-foreground/20">
           <Plus className="h-4 w-4" /> Novo Imóvel
         </Button>
       </DialogTrigger>

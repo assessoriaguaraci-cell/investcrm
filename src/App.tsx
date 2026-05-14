@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import { Button } from "@/components/ui/button";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -38,7 +39,7 @@ const App = () => {
                 <Route
                   element={
                     <RequireAuth>
-                      <ErrorBoundary name="App Layout">
+                      <ErrorBoundary name="App Layout" fallback={<div className="p-20 text-center"><h1>Erro Crítico no Layout</h1><Button onClick={() => window.location.reload()}>Recarregar App</Button></div>}>
                         <AppLayout />
                       </ErrorBoundary>
                     </RequireAuth>

@@ -508,12 +508,12 @@ export default function Clients() {
           
           <div className="hidden lg:flex items-center gap-4 border-l pl-6">
             <div className="text-center">
-              <p className="text-[10px] font-black text-muted-foreground uppercase">Leads</p>
-              <p className="text-sm font-black text-foreground">{filtered.length}</p>
+              <p className="text-[10px] font-black text-white/60 uppercase">Leads</p>
+              <p className="text-sm font-black text-white">{filtered.length}</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-black text-muted-foreground uppercase">Valor</p>
-              <p className="text-sm font-black text-primary">{formatCurrency(totalFunnelValue)}</p>
+              <p className="text-[10px] font-black text-white/60 uppercase">Valor</p>
+              <p className="text-sm font-black text-orange-500">{formatCurrency(totalFunnelValue)}</p>
             </div>
           </div>
         </div>
@@ -531,10 +531,10 @@ export default function Clients() {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-2 border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-black uppercase tracking-wider shadow-sm">
-                <Eye className="h-3.5 w-3.5 text-slate-500" />
+              <Button variant="outline" size="sm" className="h-8 gap-2 border-white/20 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                <Eye className="h-3.5 w-3.5 text-orange-500" />
                 Colunas
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px]">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px]">
                   {visibleStages.length}/{stages.length}
                 </span>
               </Button>
@@ -606,10 +606,10 @@ export default function Clients() {
             }}
             className={cn(
               "h-8 gap-1.5 font-black uppercase text-[10px] tracking-tight shadow-sm transition-all",
-              selectionModeActive ? "bg-[#002B44] hover:bg-[#003d61]" : "border-primary/20 hover:bg-primary/5"
+              selectionModeActive ? "bg-orange-600 hover:bg-orange-700 text-white border-none" : "bg-white/10 text-white border-white/20 hover:bg-white/20"
             )}
           >
-            <CheckSquare className="h-4 w-4" />
+            <CheckSquare className="h-4 w-4 text-orange-500" />
             {selectionModeActive 
               ? (selectedIds.length > 0 ? `${selectedIds.length} Selecionados` : "Sair") 
               : "Massa"}
@@ -707,7 +707,7 @@ export default function Clients() {
                           <div className="flex items-center justify-between px-2 mb-2">
                             <div className="flex items-center gap-3">
                               <div className={cn("h-4 w-1.5 rounded-full shadow-sm", phase.color)} />
-                              <h2 className="text-sm font-black uppercase tracking-tighter text-foreground/80">
+                              <h2 className="text-sm font-black uppercase tracking-tighter text-white">
                                 {phase.name}
                               </h2>
                               <Badge variant="secondary" className="bg-white/50 text-[10px] h-5">
@@ -718,7 +718,7 @@ export default function Clients() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => togglePhaseCollapse(phase.name)}
-                              className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-primary/5 gap-1.5"
+                              className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-white/50 hover:text-white hover:bg-white/10 gap-1.5"
                             >
                               <EyeOff className="h-3.5 w-3.5" />
                               Ocultar

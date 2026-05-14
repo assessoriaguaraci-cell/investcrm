@@ -55,7 +55,7 @@ export default function TaskKanbanColumn({
                 <div className="flex items-center gap-2">
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0" />
                     <div className={`w-1.5 h-1.5 rounded-full ${colorClass}`} />
-                    <h3 className="text-[11px] font-black truncate text-foreground flex-1 uppercase tracking-wider">{title}</h3>
+                    <h3 className="text-[10px] font-black truncate text-foreground flex-1 uppercase tracking-tight">{title}</h3>
                     <span className="ml-auto text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
                         {tasks.length}
                     </span>

@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { CheckSquare, ListFilter, Search, CalendarDays, Kanban as KanbanIcon, Trash2, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useActivities, useUpdateActivity, useDeleteActivity, type Activity } from "@/hooks/useActivities";
@@ -40,6 +43,7 @@ export default function Tasks() {
   const { data: activities, isLoading } = useActivities();
   const updateActivity = useUpdateActivity();
   const deleteActivity = useDeleteActivity();
+  const qc = useQueryClient();
   const location = useLocation();
   const dashboardFilter = (location.state as any)?.from === "dashboard"
     ? (location.state as any)?.filter ?? null
@@ -237,10 +241,20 @@ export default function Tasks() {
           <div className="flex items-center gap-3">
             <CheckSquare className="h-8 w-8 text-primary shrink-0" />
             <div className="flex flex-col gap-0.5">
-              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
+              <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter leading-none font-heading">
                 Gestão de Atividades
               </h1>
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Organize suas tarefas e compromissos</p>
+              <p className="text-[10px] text-white/60 font-black uppercase tracking-wider font-body">Organize suas tarefas e compromissos</p>
+            </div>
+          </div>
+          <div className="hidden lg:flex items-center gap-6 border-l border-white/10 pl-6">
+            <div className="text-center">
+              <p className="text-[10px] font-black text-white/60 uppercase">A Fazer</p>
+              <p className="text-sm font-black text-white">{(columns.todo.length + columns.overdue.length + columns.inProgress.length)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] font-black text-white/60 uppercase">Concluídas</p>
+              <p className="text-sm font-black text-orange-500">{columns.done.length}</p>
             </div>
           </div>
         </div>
@@ -282,12 +296,12 @@ export default function Tasks() {
               if (!selectionModeActive) setSelectedIds([]);
             }}
             className={cn(
-              "gap-1.5 font-black uppercase tracking-tight shadow-sm transition-all",
-              selectionModeActive ? "bg-[#002B44] hover:bg-[#003d61]" : "border-primary/20 hover:bg-primary/5"
+              "h-9 gap-1.5 font-black uppercase text-[10px] tracking-tight shadow-sm transition-all",
+              selectionModeActive ? "bg-orange-600 hover:bg-orange-700 text-white border-none" : "bg-white/10 text-white border-white/20 hover:bg-white/20"
             )}
           >
-            <CheckSquare className="h-4 w-4" />
-            {selectionModeActive ? "Sair da Seleção" : "Seleção em Massa"}
+            <CheckSquare className="h-4 w-4 text-orange-500" />
+            {selectionModeActive ? "Sair" : "Massa"}
           </Button>
           <NewTaskDialog />
         </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { MapPin, AlertTriangle, Pencil, User, Calendar, FolderOpen, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { formatCurrency, totalInvestment, PRIORITY_LEVELS, OCCUPATION_STATUSES } from "@/lib/property-constants";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import { format, differenceInDays } from "date-fns";

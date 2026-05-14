@@ -96,7 +96,7 @@ export default function ClientKanbanColumn({ stageId, stageValue, stageLabel, st
             initialLabel={stageLabel}
             funnelType="client"
           />
-          <span className="ml-auto text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
+          <span className="ml-auto text-xs font-black text-foreground bg-background/80 backdrop-blur-sm rounded-full px-2 py-0.5 border border-primary/20 shadow-sm">
             {clients.length}
           </span>
         </div>

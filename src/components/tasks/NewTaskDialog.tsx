@@ -85,13 +85,13 @@ export default function NewTaskDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Nova Tarefa
+        <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-tight shadow-md">
+          <Plus className="h-4 w-4" /> Nova Tarefa
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Nova Tarefa</DialogTitle>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight">Nova Tarefa</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>

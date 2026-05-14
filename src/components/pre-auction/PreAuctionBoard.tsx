@@ -211,7 +211,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
                 </div>
                 
                 <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                    <span className="text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
+                    <span className="text-xs font-black text-foreground bg-background/80 backdrop-blur-sm rounded-full px-2 py-0.5 border border-primary/20 shadow-sm">
                         {stageProperties.length}
                     </span>
 
@@ -306,7 +306,7 @@ export function PreAuctionBoard({ properties, onMoveProperty, onCardClick, funne
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover/add:scale-110 transition-transform">
                   <Plus className="h-6 w-6" />
               </div>
-              <span className="font-black text-xs uppercase tracking-widest text-primary/60">Nova Coluna</span>
+              <span className="font-black text-xs uppercase tracking-widest text-primary group-hover/add:text-orange-500 transition-colors">Nova Coluna</span>
           </Button>
       </div>
 

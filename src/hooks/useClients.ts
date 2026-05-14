@@ -47,7 +47,7 @@ export function useClients() {
         return supabase
           .from("clients")
           .select("*")
-          .order("created_at", { ascending: false })
+          .order("updated_at", { ascending: false })
           .range(from, to);
       });
       
@@ -85,7 +85,7 @@ export function useUpdateClient() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: TablesUpdate<"clients"> & { id: string }) => {
-      const { data, error } = await supabase.from("clients").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("clients").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
@@ -95,7 +95,10 @@ export function useUpdateClient() {
 
       qc.setQueryData<Client[]>(["clients"], (old) => {
         if (!old) return [];
-        return old.map((c) => (c.id === id ? { ...c, ...updates } : c));
+        const item = old.find(c => c.id === id);
+        if (!item) return old;
+        const filtered = old.filter(c => c.id !== id);
+        return [{ ...item, ...updates, updated_at: new Date().toISOString() }, ...filtered];
       });
 
       return { previousClients };

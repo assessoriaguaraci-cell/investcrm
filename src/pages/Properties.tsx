@@ -291,15 +291,19 @@ export default function Properties() {
                 FUNIL DE IMÓVEIS
               </h1>
               <div className="flex items-center gap-2">
-                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Portfólio e Ativos</p>
-                <Badge variant="outline" className="text-[9px] font-black bg-primary/5 text-primary border-primary/10 h-4">
+                <p className="text-[10px] text-white/60 font-black uppercase tracking-wider font-body">Portfólio e Ativos</p>
+                <Badge variant="outline" className="text-[9px] font-black bg-orange-500 text-white border-none h-4 shadow-sm">
                     {properties?.length || 0} TOTAL
                 </Badge>
                 {filtered.length !== properties?.length && (
-                    <Badge variant="secondary" className="text-[9px] font-black h-4">
+                    <Badge variant="secondary" className="text-[9px] font-black h-4 bg-white/20 text-white border-none">
                         {filtered.length} NO FILTRO
                     </Badge>
                 )}
+                <div className="h-4 w-px bg-white/20 mx-1" />
+                <p className="text-[10px] text-orange-500 font-black uppercase tracking-wider">
+                  {formatCurrency(totalPortfolioValue)}
+                </p>
               </div>
             </div>
           </div>
@@ -319,9 +323,9 @@ export default function Properties() {
                 if (viewMode === "table") exportToCSV("imoveis", filtered);
                 else exportToExcel("imoveis", filtered);
               }} 
-              className="font-black uppercase tracking-tight gap-2 h-9 border-primary/20 hover:bg-primary/5 shadow-sm"
+              className="font-black uppercase tracking-tight gap-2 h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 shadow-sm text-[10px]"
           >
-            <Download className="h-4 w-4" /> Exportar
+            <Download className="h-4 w-4 text-orange-500" /> Exportar
           </Button>
 
           <DropdownMenu>

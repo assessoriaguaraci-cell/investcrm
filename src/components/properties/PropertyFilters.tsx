@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Filter, X, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -109,19 +110,22 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
           variant={expanded ? "secondary" : "outline"}
           size="sm"
           onClick={() => setExpanded(!expanded)}
-          className="gap-1.5"
+          className={cn(
+            "gap-1.5 font-black uppercase text-[10px] tracking-tight",
+            expanded ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+          )}
         >
           <Filter className="h-4 w-4" />
           Filtros
           {activeCount > 0 && (
-            <Badge variant="default" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+            <Badge variant="default" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-orange-500 text-white">
               {activeCount}
             </Badge>
           )}
         </Button>
         <AddColumnDialog funnelType="property" />
         {activeCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={clear} className="gap-1 text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={clear} className="gap-1 text-orange-500 font-black uppercase text-[10px] hover:bg-orange-500/10">
             <X className="h-3.5 w-3.5" /> Limpar
           </Button>
         )}

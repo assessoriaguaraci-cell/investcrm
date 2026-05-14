@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PreAuctionProperty, PreAuctionStage, PreAuctionFunnel } from "@/types/pre-auction";
@@ -41,13 +42,13 @@ export function usePreAuctionProperties(funnelId?: string, diligenteId?: string)
   }, [queryClient, funnelId, diligenteId]);
 
   return useQuery({
-    queryKey: ["pre-auction-properties", funnelId, diligenteId],
+    queryKey: ["pre-auction-properties", funnelId || "all", diligenteId || "all"],
     queryFn: async () => {
       try {
         let query = supabase
           .from("pre_auction_properties")
           .select("*")
-          .order("created_at", { ascending: false })
+          .order("updated_at", { ascending: false })
           .limit(5000);
         
         if (funnelId && funnelId !== "default") {
@@ -87,7 +88,7 @@ export function useUpdatePreAuctionProperty() {
     mutationFn: async ({ id, ...updates }: Partial<PreAuctionProperty> & { id: string }) => {
       const { data, error } = await supabase
         .from("pre_auction_properties")
-        .update(updates)
+        .update({ ...updates, updated_at: new Date().toISOString() })
         .eq("id", id)
         .select()
         .single();
@@ -102,10 +103,31 @@ export function useUpdatePreAuctionProperty() {
 
       return data;
     },
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey: ["pre-auction-properties"] });
+      
+      // Update all queries that start with "pre-auction-properties"
+      queryClient.getQueriesData({ queryKey: ["pre-auction-properties"] }).forEach(([queryKey, oldData]) => {
+        if (!oldData) return;
+        const old = oldData as PreAuctionProperty[];
+        const item = old.find(p => p.id === id);
+        if (!item) return;
+        
+        const filtered = old.filter(p => p.id !== id);
+        const updated = { ...item, ...updates, updated_at: new Date().toISOString() };
+        queryClient.setQueryData(queryKey, [updated, ...filtered]);
+      });
+
+      return { };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pre-auction-properties"] });
-      queryClient.refetchQueries({ queryKey: ["pre-auction-properties"] });
       toast.success("Imóvel atualizado!");
+    },
+    onError: (err, variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["pre-auction-properties"], context.previous);
+      }
     },
   });
 }

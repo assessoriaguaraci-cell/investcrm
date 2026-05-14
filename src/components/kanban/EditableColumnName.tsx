@@ -95,7 +95,7 @@ export default function EditableColumnName({ stageId, stageValue, pipeline, init
                 className="flex items-center gap-2 flex-1 cursor-pointer truncate"
                 onClick={() => setIsEditing(true)}
             >
-                <h3 className={cn("text-xs font-bold truncate text-foreground flex-1", className)} title={initialLabel}>
+                <h3 className={cn("text-[10px] font-black uppercase tracking-tight truncate text-foreground flex-1", className)} title={initialLabel}>
                     {initialLabel}
                 </h3>
                 <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />

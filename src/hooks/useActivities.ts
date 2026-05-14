@@ -34,8 +34,8 @@ export function useActivities() {
       const { data, error } = await supabase
         .from("activities")
         .select("*, clients(full_name, phone), properties(code, city, responsible_user_id)")
-        .order("due_date", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .order("due_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
 
       const userIds = [...new Set(data.map((a) => a.responsible_user_id).filter(Boolean))];
@@ -75,11 +75,30 @@ export function useUpdateActivity() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: TablesUpdate<"activities"> & { id: string }) => {
-      const { data, error } = await supabase.from("activities").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase.from("activities").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id).select().single();
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, ...updates }) => {
+      await qc.cancelQueries({ queryKey: ["activities"] });
+      const previous = qc.getQueryData<Activity[]>(["activities"]);
+
+      qc.setQueryData<Activity[]>(["activities"], (old) => {
+        if (!old) return [];
+        const item = old.find(a => a.id === id);
+        if (!item) return old;
+        const filtered = old.filter(a => a.id !== id);
+        return [{ ...item, ...updates, updated_at: new Date().toISOString() }, ...filtered];
+      });
+
+      return { previous };
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["activities"] }),
+    onError: (err, variables, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["activities"], context.previous);
+      }
+    },
   });
 }
 

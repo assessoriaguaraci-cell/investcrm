@@ -178,8 +178,8 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
       }
       onOpenChange(false);
     } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || "Erro ao salvar informações.");
+      console.error("ERRO DETALHADO NO SALVAMENTO:", error);
+      toast.error(error.message || "Erro ao salvar informações. Verifique os campos.");
     }
   };
 

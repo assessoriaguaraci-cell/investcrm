@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { exportToCSV, exportToExcel } from "@/utils/exportUtils";
+import { format } from "date-fns";
 
 type ViewMode = "kanban" | "table";
 
@@ -229,7 +230,7 @@ export default function PreAuctionKanban() {
 
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="gap-2 font-black h-10 px-4 uppercase text-xs border-white/10 bg-muted/30">
+                    <Button variant="outline" className="gap-2 font-black h-10 px-4 uppercase text-xs border-orange-500/30 bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-sm">
                         <Download className="h-4 w-4" /> Exportar
                     </Button>
                 </DropdownMenuTrigger>
@@ -243,7 +244,7 @@ export default function PreAuctionKanban() {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button onClick={handleAddProperty} className="gap-2 font-black shadow-lg bg-primary hover:bg-primary/90 text-white h-10 px-6 uppercase text-xs shadow-primary/20">
+            <Button onClick={handleAddProperty} className="gap-2 font-black shadow-lg bg-primary hover:bg-primary/90 text-white h-10 px-6 uppercase text-xs shadow-primary/40 border border-white/10">
                 <Plus className="h-4 w-4" /> Novo Imóvel
             </Button>
         </div>

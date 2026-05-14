@@ -27,7 +27,7 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
 
   const getStatusColor = (status: string) => {
     const s = status?.toLowerCase() || '';
-    if (s.includes('concluí')) return 'bg-blue-500'; // Blue for Completed
+    if (s.includes('concluí')) return 'bg-[#016FAE]'; // Blue for Completed
     if (s.includes('andamento')) return 'bg-orange-500'; // Orange for In Progress
     return 'bg-red-500'; // Red for Not Started
   };
@@ -83,10 +83,12 @@ export function PreAuctionCard({ property, onClick }: PreAuctionCardProps) {
               {(() => {
                 if (!property.proposal_deadline) return "N/A";
                 try {
-                  const date = new Date(property.proposal_deadline + "T12:00:00");
-                  if (isNaN(date.getTime())) return "N/A";
+                  // Use local date parts to avoid timezone shifts
+                  const [year, month, day] = property.proposal_deadline.split('-').map(Number);
+                  const date = new Date(year, month - 1, day);
                   return format(date, "dd/MM/yyyy");
                 } catch (e) {
+                  console.error("Erro ao formatar data no card:", e);
                   return "N/A";
                 }
               })()}
