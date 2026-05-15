@@ -263,19 +263,19 @@ export default function Tasks() {
           <div className="flex items-center gap-3">
             <CheckSquare className="h-8 w-8 text-primary shrink-0" />
             <div className="flex flex-col gap-0.5">
-              <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter leading-none font-heading">
+              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tighter leading-none font-heading">
                 Gestão de Atividades
               </h1>
-              <p className="text-[10px] text-white/60 font-black uppercase tracking-wider font-body">Organize suas tarefas e compromissos</p>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Organize suas tarefas e compromissos</p>
             </div>
           </div>
-          <div className="hidden lg:flex items-center gap-6 border-l border-white/10 pl-6">
+          <div className="hidden lg:flex items-center gap-6 border-l border-border pl-6">
             <div className="text-center">
-              <p className="text-[10px] font-black text-white/60 uppercase">A Fazer</p>
-              <p className="text-sm font-black text-white">{(columns.todo.length + columns.overdue.length + columns.inProgress.length)}</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase">A Fazer</p>
+              <p className="text-sm font-black text-foreground">{(columns.todo.length + columns.overdue.length + columns.inProgress.length)}</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-black text-white/60 uppercase">Concluídas</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase">Concluídas</p>
               <p className="text-sm font-black text-orange-500">{columns.done.length}</p>
             </div>
           </div>
@@ -319,7 +319,7 @@ export default function Tasks() {
             }}
             className={cn(
               "h-9 gap-1.5 font-black uppercase text-[10px] tracking-tight shadow-sm transition-all",
-              selectionModeActive ? "bg-orange-600 hover:bg-orange-700 text-white border-none" : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+              selectionModeActive ? "bg-orange-600 hover:bg-orange-700 text-white border-none" : "bg-muted text-foreground border-border hover:bg-muted/80"
             )}
           >
             <CheckSquare className="h-4 w-4 text-orange-500" />

@@ -506,13 +506,13 @@ export default function Clients() {
             </div>
           </div>
           
-          <div className="hidden lg:flex items-center gap-4 border-l pl-6">
+          <div className="hidden lg:flex items-center gap-4 border-l border-border pl-6">
             <div className="text-center">
-              <p className="text-[10px] font-black text-white/60 uppercase">Leads</p>
-              <p className="text-sm font-black text-white">{filtered.length}</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase">Leads</p>
+              <p className="text-sm font-black text-foreground">{filtered.length}</p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-black text-white/60 uppercase">Valor</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase">Valor</p>
               <p className="text-sm font-black text-orange-500">{formatCurrency(totalFunnelValue)}</p>
             </div>
           </div>

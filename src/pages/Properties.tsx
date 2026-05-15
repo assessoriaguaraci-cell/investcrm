@@ -291,16 +291,16 @@ export default function Properties() {
                 FUNIL DE IMÓVEIS
               </h1>
               <div className="flex items-center gap-2">
-                <p className="text-[10px] text-white/60 font-black uppercase tracking-wider font-body">Portfólio e Ativos</p>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider font-body">Portfólio e Ativos</p>
                 <Badge variant="outline" className="text-[9px] font-black bg-orange-500 text-white border-none h-4 shadow-sm">
                     {properties?.length || 0} TOTAL
                 </Badge>
                 {filtered.length !== properties?.length && (
-                    <Badge variant="secondary" className="text-[9px] font-black h-4 bg-white/20 text-white border-none">
+                    <Badge variant="secondary" className="text-[9px] font-black h-4 bg-muted text-foreground border-none">
                         {filtered.length} NO FILTRO
                     </Badge>
                 )}
-                <div className="h-4 w-px bg-white/20 mx-1" />
+                <div className="h-4 w-px bg-border mx-1" />
                 <p className="text-[10px] text-orange-500 font-black uppercase tracking-wider">
                   {formatCurrency(totalPortfolioValue)}
                 </p>

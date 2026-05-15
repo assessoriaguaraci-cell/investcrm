@@ -64,7 +64,7 @@ export default function TaskKanbanColumn({
                                     onSelectAll(tasks.map(t => t.id), !!checked);
                                 }
                             }}
-                            className="h-3.5 w-3.5 border-white/30 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                            className="h-3.5 w-3.5 border-border data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                         />
                     )}
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0" />
