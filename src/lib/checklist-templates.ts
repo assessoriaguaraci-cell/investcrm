@@ -50,8 +50,6 @@ export const CHECKLIST_TEMPLATES: ChecklistTemplate[] = [
   { stage: "itbi_contrato", group: "Controle Documental", task: "ITBI pago", sort: 4 },
   { stage: "itbi_contrato", group: "Controle Documental", task: "IPTU pago", sort: 5 },
   { stage: "itbi_contrato", group: "Controle Documental", task: "Matrícula em nome do novo proprietário", sort: 6 },
-  { stage: "itbi_contrato", group: "Controle Documental", task: "Registro concluído", sort: 7 },
-  { stage: "itbi_contrato", group: "Controle Documental", task: "Listar pendências", sort: 8 },
 
   // ── REGISTRO ──────────────────────────────────────────────────
   // (mesmo checklist do ITBI/Contrato por ora)

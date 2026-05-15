@@ -26,6 +26,7 @@ import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PreAuctionFiles } from "./PreAuctionFiles";
+import PropertyReportGenerator from "@/components/properties/PropertyReportGenerator";
 
 const schema = z.object({
   code: z.string().min(1, "Código obrigatório"),
@@ -229,83 +230,7 @@ export function PreAuctionDialog({ property, open, onOpenChange, funnelId, initi
                 </TabsContent>
 
                 <TabsContent value="relatorio" className="mt-0">
-                   <div className="space-y-4">
-                     <h3 className="font-black uppercase text-xs tracking-widest text-primary flex items-center gap-2">
-                         <div className="h-1.5 w-1.5 rounded-full bg-primary" /> Relatório de Pré-Arrematação
-                     </h3>
-                     <p className="text-sm text-muted-foreground">Confira a prévia abaixo e clique em copiar para compartilhar.</p>
-                     
-                     {(() => {
-                        const vals = form.watch();
-                        const formatCurrency = (val: any) => 
-                           val ? Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val)) : "---";
-                        const formatDate = (date: any) => date ? format(new Date(date + "T12:00:00"), "dd/MM/yyyy") : "---";
-
-                        const reportText = [
-                           `📊 *ANÁLISE PRÉ-ARREMATAÇÃO – INVEST LAR*`,
-                           ``,
-                           `📆 Data vencimento do boleto: *${formatDate(vals.bill_due_date)}*`,
-                           ``,
-                           `🏠 Código do imóvel: *${vals.code}*`,
-                           ``,
-                           `📍 Endereço: *${vals.address || "---"}*`,
-                           `Link do Localização (Maps): ${vals.maps_url || "---"}`,
-                           ``,
-                           `💰 Lance atual: *${formatCurrency(vals.current_bid || vals.purchase_price)}*`,
-                           ``,
-                           `📈 Valor de mercado: *${formatCurrency(vals.market_value || vals.listed_price)}*`,
-                           ``,
-                           `📅 Data de Validade do laudo: *${formatDate(vals.appraisal_validity)}*`,
-                           ``,
-                           `📄 Débitos`,
-                           `•  IPTU: *${formatCurrency(vals.iptu)}*`,
-                           `•  ITBI: *${formatCurrency(vals.itbi)}*`,
-                           `•  Condomínio: *${formatCurrency(vals.condo_fees)}*`,
-                           ``,
-                           `🧱 Condicoes do imóvel:`,
-                           `${vals.property_conditions || "---"}`,
-                           ``,
-                           `📄 Analise da Matricula:`,
-                           `${vals.registry_analysis || "---"}`,
-                           ``,
-                           `🗃️ Analise juridica:`,
-                           `${vals.legal_analysis || "---"}`,
-                           ``,
-                           `🔐 Segurança da região:`,
-                           `${vals.security_analysis || "---"}`,
-                           ``,
-                           `🏪 Comércios, transporte e serviços:`,
-                           `${vals.transport_analysis || "---"}`,
-                           ``,
-                           `📞 Contato do ocupante: *${vals.occupant_contact || "---"}*`,
-                           ``,
-                           `📞 Contato do síndico: *${vals.syndic_contact || "---"}*`,
-                           ``,
-                           `🏢 Contato Administradora: *${vals.manager_contact || "---"}*`
-                        ].join("\n");
-
-                        return (
-                          <>
-                            <Textarea 
-                              value={reportText} 
-                              readOnly 
-                              className="min-h-[300px] font-mono text-xs bg-muted/30" 
-                            />
-                            <Button 
-                              type="button"
-                              className="w-full font-black uppercase tracking-tight gap-2 h-12 text-lg shadow-xl shadow-primary/20"
-                              onClick={() => {
-                                navigator.clipboard.writeText(reportText);
-                                toast.success("Relatório copiado para o WhatsApp!");
-                              }}
-                            >
-                              <ClipboardList className="h-5 w-5" />
-                              COPIAR RELATÓRIO FORMATADO
-                            </Button>
-                          </>
-                        );
-                     })()}
-                   </div>
+                   {property && <PropertyReportGenerator property={property} mode="pre_auction" />}
                 </TabsContent>
 
                 <TabsContent value="analise" className="mt-0">
