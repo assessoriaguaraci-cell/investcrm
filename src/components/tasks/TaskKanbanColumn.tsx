@@ -1,7 +1,8 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard";
 import type { Activity } from "@/hooks/useActivities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, CheckSquare } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
     columnId: string;
@@ -13,6 +14,7 @@ interface Props {
     colorClass: string;
     selectedIds: string[];
     onToggleSelection: (id: string) => void;
+    onSelectAll?: (ids: string[], selected: boolean) => void;
     selectable?: boolean;
 }
 
@@ -26,6 +28,7 @@ export default function TaskKanbanColumn({
     colorClass,
     selectedIds,
     onToggleSelection,
+    onSelectAll,
     selectable
 }: Props) {
     // Map tailwind color classes to CSS variables if possible
@@ -53,6 +56,17 @@ export default function TaskKanbanColumn({
                 }}
             >
                 <div className="flex items-center gap-2">
+                    {selectable && (
+                        <Checkbox 
+                            checked={tasks.length > 0 && tasks.every(t => selectedIds.includes(t.id))}
+                            onCheckedChange={(checked) => {
+                                if (onSelectAll) {
+                                    onSelectAll(tasks.map(t => t.id), !!checked);
+                                }
+                            }}
+                            className="h-3.5 w-3.5 border-white/30 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                        />
+                    )}
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0" />
                     <div className={`w-1.5 h-1.5 rounded-full ${colorClass}`} />
                     <h3 className="text-[10px] font-black truncate text-foreground flex-1 uppercase tracking-tight">{title}</h3>

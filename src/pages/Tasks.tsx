@@ -162,6 +162,14 @@ export default function Tasks() {
     );
   };
 
+  const handleSelectAll = (ids: string[], selected: boolean) => {
+    if (selected) {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...ids])));
+    } else {
+      setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (!confirm(`Excluir ${selectedIds.length} tarefas selecionadas?`)) return;
     
@@ -205,25 +213,38 @@ export default function Tasks() {
 
   const handleBulkMove = async (destColumnId: string) => {
     try {
-      let updates: any = {};
+      const today = new Date().toISOString().split('T')[0];
       
-      if (destColumnId === "done") {
-        updates.status = "feito";
-        updates.completed_at = new Date().toISOString();
-      } else if (destColumnId === "inProgress") {
-        updates.status = "em_andamento";
-        updates.completed_at = null;
-      } else if (destColumnId === "todo") {
-        updates.status = "pendente";
-        updates.completed_at = null;
+      for (const id of selectedIds) {
+        let updates: any = {};
+        const task = activities?.find(a => a.id === id);
+        
+        if (destColumnId === "done") {
+          updates.status = "feito";
+          updates.completed_at = new Date().toISOString();
+        } else {
+          updates.completed_at = null;
+          if (destColumnId === "inProgress") {
+            updates.status = "em_andamento";
+          } else if (destColumnId === "todo" || destColumnId === "overdue") {
+            updates.status = "pendente";
+          }
+          
+          // If moving OUT of overdue view to a non-done status, reset date to today
+          if (task && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
+             if (destColumnId !== "overdue") {
+               updates.due_date = today;
+             }
+          }
+        }
+        
+        const { error } = await supabase
+          .from("activities")
+          .update(updates)
+          .eq("id", id);
+        
+        if (error) throw error;
       }
-      
-      const { error } = await supabase
-        .from("activities")
-        .update(updates)
-        .in("id", selectedIds);
-      
-      if (error) throw error;
       
       setSelectedIds([]);
       qc.invalidateQueries({ queryKey: ["activities"] });
@@ -326,6 +347,7 @@ export default function Tasks() {
                 <SelectValue placeholder="MOVER PARA..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="overdue">ATRASADAS</SelectItem>
                 <SelectItem value="todo">A FAZER</SelectItem>
                 <SelectItem value="inProgress">EM ANDAMENTO</SelectItem>
                 <SelectItem value="done">CONCLUÍDAS</SelectItem>
@@ -368,6 +390,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  onSelectAll={handleSelectAll}
                   selectable={selectionModeActive}
                 />
                 <TaskKanbanColumn
@@ -380,6 +403,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  onSelectAll={handleSelectAll}
                   selectable={selectionModeActive}
                 />
                 <TaskKanbanColumn
@@ -392,6 +416,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  onSelectAll={handleSelectAll}
                   selectable={selectionModeActive}
                 />
                 <TaskKanbanColumn
@@ -404,6 +429,7 @@ export default function Tasks() {
                   onDelete={handleDelete}
                   selectedIds={selectedIds}
                   onToggleSelection={toggleSelection}
+                  onSelectAll={handleSelectAll}
                   selectable={selectionModeActive}
                 />
               </div>
