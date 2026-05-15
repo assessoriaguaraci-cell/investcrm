@@ -228,6 +228,8 @@ export default function PreAuctionKanban() {
                 )}
             </div>
 
+            <AddColumnDialog funnelType="pre_auction" funnelId={selectedFunnelId} showLabel />
+
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="gap-2 font-black h-10 px-4 uppercase text-xs border-orange-500/30 bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-sm">

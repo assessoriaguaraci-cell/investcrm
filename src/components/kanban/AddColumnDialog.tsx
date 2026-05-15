@@ -89,6 +89,17 @@ export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLa
                 }))
                 .filter(s => s.title !== "" || s.items.length > 0);
 
+            // Check if value already exists in this funnel
+            const existingStage = (stages as any[]).find(s => s.value === value);
+            if (existingStage) {
+                toast({ 
+                    title: "Essa coluna já existe", 
+                    description: "Tente usar um nome diferente para esta etapa.",
+                    variant: "destructive" 
+                });
+                return;
+            }
+
             await addStage({
                 funnel_type: funnelType,
                 value,
