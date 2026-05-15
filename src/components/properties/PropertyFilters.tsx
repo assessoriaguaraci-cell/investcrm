@@ -112,7 +112,7 @@ export default function PropertyFilters({ filters, onFiltersChange }: Props) {
           onClick={() => setExpanded(!expanded)}
           className={cn(
             "gap-1.5 font-black uppercase text-[10px] tracking-tight",
-            expanded ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+            expanded ? "bg-orange-600 text-white hover:bg-orange-700 border-none" : "bg-muted text-foreground border-border hover:bg-muted/80"
           )}
         >
           <Filter className="h-4 w-4" />

@@ -531,7 +531,7 @@ export default function Clients() {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-2 border-white/20 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+            <Button variant="outline" size="sm" className="h-8 gap-2 bg-muted text-foreground border-border hover:bg-muted/80 text-[10px] font-black uppercase tracking-wider shadow-sm">
                 <Eye className="h-3.5 w-3.5 text-orange-500" />
                 Colunas
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px]">
