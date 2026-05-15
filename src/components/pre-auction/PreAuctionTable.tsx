@@ -121,7 +121,7 @@ export function PreAuctionTable({ properties }: Props) {
       <div className="flex justify-end px-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 bg-card/50 backdrop-blur-md border-white/10 shadow-lg">
+            <Button variant="outline" size="sm" className="gap-2 bg-muted text-foreground border-border hover:bg-muted/80 shadow-lg font-black uppercase text-[10px]">
               <Columns className="h-4 w-4" />
               Colunas
               <ChevronDown className="h-4 w-4 opacity-50" />

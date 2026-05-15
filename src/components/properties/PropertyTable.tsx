@@ -173,7 +173,7 @@ export default function PropertyTable({ properties }: Props) {
       <div className="flex justify-end px-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="bg-card/50 backdrop-blur-md border-white/10 gap-2 shadow-lg">
+            <Button variant="outline" size="sm" className="bg-muted text-foreground border-border gap-2 shadow-lg font-black uppercase text-[10px]">
               <Columns className="h-4 w-4" />
               Colunas
               <ChevronDown className="h-4 w-4 opacity-50" />

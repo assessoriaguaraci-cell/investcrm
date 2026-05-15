@@ -323,14 +323,14 @@ export default function Properties() {
                 if (viewMode === "table") exportToCSV("imoveis", filtered);
                 else exportToExcel("imoveis", filtered);
               }} 
-              className="font-black uppercase tracking-tight gap-2 h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 shadow-sm text-[10px]"
+              className="font-black uppercase tracking-tight gap-2 h-9 bg-muted text-foreground border-border hover:bg-muted/80 shadow-sm text-[10px]"
           >
             <Download className="h-4 w-4 text-orange-500" /> Exportar
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground hover:bg-muted border border-border/20 shadow-sm" title="Mais opções (Visualização e Filtros)">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground hover:bg-muted border border-border shadow-sm" title="Mais opções (Visualização e Filtros)">
                 <MoreHorizontal className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>

@@ -605,8 +605,8 @@ export default function Clients() {
               if (!selectionModeActive) setSelectedIds([]);
             }}
             className={cn(
-              "h-8 gap-1.5 font-black uppercase text-[10px] tracking-tight shadow-sm transition-all",
-              selectionModeActive ? "bg-orange-600 hover:bg-orange-700 text-white border-none" : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+              "h-9 gap-1.5 font-black uppercase text-[10px] tracking-tight shadow-sm transition-all",
+              selectionModeActive ? "bg-orange-600 hover:bg-orange-700 text-white border-none" : "bg-muted text-foreground border-border hover:bg-muted/80"
             )}
           >
             <CheckSquare className="h-4 w-4 text-orange-500" />
@@ -701,16 +701,16 @@ export default function Clients() {
                       return (
                         <div 
                           key={`phase-group-${phase.name}`}
-                          className="flex flex-col gap-4 p-4 rounded-2xl bg-white/30 border border-white/50 shadow-sm shrink-0"
+                          className="flex flex-col gap-4 p-4 rounded-2xl bg-muted/30 border border-border shadow-sm shrink-0"
                           style={{ minWidth: `calc(${stagesInPhase.length} * 280px + (${stagesInPhase.length - 1} * 16px) + 32px)` }}
                         >
                           <div className="flex items-center justify-between px-2 mb-2">
                             <div className="flex items-center gap-3">
                               <div className={cn("h-4 w-1.5 rounded-full shadow-sm", phase.color)} />
-                              <h2 className="text-sm font-black uppercase tracking-tighter text-white">
+                              <h2 className="text-sm font-black uppercase tracking-tighter text-foreground">
                                 {phase.name}
                               </h2>
-                              <Badge variant="secondary" className="bg-white/50 text-[10px] h-5">
+                              <Badge variant="secondary" className="bg-muted text-foreground border-border text-[10px] h-5">
                                 {stagesInPhase.length} etapas
                               </Badge>
                             </div>
@@ -718,7 +718,7 @@ export default function Clients() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => togglePhaseCollapse(phase.name)}
-                              className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-white/50 hover:text-white hover:bg-white/10 gap-1.5"
+                              className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5"
                             >
                               <EyeOff className="h-3.5 w-3.5" />
                               Ocultar
@@ -763,9 +763,9 @@ export default function Clients() {
                     
                     {provided.placeholder}
                     
-                    <div className="flex flex-col min-w-[200px] h-40 items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl group/add bg-white/20 hover:bg-white/40 transition-all shrink-0">
+                    <div className="flex flex-col min-w-[200px] h-40 items-center justify-center border-2 border-dashed border-border rounded-2xl group/add bg-muted/50 hover:bg-muted transition-all shrink-0">
                       <AddColumnDialog funnelType="client" pipeline="inicial" showLabel />
-                      <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest">Nova Etapa</p>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Etapa</p>
                     </div>
                   </div>
                 )}
