@@ -19,6 +19,7 @@ import { useLocation } from "react-router-dom";
 import GoogleCalendarView from "@/components/tasks/GoogleCalendarView";
 import MultiSelectFilter from "@/components/properties/MultiSelectFilter";
 import { SavedFiltersButton } from "@/components/ui/saved-filters-button";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface TaskFilterValues {
   types: string[];
