@@ -1033,7 +1033,8 @@ export type Database = {
           group_name: string
           id: string
           notes: string | null
-          property_id: string
+          pre_auction_property_id: string | null
+          property_id: string | null
           sort_order: number
           stage: Database["public"]["Enums"]["property_stage"]
           task_name: string
@@ -1046,7 +1047,8 @@ export type Database = {
           group_name: string
           id?: string
           notes?: string | null
-          property_id: string
+          pre_auction_property_id?: string | null
+          property_id?: string | null
           sort_order?: number
           stage: Database["public"]["Enums"]["property_stage"]
           task_name: string
@@ -1059,12 +1061,20 @@ export type Database = {
           group_name?: string
           id?: string
           notes?: string | null
-          property_id?: string
+          pre_auction_property_id?: string | null
+          property_id?: string | null
           sort_order?: number
           stage?: Database["public"]["Enums"]["property_stage"]
           task_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "property_checklist_items_pre_auction_property_id_fkey"
+            columns: ["pre_auction_property_id"]
+            isOneToOne: false
+            referencedRelation: "pre_auction_properties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "property_checklist_items_property_id_fkey"
             columns: ["property_id"]

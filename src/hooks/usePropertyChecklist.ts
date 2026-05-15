@@ -14,51 +14,43 @@ export function usePropertyChecklist(propertyId: string | undefined) {
     enabled: !!propertyId,
     queryFn: async () => {
       const isPreAuction = window.location.pathname.includes('pre-auction');
-      const query = supabase.from("property_checklist_items").select("*");
       
-      if (isPreAuction) {
-        // VIRTUAL CHECKLIST: For now, if the DB column is missing, return empty
-        // to stop the red error and allow the user to work.
-        // We will try to fetch from property_checklist_items but catch the error.
-        try {
+      try {
+        if (isPreAuction) {
           const { data, error } = await supabase
             .from("property_checklist_items")
             .select("*")
             .eq("pre_auction_property_id", propertyId!)
             .order("sort_order", { ascending: true });
           
-          if (error) throw error;
+          if (error) {
+            if (error.message.includes('column') && error.message.includes('pre_auction_property_id')) {
+              console.warn("Checklist column for pre-auction not found yet.");
+              return [];
+            }
+            throw error;
+          }
           return data || [];
-        } catch (e) {
-          console.warn("Using fallback empty checklist for pre-auction");
-          return [];
+        } else {
+          const { data, error } = await supabase
+            .from("property_checklist_items")
+            .select("*")
+            .eq("property_id", propertyId!)
+            .order("sort_order", { ascending: true });
+          
+          if (error) throw error;
+          
+          // Filter out obsolete groups or tasks that should no longer exist
+          const filteredData = (data as ChecklistItem[] || []).filter(
+            item => {
+              if (["Estratégia Definida", "Execução"].includes(item.group_name || "")) return false;
+              if (["Histórico de pagamento conhecido", "Risco jurídico avaliado"].includes(item.task_name || "")) return false;
+              return true;
+            }
+          );
+          
+          return filteredData;
         }
-      } else {
-        query.eq("property_id", propertyId!);
-      }
-
-      try {
-        const { data, error } = await query.order("sort_order", { ascending: true });
-        
-        if (error) {
-          // If the column doesn't exist yet, don't crash the whole app
-          if (error.message.includes('column') && error.message.includes('pre_auction_property_id')) {
-            console.warn("Checklist column for pre-auction not found yet. Please run the SQL migration.");
-            return [];
-          }
-          throw error;
-        }
-        
-        // Filter out obsolete groups or tasks that should no longer exist
-        const filteredData = (data as ChecklistItem[] || []).filter(
-          item => {
-            if (["Estratégia Definida", "Execução"].includes(item.group_name || "")) return false;
-            if (["Histórico de pagamento conhecido", "Risco jurídico avaliado"].includes(item.task_name || "")) return false;
-            return true;
-          }
-        );
-        
-        return filteredData;
       } catch (err) {
         console.error("Error fetching checklist:", err);
         return [];
