@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Input } from "./input";
+import { cn } from "@/lib/utils";
 
 interface CurrencyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
   value: number | undefined;
@@ -93,7 +94,7 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder="0,00"
-        className={`pl-9 ${props.className}`}
+        className={cn("pl-9", props.className)}
       />
     </div>
   );

@@ -56,7 +56,50 @@ const COLUMN_CATEGORIES = {
   appraisal: { label: "Avaliação", icon: TrendingUp },
 };
 
+const defaultWidths: Record<string, number> = {
+  photo: 50,
+  code: 120,
+  address: 200,
+  owner: 150,
+  neighborhood: 150,
+  city: 120,
+  landmark: 150,
+  total_investment: 120,
+};
+
 export default function PropertyTable({ properties }: Props) {
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem("property-table-widths");
+    return saved ? JSON.parse(saved) : defaultWidths;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("property-table-widths", JSON.stringify(columnWidths));
+  }, [columnWidths]);
+
+  const handleResizeStart = (e: React.MouseEvent, colId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.pageX;
+    const startWidth = columnWidths[colId] || 120; // Default min width
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.pageX - startX;
+      setColumnWidths(prev => ({
+        ...prev,
+        [colId]: Math.max(50, startWidth + deltaX)
+      }));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const { data: members } = useApprovedMembers();
   const updateProperty = useUpdateProperty();
@@ -224,11 +267,22 @@ export default function PropertyTable({ properties }: Props) {
           <Table className="border-collapse min-w-full">
             <TableHeader className="sticky top-0 z-30 shadow-md">
               <TableRow className="hover:bg-transparent h-10 border-none">
-                {activeColumns.map(col => (
-                  <TableHead key={col.id} className="font-bold text-[9px] uppercase tracking-wider px-3 border-r border-white/5 last:border-0 whitespace-nowrap text-muted-foreground bg-muted/95 backdrop-blur-sm sticky top-0">
-                    {col.label}
-                  </TableHead>
-                ))}
+                {activeColumns.map(col => {
+                  const width = columnWidths[col.id] || 120;
+                  return (
+                    <TableHead 
+                      key={col.id} 
+                      className="relative font-bold text-[9px] uppercase tracking-wider px-3 border-r border-white/5 last:border-0 whitespace-nowrap text-muted-foreground bg-muted/95 backdrop-blur-sm sticky top-0 group select-none"
+                      style={{ width: `${width}px`, minWidth: `${width}px` }}
+                    >
+                      {col.label}
+                      <div 
+                        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/50 group-hover:bg-primary/20 z-10 transition-colors"
+                        onMouseDown={(e) => handleResizeStart(e, col.id)}
+                      />
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -682,9 +736,16 @@ export default function PropertyTable({ properties }: Props) {
                             ) : <span className="px-1 opacity-50">#</span>;
                         }
 
+                        const width = columnWidths[col.id] || 120;
                         return (
-                          <TableCell key={col.id} className="px-1 py-0 text-[9px] font-medium border-r border-white/5 last:border-0 whitespace-nowrap hover:bg-primary/[0.05] transition-colors focus-within:bg-primary/[0.08]">
-                            {content}
+                          <TableCell 
+                            key={col.id} 
+                            className="px-1 py-0 text-[9px] font-medium border-r border-white/5 last:border-0 whitespace-nowrap hover:bg-primary/[0.05] transition-colors focus-within:bg-primary/[0.08]"
+                            style={{ width: `${width}px`, maxWidth: `${width}px`, overflow: 'hidden' }}
+                          >
+                            <div className="w-full flex items-center">
+                              {content}
+                            </div>
                           </TableCell>
                         );
                       })}
