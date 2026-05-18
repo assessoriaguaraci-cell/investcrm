@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { TEMPERATURE_OPTIONS } from "@/lib/client-constants";
@@ -27,7 +27,7 @@ const tempColors: Record<string, string> = {
   quente: "bg-[hsl(var(--temp-hot))] text-white",
 };
 
-export default function ClientCard({ client, index, selectable, selected, onSelect }: Props) {
+const ClientCardComponent = ({ client, index, selectable, selected, onSelect }: Props) => {
   const [editOpen, setEditOpen] = useState(false);
   const { data: links = [] } = useClientPropertyLinks();
   const { data: members = [] } = useApprovedMembers();
@@ -193,4 +193,17 @@ export default function ClientCard({ client, index, selectable, selected, onSele
       <EditClientDialog client={client} open={editOpen} onOpenChange={setEditOpen} />
     </>
   );
-}
+};
+
+const areEqual = (prevProps: Props, nextProps: Props) => {
+  return (
+    prevProps.client.id === nextProps.client.id &&
+    prevProps.client.updated_at === nextProps.client.updated_at &&
+    prevProps.client.stage === nextProps.client.stage &&
+    prevProps.index === nextProps.index &&
+    prevProps.selectable === nextProps.selectable &&
+    prevProps.selected === nextProps.selected
+  );
+};
+
+export default React.memo(ClientCardComponent, areEqual);

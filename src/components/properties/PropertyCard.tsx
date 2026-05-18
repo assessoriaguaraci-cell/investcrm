@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { MapPin, AlertTriangle, Pencil, User, Calendar, FolderOpen, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ const priorityColors: Record<string, string> = {
   baixa: "bg-[hsl(var(--priority-low))] text-white",
 };
 
-export default function PropertyCard({ property, index, cardSettings }: Props) {
+const PropertyCardComponent = ({ property, index, cardSettings }: Props) => {
   const [editOpen, setEditOpen] = useState(false);
   const { data: members } = useApprovedMembers();
   const investment = totalInvestment(property);
@@ -169,4 +169,16 @@ export default function PropertyCard({ property, index, cardSettings }: Props) {
       <EditPropertyDialog property={property} open={editOpen} onOpenChange={setEditOpen} />
     </>
   );
-}
+};
+
+const areEqual = (prevProps: Props, nextProps: Props) => {
+  return (
+    prevProps.property.id === nextProps.property.id &&
+    prevProps.property.updated_at === nextProps.property.updated_at &&
+    prevProps.property.stage === nextProps.property.stage &&
+    prevProps.index === nextProps.index &&
+    prevProps.cardSettings === nextProps.cardSettings
+  );
+};
+
+export default React.memo(PropertyCardComponent, areEqual);
