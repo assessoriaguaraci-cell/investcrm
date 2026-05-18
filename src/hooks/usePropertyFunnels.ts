@@ -43,3 +43,41 @@ export function useCreatePropertyFunnel() {
     },
   });
 }
+
+export function useUpdatePropertyFunnel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { data, error } = await supabase
+        .from("property_funnels")
+        .update({ name })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-funnels"] });
+      toast.success("Funil renomeado!");
+    },
+  });
+}
+
+export function useDeletePropertyFunnel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("property_funnels")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["property-funnels"] });
+      toast.success("Funil excluído!");
+    },
+  });
+}

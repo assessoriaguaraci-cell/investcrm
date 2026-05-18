@@ -31,6 +31,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -39,9 +40,11 @@ import { parseISO, isAfter, isBefore, startOfMonth, endOfMonth, format } from "d
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 import type { Property } from "@/hooks/useProperties";
-import { usePropertyFunnels, useCreatePropertyFunnel } from "@/hooks/usePropertyFunnels";
+import type { Property } from "@/hooks/useProperties";
+import { usePropertyFunnels, useCreatePropertyFunnel, useUpdatePropertyFunnel, useDeletePropertyFunnel } from "@/hooks/usePropertyFunnels";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Check, X, Pencil, Trash2 } from "lucide-react";
 
 type PropertyStage = Database["public"]["Enums"]["property_stage"];
 type DashboardFilter = "active" | "sales_this_month" | "custom_ids" | null;
@@ -52,7 +55,10 @@ export default function Properties() {
   const { data: properties, isLoading: isPropertiesLoading } = useProperties();
   const { stages: dynamicStages, isLoading: isStagesLoading, updateStage, addStage } = useKanbanStages("property", selectedFunnelId);
   const { data: funnels } = usePropertyFunnels();
+  const { data: funnels } = usePropertyFunnels();
   const createFunnelMutation = useCreatePropertyFunnel();
+  const updateFunnelMutation = useUpdatePropertyFunnel();
+  const deleteFunnelMutation = useDeletePropertyFunnel();
 
   const updateProperty = useUpdateProperty();
   const { filters, setFilters, loadFromCloud: loadFiltersFromCloud } = usePropertyFiltersStore();
@@ -69,6 +75,8 @@ export default function Properties() {
 
   const [isNewFunnelOpen, setIsNewFunnelOpen] = useState(false);
   const [newFunnelName, setNewFunnelName] = useState("");
+  const [isRenamingFunnel, setIsRenamingFunnel] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
   const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
   useEffect(() => {
@@ -266,6 +274,28 @@ export default function Properties() {
     }
   };
 
+  const handleRenameFunnel = async () => {
+    if (!selectedFunnelId || !renameValue) return;
+    try {
+      await updateFunnelMutation.mutateAsync({ id: selectedFunnelId, name: renameValue });
+      setIsRenamingFunnel(false);
+    } catch (error) {
+      toast.error("Erro ao renomear funil.");
+    }
+  };
+
+  const handleDeleteFunnel = async () => {
+    if (!selectedFunnelId) return;
+    if (confirm("Tem certeza que deseja excluir esta fase? Todos os imóveis vinculados a ela voltarão para a Fase Padrão.")) {
+      try {
+        await deleteFunnelMutation.mutateAsync(selectedFunnelId);
+        setSelectedFunnelId(undefined);
+      } catch (error) {
+        toast.error("Erro ao excluir funil.");
+      }
+    }
+  };
+
   const isLoading = isPropertiesLoading || isStagesLoading;
 
   if (isLoading) {
@@ -280,6 +310,7 @@ export default function Properties() {
   // if (activeListView) { ... }
 
   const totalPortfolioValue = filtered.reduce((sum, p) => sum + (p.purchase_price || 0), 0);
+  const selectedFunnel = funnels?.find(f => f.id === selectedFunnelId);
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col">
@@ -312,6 +343,64 @@ export default function Properties() {
         </div>
 
         <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
+                {isRenamingFunnel ? (
+                    <div className="flex items-center gap-1 px-2">
+                        <Input 
+                            value={renameValue} 
+                            onChange={e => setRenameValue(e.target.value)}
+                            className="h-7 w-[120px] text-[10px] font-black uppercase"
+                            autoFocus
+                        />
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={handleRenameFunnel}>
+                            <Check className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-600" onClick={() => setIsRenamingFunnel(false)}>
+                            <X className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
+                ) : (
+                    <Select value={selectedFunnelId || "default"} onValueChange={(v) => setSelectedFunnelId(v === "default" ? undefined : v)}>
+                        <SelectTrigger className="w-[150px] h-8 text-[10px] font-black uppercase tracking-widest border-none bg-transparent">
+                            <SelectValue placeholder="Selecionar Fase" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default" className="text-[10px] font-black uppercase">Fase Padrão</SelectItem>
+                            {funnels?.map(f => (
+                                <SelectItem key={f.id} value={f.id} className="text-[10px] font-black uppercase">{f.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
+                
+                {selectedFunnelId && !isRenamingFunnel && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="gap-2 font-black uppercase text-[10px]" onClick={() => {
+                                setIsRenamingFunnel(true);
+                                setRenameValue(selectedFunnel?.name || "");
+                            }}>
+                                <Pencil className="h-3.5 w-3.5" /> Renomear
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 font-black uppercase text-[10px] text-destructive focus:text-destructive" onClick={handleDeleteFunnel}>
+                                <Trash2 className="h-3.5 w-3.5" /> Excluir Fase
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+
+                {!selectedFunnelId && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setIsNewFunnelOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+
           <AddColumnDialog funnelType="property" funnelId={selectedFunnelId} showLabel />
           <NewPropertyDialog defaultFunnelId={selectedFunnelId} />
 
@@ -346,33 +435,6 @@ export default function Properties() {
                             <TableIcon className="h-3 w-3" /> Tabela
                         </ToggleGroupItem>
                     </ToggleGroup>
-                </div>
-
-                <DropdownMenuSeparator className="my-1 opacity-50" />
-
-                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1">Funis de Imóveis</DropdownMenuLabel>
-                <DropdownMenuRadioGroup value={selectedFunnelId} onValueChange={setSelectedFunnelId}>
-                    <DropdownMenuRadioItem value={undefined as any} className="text-[10px] font-black uppercase py-2 cursor-pointer">
-                        Funil Padrão
-                    </DropdownMenuRadioItem>
-                    {funnels?.map(funnel => (
-                        <DropdownMenuRadioItem key={funnel.id} value={funnel.id} className="text-[10px] font-black uppercase py-2 cursor-pointer">
-                            {funnel.name}
-                        </DropdownMenuRadioItem>
-                    ))}
-                </DropdownMenuRadioGroup>
-
-                <DropdownMenuSeparator className="my-1 opacity-50" />
-                
-                <div className="p-1">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full justify-start text-[10px] font-black uppercase gap-2 h-8 text-primary hover:text-primary hover:bg-primary/5"
-                        onClick={() => setIsNewFunnelOpen(true)}
-                    >
-                        <Plus className="h-3 w-3" /> Novo Funil
-                    </Button>
                 </div>
 
                 <DropdownMenuSeparator className="my-1 opacity-50" />
@@ -504,17 +566,17 @@ export default function Properties() {
       <Dialog open={isNewFunnelOpen} onOpenChange={setIsNewFunnelOpen}>
           <DialogContent>
               <DialogHeader>
-                  <DialogTitle className="font-black uppercase tracking-tighter">Criar Novo Funil de Imóveis</DialogTitle>
+                  <DialogTitle className="font-black uppercase tracking-tighter">Criar Nova Fase</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nome do Funil</Label>
-                      <Input value={newFunnelName} onChange={(e) => setNewFunnelName(e.target.value)} placeholder="Ex: Investidores RJ" />
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nome da Fase (Funil)</Label>
+                      <Input value={newFunnelName} onChange={(e) => setNewFunnelName(e.target.value)} placeholder="Ex: Investidores SP" />
                   </div>
               </div>
               <DialogFooter>
                   <Button variant="outline" onClick={() => setIsNewFunnelOpen(false)} className="font-black uppercase tracking-tight">Cancelar</Button>
-                  <Button onClick={handleCreateFunnel} className="font-black uppercase tracking-tight">Criar Funil</Button>
+                  <Button onClick={handleCreateFunnel} className="font-black uppercase tracking-tight">Criar Fase</Button>
               </DialogFooter>
           </DialogContent>
       </Dialog>
