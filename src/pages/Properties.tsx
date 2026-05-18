@@ -69,6 +69,7 @@ export default function Properties() {
 
   const [isNewFunnelOpen, setIsNewFunnelOpen] = useState(false);
   const [newFunnelName, setNewFunnelName] = useState("");
+  const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -469,10 +470,25 @@ export default function Properties() {
                     </Draggable>
                   ))}
                   {provided.placeholder}
-                  <div className="flex flex-col min-w-[100px] shrink-0 items-center justify-start pt-4">
-                    <AddColumnDialog funnelType="property" funnelId={selectedFunnelId} />
-                    <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-wider">Nova Coluna</p>
+                  <div className="flex flex-col min-w-[300px] w-[300px] border-2 border-dashed border-primary/20 rounded-lg items-center justify-center bg-muted/5 p-4 group/add mt-4 mb-4">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full h-full flex flex-col gap-3 hover:bg-primary/5 transition-colors"
+                      onClick={() => setIsAddColumnOpen(true)}
+                    >
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover/add:scale-110 transition-transform">
+                            <Plus className="h-6 w-6" />
+                        </div>
+                        <span className="font-black text-xs uppercase tracking-widest text-primary group-hover/add:text-orange-500 transition-colors">Nova Etapa</span>
+                    </Button>
                   </div>
+                  
+                  <AddColumnDialog 
+                    open={isAddColumnOpen}
+                    onOpenChange={setIsAddColumnOpen}
+                    funnelType="property" 
+                    funnelId={selectedFunnelId} 
+                  />
                 </div>
               </div>
             )}
