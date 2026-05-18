@@ -10,6 +10,7 @@ import {
 import { PreAuctionBoard } from "@/components/pre-auction/PreAuctionBoard";
 import { PreAuctionTable } from "@/components/pre-auction/PreAuctionTable";
 import { PreAuctionDialog } from "@/components/pre-auction/PreAuctionDialog";
+import AddColumnDialog from "@/components/kanban/AddColumnDialog";
 import { PreAuctionProperty, PreAuctionStage } from "@/types/pre-auction";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
