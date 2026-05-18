@@ -94,7 +94,7 @@ export function CurrencyInput({ value, onChange, ...props }: CurrencyInputProps)
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder="0,00"
-        className={cn("pl-9", props.className)}
+        className={cn(props.className, "pl-9")}
       />
     </div>
   );
