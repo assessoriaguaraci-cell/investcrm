@@ -23,10 +23,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface TaskFilterValues {
   types: string[];
+  responsibles: string[];
+  createdFrom: string | null;
+  createdTo: string | null;
+  dueFrom: string | null;
+  dueTo: string | null;
 }
 
 export const EMPTY_TASK_FILTERS: TaskFilterValues = {
   types: [],
+  responsibles: [],
+  createdFrom: null,
+  createdTo: null,
+  dueFrom: null,
+  dueTo: null,
 };
 
 const TYPE_OPTIONS = [
@@ -39,6 +49,8 @@ const TYPE_OPTIONS = [
   { value: "lembrete", label: "Lembrete" },
   { value: "outro", label: "Outro" },
 ];
+
+import TaskFilters from "@/components/tasks/TaskFilters";
 
 export default function Tasks() {
   const { data: activities, isLoading } = useActivities();
@@ -74,7 +86,37 @@ export default function Tasks() {
   const filtered = useMemo(() => {
     if (!activities) return [];
     return activities.filter((a) => {
+      // Tipos
       if (!matchesMultiSelect(a.activity_type, filters.types)) return false;
+      
+      // Responsável
+      if (!matchesMultiSelect(a.responsible_user_id, filters.responsibles)) return false;
+      
+      // Data de Criação
+      if (filters.createdFrom || filters.createdTo) {
+        const createdDate = a.created_at ? new Date(a.created_at).toISOString().split('T')[0] : null;
+        if (createdDate) {
+          if (filters.createdFrom && createdDate < filters.createdFrom) return false;
+          if (filters.createdTo && createdDate > filters.createdTo) return false;
+        } else {
+           // if filtering by date and item has no date, it's filtered out
+           return false;
+        }
+      }
+
+      // Prazo (Vencimento)
+      if (filters.dueFrom || filters.dueTo) {
+        const dueDate = a.due_date ? new Date(a.due_date).toISOString().split('T')[0] : null;
+        if (dueDate) {
+          if (filters.dueFrom && dueDate < filters.dueFrom) return false;
+          if (filters.dueTo && dueDate > filters.dueTo) return false;
+        } else {
+           // if filtering by date and item has no date, it's filtered out
+           return false;
+        }
+      }
+
+      // Busca por Texto
       if (search) {
         const q = search.toLowerCase();
         const matchDesc = a.description.toLowerCase().includes(q);
@@ -282,24 +324,15 @@ export default function Tasks() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 shrink-0">
-        <div className="flex flex-1 gap-2">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar tarefa..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-background border-border focus-visible:ring-primary/20"
-            />
-          </div>
-          <div className="w-[220px]">
-            <MultiSelectFilter
-              label="Tipos"
-              options={TYPE_OPTIONS.filter(o => o.value !== "all").map(o => ({ value: o.value, label: o.label }))}
-              selected={filters.types}
-              onSelectionChange={v => setFilters({ ...filters, types: v })}
-              placeholder="Todos os tipos"
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 shrink-0">
+        <div className="flex flex-1 gap-2 items-start max-w-full lg:max-w-[70%]">
+          <div className="flex-1 w-full">
+            <TaskFilters 
+              filters={filters} 
+              onFiltersChange={setFilters} 
+              search={search}
+              onSearchChange={setSearch}
+              emptyFilters={EMPTY_TASK_FILTERS}
             />
           </div>
           <SavedFiltersButton
