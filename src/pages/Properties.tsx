@@ -55,7 +55,6 @@ export default function Properties() {
   const { data: properties, isLoading: isPropertiesLoading } = useProperties();
   const { stages: dynamicStages, isLoading: isStagesLoading, updateStage, addStage } = useKanbanStages("property", selectedFunnelId);
   const { data: funnels } = usePropertyFunnels();
-  const { data: funnels } = usePropertyFunnels();
   const createFunnelMutation = useCreatePropertyFunnel();
   const updateFunnelMutation = useUpdatePropertyFunnel();
   const deleteFunnelMutation = useDeletePropertyFunnel();
