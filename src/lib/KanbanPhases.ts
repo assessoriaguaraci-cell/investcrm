@@ -1,5 +1,6 @@
 export interface KanbanPhase {
   name: string;
+  value: string;
   color: string;
   stages: string[];
 }
@@ -7,6 +8,7 @@ export interface KanbanPhase {
 export const CLIENT_PHASES: KanbanPhase[] = [
   {
     name: "Fase Inicial",
+    value: "inicial",
     color: "bg-blue-600",
     stages: [
       "chegada_lead", "em_triagem", "interessados", "aguardando_atendimento", 
@@ -16,6 +18,7 @@ export const CLIENT_PHASES: KanbanPhase[] = [
   },
   {
     name: "Fase de Aprovação",
+    value: "aprovacao",
     color: "bg-purple-600",
     stages: [
       "aguardando_documentos", "aguardando_documentacao", 
@@ -26,6 +29,7 @@ export const CLIENT_PHASES: KanbanPhase[] = [
   },
   {
     name: "Fase de Vendas",
+    value: "vendas",
     color: "bg-orange-600",
     stages: [
       "aguardando_ccv", "aguardando_reserva", "aguardando_prioridade", 
@@ -35,6 +39,7 @@ export const CLIENT_PHASES: KanbanPhase[] = [
   },
   {
     name: "Fase de Reaprovação",
+    value: "reaprovacao",
     color: "bg-red-600",
     stages: [
       "credito_reprovado", "credito_reprovado_pipe", 
