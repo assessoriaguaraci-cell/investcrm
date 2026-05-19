@@ -28,7 +28,10 @@ const PropertyCardComponent = ({ property, index, cardSettings }: Props) => {
   const investment = totalInvestment(property);
   const occLabel = OCCUPATION_STATUSES.find(o => o.value === property.occupation_status)?.label ?? "";
   const prioLabel = PRIORITY_LEVELS.find(p => p.value === property.priority)?.label ?? "";
-  const responsibleName = members?.find(m => m.user_id === property.responsible_user_id)?.full_name;
+  let responsibleName = members?.find(m => m.user_id === property.responsible_user_id)?.full_name;
+  if (property.responsible_user_id === "00000000-0000-0000-0000-000000000001") responsibleName = "MENTORIA";
+  if (property.responsible_user_id === "00000000-0000-0000-0000-000000000002") responsibleName = "FIRMA";
+  if (property.responsible_user_id === "00000000-0000-0000-0000-000000000003") responsibleName = "COTISTA";
   const photoUrl = (property as any).photo_url as string | null;
   const auctionDate = property.auction_date;
   const lifeDays = auctionDate ? differenceInDays(new Date(), new Date(auctionDate)) : null;

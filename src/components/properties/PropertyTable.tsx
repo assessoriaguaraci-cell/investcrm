@@ -136,7 +136,13 @@ export default function PropertyTable({ properties }: Props) {
   const getType = (val: string) => PROPERTY_TYPES.find(t => t.value === val);
   const getOcc = (val: string) => OCCUPATION_STATUSES.find(o => o.value === val);
   const getPrio = (val: string) => PRIORITY_LEVELS.find(p => p.value === val);
-  const getResp = (id: string | null) => id ? members?.find(m => m.user_id === id)?.full_name : null;
+  const getResp = (id: string | null) => {
+    if (!id) return null;
+    if (id === "00000000-0000-0000-0000-000000000001") return "MENTORIA";
+    if (id === "00000000-0000-0000-0000-000000000002") return "FIRMA";
+    if (id === "00000000-0000-0000-0000-000000000003") return "COTISTA";
+    return members?.find(m => m.user_id === id)?.full_name || id;
+  };
 
   const allColumns = useMemo(() => [
     { id: "photo", label: "Foto", category: "identification" },
@@ -580,6 +586,7 @@ export default function PropertyTable({ properties }: Props) {
                             );
                             break;
                           case "responsible":
+                            const respName = getResp(p.responsible_user_id);
                             content = (
                               <Select 
                                 value={p.responsible_user_id || "__none__"} 
@@ -589,10 +596,38 @@ export default function PropertyTable({ properties }: Props) {
                                   className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <SelectValue placeholder="Selecione" />
+                                  <SelectValue>{respName && respName !== "__none__" ? respName : "Selecione"}</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="__none__">Nenhum</SelectItem>
+                                  <SelectItem value="00000000-0000-0000-0000-000000000001">MENTORIA</SelectItem>
+                                  <SelectItem value="00000000-0000-0000-0000-000000000002">FIRMA</SelectItem>
+                                  <SelectItem value="00000000-0000-0000-0000-000000000003">COTISTA</SelectItem>
+                                  {members?.map(m => (
+                                    <SelectItem key={m.user_id} value={m.user_id || ""}>{m.full_name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                            break;
+                          case "op_responsible":
+                            const opRespName = getResp(p.operation_responsible_id);
+                            content = (
+                              <Select 
+                                value={p.operation_responsible_id || "__none__"} 
+                                onValueChange={(val) => handleUpdate(id, "operation_responsible_id", val === "__none__" ? null : val)}
+                              >
+                                <SelectTrigger 
+                                  className="h-7 text-[9px] border-none bg-transparent hover:bg-muted/50 p-1 w-32 font-bold text-emerald-600"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <SelectValue>{opRespName && opRespName !== "__none__" ? opRespName : "Selecione"}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">Nenhum</SelectItem>
+                                  <SelectItem value="00000000-0000-0000-0000-000000000001">MENTORIA</SelectItem>
+                                  <SelectItem value="00000000-0000-0000-0000-000000000002">FIRMA</SelectItem>
+                                  <SelectItem value="00000000-0000-0000-0000-000000000003">COTISTA</SelectItem>
                                   {members?.map(m => (
                                     <SelectItem key={m.user_id} value={m.user_id || ""}>{m.full_name}</SelectItem>
                                   ))}

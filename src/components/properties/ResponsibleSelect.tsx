@@ -19,6 +19,8 @@ export default function ResponsibleSelect({ value, onValueChange, className, sho
       <SelectContent>
         <SelectItem value="none">Sem responsável</SelectItem>
         <SelectItem value="00000000-0000-0000-0000-000000000001">MENTORIA</SelectItem>
+        <SelectItem value="00000000-0000-0000-0000-000000000002">FIRMA</SelectItem>
+        <SelectItem value="00000000-0000-0000-0000-000000000003">COTISTA</SelectItem>
         {members?.map((m) => (
           <SelectItem
             key={m.user_id}
