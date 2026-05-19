@@ -696,6 +696,53 @@ export default function Clients() {
           </Button>
           <DuplicateManagerDialog />
           <NewClientDialog />
+          
+          <div className="h-6 w-px bg-border/50 mx-1" />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-foreground bg-muted border-border hover:bg-muted/80 shadow-sm" title="Mais opções (Visualização e Filtros)">
+                <MoreHorizontal className="h-4 w-4 text-orange-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-2 shadow-xl border-border/40 bg-card">
+              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 pt-2 tracking-widest">Visualização</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={viewMode} onValueChange={v => setViewMode(v as ViewMode)} className="px-1">
+                <DropdownMenuRadioItem value="kanban" className="text-xs font-bold uppercase py-2 cursor-pointer transition-colors">
+                  <LayoutGrid className="h-4 w-4 mr-2" /> Modo Kanban (Cards)
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="table" className="text-xs font-bold uppercase py-2 cursor-pointer transition-colors">
+                  <TableIcon className="h-4 w-4 mr-2" /> Modo Tabela (Lista)
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              
+              {viewMode === "kanban" && (
+                <BoardSettingsMenu triggerAsMenuItem />
+              )}
+
+              <DropdownMenuSeparator className="my-2" />
+              <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5 tracking-widest">Dados</DropdownMenuLabel>
+              <div className="px-1 space-y-1">
+                <ImportClientsDialog />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5 transition-all bg-transparent"
+                  onClick={() => exportToCSV('clientes_invest_crm', filtered)}
+                >
+                  <Download className="h-3.5 w-3.5 text-primary" /> Exportar CSV
+                </Button>
+                <Button 
+                  variant="outline" 
+                   size="sm" 
+                  className="w-full justify-start gap-2 font-bold uppercase text-[10px] h-8 border-primary/20 hover:bg-primary/5 transition-all bg-transparent"
+                  onClick={() => exportToExcel('clientes_invest_crm', filtered)}
+                >
+                  <Download className="h-3.5 w-3.5 text-primary" /> Exportar Excel (XLSX)
+                </Button>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
