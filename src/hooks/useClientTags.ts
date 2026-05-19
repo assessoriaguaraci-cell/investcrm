@@ -46,13 +46,21 @@ export function useClientTags() {
   return useQuery({
     queryKey: ["client-tags"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_tags")
-        .select("*")
-        .order("name", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("client_tags")
+          .select("*")
+          .order("name", { ascending: true });
 
-      if (error) throw error;
-      return data as ClientTag[];
+        if (error) {
+          console.warn("client_tags table might not exist yet:", error);
+          return [] as ClientTag[];
+        }
+        return (data || []) as ClientTag[];
+      } catch (err) {
+        console.warn("Failed to fetch client tags:", err);
+        return [] as ClientTag[];
+      }
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
