@@ -441,8 +441,13 @@ export default function Clients() {
           return hardcodedPhase.name === phase.name;
         }
         
-        if (s.pipeline === phase.value) return true;
-        if (phase.name === "Fase Inicial" && !s.pipeline) return true;
+        // Se não for uma coluna hardcoded, ela foi criada pelo usuário.
+        // Verificamos o pipeline dela no banco.
+        if (s.pipeline) {
+            return s.pipeline === phase.value;
+        }
+        
+        // Se não tiver pipeline e for customizada, por garantia não exibimos em lugar errado.
         return false;
       });
 
@@ -568,11 +573,16 @@ export default function Clients() {
                   {[...CLIENT_PHASES, ...(boardSettings.customPhases || []).map(p => ({ ...p, stages: [] }))].map(phase => {
                     if (!stages || !Array.isArray(stages)) return null;
                     const stagesInPhase = stages.filter(s => {
-                        if (!s) return false;
+                        if (!s || !s.value) return false;
+                        
                         const hardcodedPhase = getPhaseForStage(s.value);
-                        if (hardcodedPhase) return hardcodedPhase.name === phase.name;
-                        if (s.pipeline === phase.value) return true;
-                        if (phase.name === "Fase Inicial" && !s.pipeline) return true;
+                        if (hardcodedPhase) {
+                          return hardcodedPhase.name === phase.name;
+                        }
+                        
+                        if (s.pipeline) {
+                            return s.pipeline === (phase as any).value;
+                        }
                         return false;
                     });
                     if (stagesInPhase.length === 0) return null;

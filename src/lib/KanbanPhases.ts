@@ -13,7 +13,7 @@ export const CLIENT_PHASES: KanbanPhase[] = [
     stages: [
       "chegada_lead", "em_triagem", "interessados", "aguardando_atendimento", 
       "em_atendimento", "lead_qualificado", "orientacao_financiamento", 
-      "agendamento_visitas", "agendamento_de_visitas"
+      "agendamento_visitas", "agendamento_de_visitas", "desistencia"
     ]
   },
   {
@@ -44,7 +44,7 @@ export const CLIENT_PHASES: KanbanPhase[] = [
     stages: [
       "credito_reprovado", "credito_reprovado_pipe", 
       "documentacao_atualizada", "reaprovacao_credito", "reaprovacao_de_credito", 
-      "credito_aprovado_pipe"
+      "reaprovacoa_de_credito", "credito_aprovado_pipe"
     ]
   }
 ];
