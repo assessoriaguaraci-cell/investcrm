@@ -238,14 +238,29 @@ export default function Clients() {
 
   const handleConfirmCancellation = async (reason: string) => {
     if (cancellationClientId && cancellationStageId) {
-      await updateClient.mutateAsync({
-        id: cancellationClientId,
-        stage: cancellationStageId as any,
-        cancellation_reason: reason,
-        updated_at: new Date().toISOString()
-      });
-      setCancellationClientId(null);
-      setCancellationStageId(null);
+      try {
+        await updateClient.mutateAsync({
+          id: cancellationClientId,
+          stage: cancellationStageId as any,
+          cancellation_reason: reason,
+          updated_at: new Date().toISOString()
+        });
+        toast({
+          title: "Cliente movido!",
+          description: "O cliente foi movido para Desistência e o motivo foi salvo com sucesso."
+        });
+      } catch (err: any) {
+        console.error("Failed to update client with cancellation reason:", err);
+        toast({
+          title: "Erro ao mover cliente",
+          description: "O banco de dados rejeitou a alteração. Certifique-se de executar a migração SQL no painel do Supabase! Erro: " + (err.message || err.code || "Desconhecido"),
+          variant: "destructive"
+        });
+        throw err; // Propagate to let dialog know it failed
+      } finally {
+        setCancellationClientId(null);
+        setCancellationStageId(null);
+      }
     }
   };
 
