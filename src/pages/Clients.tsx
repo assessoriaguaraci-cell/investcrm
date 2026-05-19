@@ -435,9 +435,14 @@ export default function Clients() {
       
       const stagesInPhase = visibleStages.filter(s => {
         if (!s || !s.value) return false;
-        if (phase.stages && phase.stages.includes(s.value)) return true;
+        
+        const hardcodedPhase = getPhaseForStage(s.value);
+        if (hardcodedPhase) {
+          return hardcodedPhase.name === phase.name;
+        }
+        
         if (s.pipeline === phase.value) return true;
-        if (phase.name === "Fase Inicial" && !s.pipeline && !getPhaseForStage(s.value)) return true;
+        if (phase.name === "Fase Inicial" && !s.pipeline) return true;
         return false;
       });
 
@@ -562,7 +567,14 @@ export default function Clients() {
                 <div className="p-2 space-y-4">
                   {[...CLIENT_PHASES, ...(boardSettings.customPhases || []).map(p => ({ ...p, stages: [] }))].map(phase => {
                     if (!stages || !Array.isArray(stages)) return null;
-                    const stagesInPhase = stages.filter(s => s && ((phase.stages && phase.stages.includes(s.value)) || s.pipeline === phase.value || (phase.name === "Fase Inicial" && !s.pipeline && !getPhaseForStage(s.value))));
+                    const stagesInPhase = stages.filter(s => {
+                        if (!s) return false;
+                        const hardcodedPhase = getPhaseForStage(s.value);
+                        if (hardcodedPhase) return hardcodedPhase.name === phase.name;
+                        if (s.pipeline === phase.value) return true;
+                        if (phase.name === "Fase Inicial" && !s.pipeline) return true;
+                        return false;
+                    });
                     if (stagesInPhase.length === 0) return null;
                     
                     return (
