@@ -58,6 +58,7 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
   const [notes, setNotes] = useState(client.notes ?? "");
   const [driveUrl, setDriveUrl] = useState((client as any).drive_url ?? "");
   const [lostReason, setLostReason] = useState(client.lost_reason ?? "");
+  const [cancellationReason, setCancellationReason] = useState(client.cancellation_reason ?? "");
   const [tags, setTags] = useState<string[]>(() => {
     const raw = (client as any).tags;
     if (Array.isArray(raw)) return raw;
@@ -95,6 +96,7 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
       setNotes(client.notes ?? "");
       setDriveUrl((client as any).drive_url ?? "");
       setLostReason(client.lost_reason ?? "");
+      setCancellationReason(client.cancellation_reason ?? "");
       const raw = (client as any).tags;
       let initialTags: string[] = [];
       if (Array.isArray(raw)) initialTags = raw;
@@ -119,14 +121,15 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
   };
 
   const isLostStage = stage === "venda_cancelada" || stage === "credito_reprovado" || stage === "credito_reprovado_pipe";
+  const isCancellationStage = stage === "desistencia";
 
   const handleSave = async () => {
     if (!fullName.trim()) {
       toast({ title: "Nome obrigatório", variant: "destructive" });
       return;
     }
-    if (isLostStage && !lostReason.trim()) {
-      toast({ title: "Motivo da perda é obrigatório", variant: "destructive" });
+    if (isCancellationStage && !cancellationReason.trim()) {
+      toast({ title: "Motivo da desistência é obrigatório", variant: "destructive" });
       return;
     }
     try {
@@ -153,6 +156,7 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
         notes: notes || null,
         drive_url: driveUrl || null,
         lost_reason: lostReason || null,
+        cancellation_reason: isCancellationStage ? cancellationReason || null : null,
         responsible_user_id: responsibleUserId || null,
         tags: tags
       };
@@ -475,6 +479,23 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                     <div className="space-y-1 pt-4 border-t border-red-100">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-red-600">Motivo da Perda *</Label>
                       <Input value={lostReason} onChange={e => setLostReason(e.target.value)} placeholder="Informe o motivo" className="border-red-200 focus-visible:ring-red-200" />
+                    </div>
+                  )}
+
+                  {isCancellationStage && (
+                    <div className="space-y-1 pt-4 border-t border-red-100">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-red-600">Motivo da Desistência *</Label>
+                      <Select value={cancellationReason} onValueChange={setCancellationReason}>
+                        <SelectTrigger className="border-red-200 focus-visible:ring-red-200 font-bold uppercase">
+                          <SelectValue placeholder="Selecione o motivo da desistência..." />
+                        </SelectTrigger>
+                        <SelectContent className="font-bold uppercase text-[11px]">
+                          <SelectItem value="cliente nao respondeu">Cliente não respondeu</SelectItem>
+                          <SelectItem value="comprou em outro lugar">Comprou em outro lugar</SelectItem>
+                          <SelectItem value="localização não agradou">Localização não agradou</SelectItem>
+                          <SelectItem value="não possui renda">Não possui renda</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 </div>

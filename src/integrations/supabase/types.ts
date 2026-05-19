@@ -328,6 +328,7 @@ export type Database = {
           whatsapp: string | null
           work_regime: Database["public"]["Enums"]["work_regime"] | null
           tags: string[] | null
+          cancellation_reason: string | null
         }
         Insert: {
           ad_name?: string | null
@@ -365,6 +366,7 @@ export type Database = {
           whatsapp?: string | null
           work_regime?: Database["public"]["Enums"]["work_regime"] | null
           tags?: string[] | null
+          cancellation_reason?: string | null
         }
         Update: {
           ad_name?: string | null
@@ -402,6 +404,7 @@ export type Database = {
           whatsapp?: string | null
           work_regime?: Database["public"]["Enums"]["work_regime"] | null
           tags?: string[] | null
+          cancellation_reason?: string | null
         }
         Relationships: [
           {

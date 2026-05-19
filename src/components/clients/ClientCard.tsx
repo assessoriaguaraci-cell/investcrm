@@ -183,6 +183,12 @@ const ClientCardComponent = ({ client, index, selectable, selected, onSelect }: 
                       👤 {responsible.full_name || "Sem nome"}
                     </div>
                   )}
+
+                  {client.cancellation_reason && (
+                    <div className="flex items-center gap-1 mt-1.5 text-[9px] text-red-600 bg-red-50 border border-red-200/50 rounded px-1.5 py-0.5 font-bold uppercase tracking-wider">
+                      ⚠️ Motivo: {client.cancellation_reason}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -200,6 +206,7 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
     prevProps.client.id === nextProps.client.id &&
     prevProps.client.updated_at === nextProps.client.updated_at &&
     prevProps.client.stage === nextProps.client.stage &&
+    prevProps.client.cancellation_reason === nextProps.client.cancellation_reason &&
     prevProps.index === nextProps.index &&
     prevProps.selectable === nextProps.selectable &&
     prevProps.selected === nextProps.selected

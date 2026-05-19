@@ -50,6 +50,7 @@ import { Check, Eye, EyeOff, ScrollText, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AddPhaseDialog from "@/components/kanban/AddPhaseDialog";
+import { CancellationReasonDialog } from "@/components/kanban/CancellationReasonDialog";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -69,6 +70,9 @@ export default function Clients() {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [fieldDialogOpen, setFieldDialogOpen] = useState(false);
   const [bulkFieldInitial, setBulkFieldInitial] = useState<string>("temperature");
+  const [cancellationOpen, setCancellationOpen] = useState(false);
+  const [cancellationClientId, setCancellationClientId] = useState<string | null>(null);
+  const [cancellationStageId, setCancellationStageId] = useState<string | null>(null);
 
   const { toast } = useToast();
   const location = useLocation();
@@ -215,15 +219,39 @@ export default function Clients() {
         
         // draggableId is the client ID in our case
         if (draggableId) {
-            updateClient.mutate({ 
-                id: draggableId, 
-                stage: newStage as any,
-                updated_at: new Date().toISOString() 
-            });
+            if (newStage === "desistencia") {
+                setCancellationClientId(draggableId);
+                setCancellationStageId(newStage);
+                setCancellationOpen(true);
+            } else {
+                updateClient.mutate({ 
+                    id: draggableId, 
+                    stage: newStage as any,
+                    updated_at: new Date().toISOString() 
+                });
+            }
         }
     } catch (e) {
         console.error("Error in onDragEnd:", e);
     }
+  };
+
+  const handleConfirmCancellation = async (reason: string) => {
+    if (cancellationClientId && cancellationStageId) {
+      await updateClient.mutateAsync({
+        id: cancellationClientId,
+        stage: cancellationStageId as any,
+        cancellation_reason: reason,
+        updated_at: new Date().toISOString()
+      });
+      setCancellationClientId(null);
+      setCancellationStageId(null);
+    }
+  };
+
+  const handleCancelCancellation = () => {
+    setCancellationClientId(null);
+    setCancellationStageId(null);
   };
 
   const handleSelect = (id: string, selected: boolean) => {
@@ -863,6 +891,13 @@ export default function Clients() {
         selectedCount={selectedIds.length}
         initialField={bulkFieldInitial}
         onConfirm={handleBulkFieldUpdate}
+      />
+
+      <CancellationReasonDialog
+        open={cancellationOpen}
+        onOpenChange={setCancellationOpen}
+        onConfirm={handleConfirmCancellation}
+        onCancel={handleCancelCancellation}
       />
     </div>
   );
