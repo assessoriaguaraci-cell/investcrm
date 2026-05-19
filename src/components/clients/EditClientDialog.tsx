@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, ExternalLink, ClipboardList, CheckCircle2, Trash2, MessageSquare } from "lucide-react";
 import { useKanbanStages } from "@/hooks/useKanbanStages";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
+import { useClientTags, useCreateClientTag, getTagBgColor } from "@/hooks/useClientTags";
+import TagManagerDialog from "./TagManagerDialog";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -59,6 +61,10 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
   const [driveUrl, setDriveUrl] = useState((client as any).drive_url ?? "");
   const [lostReason, setLostReason] = useState(client.lost_reason ?? "");
   const [cancellationReason, setCancellationReason] = useState(client.cancellation_reason ?? "");
+  
+  const { data: dbTags = [] } = useClientTags();
+  const createTag = useCreateClientTag();
+
   const [tags, setTags] = useState<string[]>(() => {
     const raw = (client as any).tags;
     if (Array.isArray(raw)) return raw;
@@ -108,11 +114,24 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
     }
   }, [client, open]);
 
-  const handleAddTag = () => {
-    const val = newTagInput.trim();
-    if (val && !tags.includes(val)) {
-      setTags([...tags, val]);
-      setNewTagInput("");
+  const handleAddTag = async (tagText?: string) => {
+    const val = (tagText || newTagInput).trim();
+    if (!val) return;
+    
+    const tagUpper = val.toUpperCase();
+    if (!tags.includes(tagUpper)) {
+      setTags([...tags, tagUpper]);
+    }
+    setNewTagInput("");
+
+    // Auto save globally if not exists
+    const exists = dbTags.some(t => t.name.toLowerCase() === tagUpper.toLowerCase());
+    if (!exists) {
+      try {
+        await createTag.mutateAsync({ name: tagUpper, color: "blue" });
+      } catch (err) {
+        console.error("Failed to save tag globally:", err);
+      }
     }
   };
 
@@ -418,8 +437,11 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Etiquetas</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Etiquetas</Label>
+                      <TagManagerDialog />
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         placeholder="Adicionar etiqueta..."
@@ -427,19 +449,63 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                         onChange={(e) => setNewTagInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddTag())}
                       />
-                      <Button type="button" size="icon" variant="outline" onClick={handleAddTag}>
+                      <Button type="button" size="icon" variant="outline" onClick={() => handleAddTag()}>
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+
+                    {/* Tag autocomplete suggestions */}
+                    {newTagInput.trim() && (
+                      <div className="flex flex-wrap gap-1 p-2 bg-slate-50 border border-slate-100 rounded-lg mt-1 max-h-24 overflow-y-auto">
+                        <span className="text-[9px] font-black uppercase text-slate-400 w-full block mb-1">Sugestões de etiquetas:</span>
+                        {dbTags
+                          .filter(t => t.name.toLowerCase().includes(newTagInput.toLowerCase()) && !tags.includes(t.name.toUpperCase()))
+                          .map(t => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => handleAddTag(t.name)}
+                              className={`text-[9px] px-2 py-0.5 font-bold uppercase rounded border transition-colors ${getTagBgColor(t.color)}`}
+                            >
+                              + {t.name}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Frequent tags suggestions */}
+                    {dbTags.length > 0 && !newTagInput.trim() && (
+                      <div className="flex flex-wrap gap-1 pt-1.5 max-h-24 overflow-y-auto">
+                        <span className="text-[9px] font-black uppercase text-slate-400 w-full block mb-0.5">Etiquetas frequentes:</span>
+                        {dbTags
+                          .filter(t => !tags.includes(t.name.toUpperCase()))
+                          .slice(0, 8)
+                          .map(t => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => handleAddTag(t.name)}
+                              className={`text-[9px] px-2 py-0.5 font-bold uppercase rounded border transition-colors ${getTagBgColor(t.color)}`}
+                            >
+                              + {t.name}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {tags.map(t => (
-                        <Badge key={t} variant="secondary" className="gap-1 pl-2 pr-1 py-1 bg-blue-50 text-blue-700 border-blue-100">
-                          {t}
-                          <button onClick={() => removeTag(t)} className="hover:bg-blue-200 rounded-full p-0.5">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
+                      {tags.map(t => {
+                        const dbTag = dbTags.find(dt => dt.name.toLowerCase() === t.toLowerCase());
+                        const colorClass = getTagBgColor(dbTag?.color);
+                        return (
+                          <Badge key={t} variant="outline" className={`gap-1 pl-2 pr-1 py-1 font-black uppercase rounded border ${colorClass}`}>
+                            {t}
+                            <button onClick={() => removeTag(t)} className="hover:bg-black/10 rounded-full p-0.5 transition-colors">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
 

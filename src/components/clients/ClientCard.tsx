@@ -10,8 +10,8 @@ import { Plus, Tag as TagIcon, Phone, Pencil, FolderOpen } from "lucide-react";
 import { useClientPropertyLinks } from "@/hooks/useClientPropertyLinks";
 import { useBoardSettings } from "@/hooks/useBoardSettings";
 import { Checkbox } from "@/components/ui/checkbox";
-import TimeInStageBadge from "./TimeInStageBadge";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
+import { useClientTags, getTagBgColor } from "@/hooks/useClientTags";
 
 interface Props {
   client: Client;
@@ -31,6 +31,7 @@ const ClientCardComponent = ({ client, index, selectable, selected, onSelect }: 
   const [editOpen, setEditOpen] = useState(false);
   const { data: links = [] } = useClientPropertyLinks();
   const { data: members = [] } = useApprovedMembers();
+  const { data: dbTags = [] } = useClientTags();
   const settings = useBoardSettings();
 
   const clientLinks = links.filter(l => l.client_id === client.id);
@@ -94,15 +95,19 @@ const ClientCardComponent = ({ client, index, selectable, selected, onSelect }: 
                       tagsArray = rawTags.replace(/[{}]/g, '').split(',').map(t => t.trim()).filter(Boolean);
                     }
 
-                    return tagsArray.map((t: string) => (
-                      <Badge
-                        key={t}
-                        variant="outline"
-                        className="text-[8px] h-3.5 px-1 font-bold border-primary/10 bg-primary/5 text-primary rounded-sm"
-                      >
-                        {t}
-                      </Badge>
-                    ));
+                    return tagsArray.map((t: string) => {
+                      const dbTag = dbTags.find(dt => dt.name.toLowerCase() === t.toLowerCase());
+                      const colorClass = getTagBgColor(dbTag?.color);
+                      return (
+                        <Badge
+                          key={t}
+                          variant="outline"
+                          className={`text-[8px] h-3.5 px-1 font-black uppercase rounded-sm border ${colorClass}`}
+                        >
+                          {t}
+                        </Badge>
+                      );
+                    });
                   })()}
                   {client.has_financial_pending && (
                     <Badge

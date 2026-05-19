@@ -291,6 +291,27 @@ export type Database = {
           },
         ]
       }
+      client_tags: {
+        Row: {
+          id: string
+          name: string
+          color: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          color?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          color?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           ad_name: string | null

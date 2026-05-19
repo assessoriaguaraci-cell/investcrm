@@ -14,6 +14,8 @@ import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { sanitizeClientFilters, type ClientFilterValues, EMPTY_CLIENT_FILTERS } from "@/hooks/useClientFiltersStore";
+import { useClientTags } from "@/hooks/useClientTags";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   filters: ClientFilterValues;
@@ -26,6 +28,7 @@ import { useApprovedMembers } from "@/hooks/useTeamMembers";
 export default function ClientFilters({ filters, onFiltersChange, activePipeline }: Props) {
   const [expanded, setExpanded] = useState(false);
   const { data: members = [] } = useApprovedMembers();
+  const { data: dbTags = [] } = useClientTags();
   const [allCities, setAllCities] = useState<{ city: string, state: string }[]>([]);
 
   useEffect(() => {
@@ -185,7 +188,19 @@ export default function ClientFilters({ filters, onFiltersChange, activePipeline
 
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Filtrar por Tag</label>
-            <Input placeholder="Ex: Lead Frio" value={filters.tag} onChange={e => update("tag", e.target.value)} className="h-9" />
+            <Select value={filters.tag || ""} onValueChange={v => update("tag", v)}>
+              <SelectTrigger className="h-9 text-xs font-bold uppercase bg-white">
+                <SelectValue placeholder="Todas as tags" />
+              </SelectTrigger>
+              <SelectContent className="text-xs font-bold uppercase">
+                <SelectItem value="">Todas as tags</SelectItem>
+                {dbTags.map(tag => (
+                  <SelectItem key={tag.id} value={tag.name}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
