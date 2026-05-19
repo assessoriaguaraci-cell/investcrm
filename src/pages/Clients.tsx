@@ -43,11 +43,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { CLIENT_PHASES, getPhaseForStage } from "@/lib/KanbanPhases";
-import { Check, Eye, EyeOff, ScrollText } from "lucide-react";
+import { Check, Eye, EyeOff, ScrollText, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import AddPhaseDialog from "@/components/kanban/AddPhaseDialog";
 
 type ClientPipeline = Database["public"]["Enums"]["client_pipeline"];
 type ClientStage = Database["public"]["Enums"]["client_stage"];
@@ -422,17 +424,30 @@ export default function Clients() {
   // Agrupar etapas visíveis por fase
   const phasesWithStages = useMemo(() => {
     if (!visibleStages || visibleStages.length === 0) return [];
-    if (!CLIENT_PHASES || !Array.isArray(CLIENT_PHASES)) return [];
     
-    return CLIENT_PHASES.map(phase => {
-      if (!phase || !phase.stages) return { ...phase, stagesInPhase: [] };
-      const stagesInPhase = visibleStages.filter(s => s && s.value && phase.stages.includes(s.value));
+    const allPhases = [
+      ...(CLIENT_PHASES || []),
+      ...(boardSettings.customPhases || []).map(p => ({ ...p, stages: [] }))
+    ];
+
+    return allPhases.map(phase => {
+      if (!phase) return { ...phase, stagesInPhase: [] };
+      
+      const stagesInPhase = visibleStages.filter(s => {
+        if (!s || !s.value) return false;
+        if (phase.stages && phase.stages.includes(s.value)) return true;
+        if (s.pipeline === phase.value) return true;
+        if (phase.name === "Fase Inicial" && !s.pipeline && !getPhaseForStage(s.value)) return true;
+        return false;
+      });
+
       return {
         ...phase,
+        isCustom: !CLIENT_PHASES.find(p => p.name === phase.name),
         stagesInPhase
       };
-    }).filter(p => p.stagesInPhase && p.stagesInPhase.length > 0);
-  }, [visibleStages]);
+    }).filter(p => p.stagesInPhase && p.stagesInPhase.length > 0 || p.isCustom);
+  }, [visibleStages, boardSettings.customPhases]);
 
   const totalFunnelValue = filtered.reduce((sum, c) => sum + (c.income || 0), 0);
 
@@ -545,9 +560,9 @@ export default function Clients() {
               </div>
               <ScrollArea className="h-[400px]">
                 <div className="p-2 space-y-4">
-                  {CLIENT_PHASES.map(phase => {
+                  {[...CLIENT_PHASES, ...(boardSettings.customPhases || []).map(p => ({ ...p, stages: [] }))].map(phase => {
                     if (!stages || !Array.isArray(stages)) return null;
-                    const stagesInPhase = stages.filter(s => s && phase.stages?.includes(s.value));
+                    const stagesInPhase = stages.filter(s => s && ((phase.stages && phase.stages.includes(s.value)) || s.pipeline === phase.value || (phase.name === "Fase Inicial" && !s.pipeline && !getPhaseForStage(s.value))));
                     if (stagesInPhase.length === 0) return null;
                     
                     return (
@@ -714,15 +729,31 @@ export default function Clients() {
                                 {stagesInPhase.length} etapas
                               </Badge>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => togglePhaseCollapse(phase.name)}
-                              className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5"
-                            >
-                              <EyeOff className="h-3.5 w-3.5" />
-                              Ocultar
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => togglePhaseCollapse(phase.name)}
+                                  className="h-7 px-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted gap-1.5"
+                                >
+                                  <EyeOff className="h-3.5 w-3.5" />
+                                  Ocultar
+                                </Button>
+                                {phase.isCustom && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem className="text-destructive font-black uppercase text-[10px]" onClick={() => boardSettings.removeCustomPhase((phase as any).value)}>
+                                                Excluir Fase
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                            </div>
                           </div>
 
                           <div className="flex gap-4 h-full">
@@ -756,6 +787,11 @@ export default function Clients() {
                                 </Draggable>
                               );
                             })}
+                            
+                            <div className="flex flex-col min-w-[200px] h-40 items-center justify-center border-2 border-dashed border-border rounded-2xl group/add bg-muted/50 hover:bg-muted transition-all shrink-0">
+                              <AddColumnDialog funnelType="client" pipeline={(phase as any).value || "inicial"} showLabel />
+                              <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Etapa</p>
+                            </div>
                           </div>
                         </div>
                       );
@@ -763,10 +799,7 @@ export default function Clients() {
                     
                     {provided.placeholder}
                     
-                    <div className="flex flex-col min-w-[200px] h-40 items-center justify-center border-2 border-dashed border-border rounded-2xl group/add bg-muted/50 hover:bg-muted transition-all shrink-0">
-                      <AddColumnDialog funnelType="client" pipeline="inicial" showLabel />
-                      <p className="text-[10px] font-black uppercase text-muted-foreground mt-2 tracking-widest">Nova Etapa</p>
-                    </div>
+                    <AddPhaseDialog />
                   </div>
                 )}
               </Droppable>

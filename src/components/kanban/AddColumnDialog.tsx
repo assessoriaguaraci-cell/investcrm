@@ -31,7 +31,7 @@ export default function AddColumnDialog({ funnelType, funnelId, pipeline, showLa
     const [sections, setSections] = useState<ChecklistSection[]>([
         { title: "", items: [""] }
     ]);
-    const { addStage, isAdding } = useKanbanStages(funnelType, funnelId);
+    const { stages, addStage, isAdding } = useKanbanStages(funnelType, funnelId);
     const { toast } = useToast();
 
     const handleAddSection = () => {

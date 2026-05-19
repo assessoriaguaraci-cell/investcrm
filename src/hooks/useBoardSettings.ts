@@ -12,8 +12,11 @@ interface BoardSettings {
     showMaritalStatus: boolean;
     showWorkRegime: boolean;
     showPropertyLinks: boolean;
+    customPhases: { name: string; value: string; color: string; }[];
     setCardSize: (size: "small" | "medium" | "large") => void;
     toggleField: (field: string) => void;
+    addCustomPhase: (phase: { name: string; value: string; color: string; }) => void;
+    removeCustomPhase: (value: string) => void;
     loadFromCloud: (userId: string) => Promise<void>;
 }
 
@@ -29,6 +32,7 @@ export const useBoardSettings = create<BoardSettings>()(
             showMaritalStatus: true,
             showWorkRegime: true,
             showPropertyLinks: true,
+            customPhases: [],
             
             setCardSize: async (cardSize) => {
                 set({ cardSize });
@@ -57,6 +61,48 @@ export const useBoardSettings = create<BoardSettings>()(
                     const local = { ...get() };
                     delete (local as any).setCardSize;
                     delete (local as any).toggleField;
+                    delete (local as any).loadFromCloud;
+
+                    await supabase.from("profiles").update({ 
+                        ui_settings: { ...currentCloud, client_settings: local } 
+                    }).eq("user_id", user.id);
+                }
+            },
+
+            addCustomPhase: async (phase) => {
+                const current = get().customPhases || [];
+                if (!current.find(p => p.value === phase.value)) {
+                    set({ customPhases: [...current, phase] });
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const { data: profile } = await supabase.from("profiles").select("ui_settings").eq("user_id", user.id).single();
+                        const currentCloud = (profile?.ui_settings as any) || {};
+                        const local = { ...get() };
+                        delete (local as any).setCardSize;
+                        delete (local as any).toggleField;
+                        delete (local as any).addCustomPhase;
+                        delete (local as any).removeCustomPhase;
+                        delete (local as any).loadFromCloud;
+
+                        await supabase.from("profiles").update({ 
+                            ui_settings: { ...currentCloud, client_settings: local } 
+                        }).eq("user_id", user.id);
+                    }
+                }
+            },
+
+            removeCustomPhase: async (value) => {
+                const current = get().customPhases || [];
+                set({ customPhases: current.filter(p => p.value !== value) });
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const { data: profile } = await supabase.from("profiles").select("ui_settings").eq("user_id", user.id).single();
+                    const currentCloud = (profile?.ui_settings as any) || {};
+                    const local = { ...get() };
+                    delete (local as any).setCardSize;
+                    delete (local as any).toggleField;
+                    delete (local as any).addCustomPhase;
+                    delete (local as any).removeCustomPhase;
                     delete (local as any).loadFromCloud;
 
                     await supabase.from("profiles").update({ 
