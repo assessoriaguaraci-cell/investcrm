@@ -277,9 +277,26 @@ export default function Partners() {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] font-black uppercase px-2">
-                                                {contact.contact_type}
-                                            </Badge>
+                                            <div className="flex flex-col gap-1.5 items-start">
+                                                <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] font-black uppercase px-2">
+                                                    {contact.contact_type}
+                                                </Badge>
+                                                {contact.contact_type === 'VIZINHO' && (
+                                                    <div className="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
+                                                        {contact.property && (
+                                                            <span className="flex items-center gap-1 text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 uppercase tracking-tighter">
+                                                                CUIDA: {contact.property.code}
+                                                            </span>
+                                                        )}
+                                                        {contact.monthly_value && (
+                                                            <span>VALOR: R$ {Number(contact.monthly_value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                        )}
+                                                        {contact.payment_date && (
+                                                            <span>PAGTO: {contact.payment_date.split('-').reverse().join('/')}</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="max-w-xs">
                                             <div className="flex flex-wrap gap-1">

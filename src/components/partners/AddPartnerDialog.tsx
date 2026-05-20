@@ -21,6 +21,7 @@ import { usePreAuctionProperties } from "@/hooks/usePreAuction";
 import { PreAuctionDialog } from "@/components/pre-auction/PreAuctionDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useProperties } from "@/hooks/useProperties";
 
 interface Props {
   open: boolean;
@@ -39,6 +40,8 @@ export default function AddPartnerDialog({
   defaultType,
   defaultCity
 }: Props) {
+  const { data: properties = [] } = useProperties();
+
   // Using initial state based on editingContact. 
   // Since we use a 'key' in the parent, this will correctly reset on every partner selection.
   const [selectedServedCities, setSelectedServedCities] = useState<{ state: string, city: string }[]>(() => 
@@ -53,7 +56,10 @@ export default function AddPartnerDialog({
     notes: editingContact?.notes || "",
     has_served: editingContact?.has_served || false,
     pix_key: editingContact?.pix_key || "",
-    diligence_history: editingContact?.diligence_history || ""
+    diligence_history: editingContact?.diligence_history || "",
+    payment_date: editingContact?.payment_date || "",
+    monthly_value: editingContact?.monthly_value || "" as any,
+    property_id: editingContact?.property_id || ""
   }));
 
   // Fail-safe: ensure state updates if editingContact changes while open
@@ -66,7 +72,10 @@ export default function AddPartnerDialog({
         notes: editingContact.notes || "",
         has_served: editingContact.has_served || false,
         pix_key: editingContact.pix_key || "",
-        diligence_history: editingContact.diligence_history || ""
+        diligence_history: editingContact.diligence_history || "",
+        payment_date: editingContact.payment_date || "",
+        monthly_value: editingContact.monthly_value || "" as any,
+        property_id: editingContact.property_id || ""
       });
       setSelectedServedCities(
         editingContact.served_cities?.map(sc => ({ state: sc.city_info.state, city: sc.city_info.city })) || []
@@ -89,6 +98,13 @@ export default function AddPartnerDialog({
       return;
     }
 
+    if (newContact.contact_type === 'VIZINHO') {
+      if (!newContact.payment_date || !newContact.monthly_value || !newContact.property_id) {
+        toast.error("Para Vizinhos, preencha a data de pagamento, valor mensal e o imóvel que ele cuida.");
+        return;
+      }
+    }
+
     const toastId = toast.loading(editingContact ? "Atualizando parceiro..." : "Criando parceiro...");
     try {
       const cityInfoIds: string[] = [];
@@ -109,7 +125,10 @@ export default function AddPartnerDialog({
           has_served: newContact.has_served,
           pix_key: newContact.pix_key,
           diligence_history: newContact.diligence_history,
-          served_city_ids: cityInfoIds
+          served_city_ids: cityInfoIds,
+          payment_date: newContact.contact_type === 'VIZINHO' ? newContact.payment_date || null : null,
+          monthly_value: newContact.contact_type === 'VIZINHO' ? (newContact.monthly_value ? Number(newContact.monthly_value) : null) : null,
+          property_id: newContact.contact_type === 'VIZINHO' ? newContact.property_id || null : null
         });
         finalId = editingContact.id;
       } else {
@@ -123,7 +142,10 @@ export default function AddPartnerDialog({
           has_served: newContact.has_served,
           pix_key: newContact.pix_key,
           diligence_history: newContact.diligence_history,
-          served_city_ids: cityInfoIds
+          served_city_ids: cityInfoIds,
+          payment_date: newContact.contact_type === 'VIZINHO' ? newContact.payment_date || null : null,
+          monthly_value: newContact.contact_type === 'VIZINHO' ? (newContact.monthly_value ? Number(newContact.monthly_value) : null) : null,
+          property_id: newContact.contact_type === 'VIZINHO' ? newContact.property_id || null : null
         });
         finalId = res.id;
       }
@@ -212,6 +234,52 @@ export default function AddPartnerDialog({
                     onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
                   />
                 </div>
+
+                {newContact.contact_type === 'VIZINHO' && (
+                  <div className="space-y-4 border-2 border-primary/20 bg-primary/5 p-4 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                    <h4 className="text-xs font-black uppercase text-primary tracking-wider">Configurações de Vizinho</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase text-muted-foreground">Data do Pagamento *</Label>
+                        <Input
+                          type="date"
+                          className="h-11 border-2 font-bold"
+                          value={newContact.payment_date}
+                          onChange={e => setNewContact({ ...newContact, payment_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[11px] font-black uppercase text-muted-foreground">Valor Mensal (R$) *</Label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          className="h-11 border-2 font-bold"
+                          value={newContact.monthly_value}
+                          onChange={e => setNewContact({ ...newContact, monthly_value: e.target.value ? parseFloat(e.target.value) : "" as any })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase text-muted-foreground">Imóvel sob Cuidado *</Label>
+                      <Select 
+                        value={newContact.property_id || "none"} 
+                        onValueChange={(val) => setNewContact({ ...newContact, property_id: val === "none" ? "" : val })}
+                      >
+                        <SelectTrigger className="h-11 border-2 font-bold focus:ring-primary">
+                          <SelectValue placeholder="Selecione o imóvel..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          <SelectItem value="none" className="font-bold">Nenhum</SelectItem>
+                          {properties.map(p => (
+                            <SelectItem key={p.id} value={p.id} className="font-bold">
+                              {p.code} — {p.city || "Sem cidade"}/{p.state || "Sem estado"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between p-4 rounded-xl border-2 bg-muted/20">
                   <div className="space-y-0.5">

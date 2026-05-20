@@ -26,6 +26,9 @@ export interface CityContact {
   pix_key: string | null;
   diligence_history: string | null;
   created_at: string;
+  payment_date: string | null;
+  monthly_value: number | null;
+  property_id: string | null;
   served_cities?: {
     city_info: CityInfo;
   }[];
@@ -76,10 +79,14 @@ export function useAllCityContacts() {
           pix_key, 
           notes, 
           diligence_history,
+          payment_date,
+          monthly_value,
+          property_id,
           city_info:city_info_id(city, state),
           served_cities:contact_served_cities(
             city_info:city_info_id(city, state)
-          )
+          ),
+          property:property_id(code, city)
         `)
         .order("created_at", { ascending: false });
       if (error) throw error;
