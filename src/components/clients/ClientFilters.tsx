@@ -188,13 +188,13 @@ export default function ClientFilters({ filters, onFiltersChange, activePipeline
 
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Filtrar por Tag</label>
-            <Select value={filters.tag || ""} onValueChange={v => update("tag", v)}>
+            <Select value={filters.tag || "all"} onValueChange={v => update("tag", v === "all" ? "" : v)}>
               <SelectTrigger className="h-9 text-xs font-bold uppercase bg-white">
                 <SelectValue placeholder="Todas as tags" />
               </SelectTrigger>
               <SelectContent className="text-xs font-bold uppercase">
-                <SelectItem value="">Todas as tags</SelectItem>
-                {dbTags.map(tag => (
+                <SelectItem value="all">Todas as tags</SelectItem>
+                {(dbTags || []).map(tag => (
                   <SelectItem key={tag.id} value={tag.name}>
                     {tag.name}
                   </SelectItem>
