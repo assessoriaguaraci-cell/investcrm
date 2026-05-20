@@ -12,6 +12,7 @@ import { useBoardSettings } from "@/hooks/useBoardSettings";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import { useClientTags, getTagBgColor } from "@/hooks/useClientTags";
+import TimeInStageBadge from "./TimeInStageBadge";
 
 interface Props {
   client: Client;
