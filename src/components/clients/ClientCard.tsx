@@ -213,6 +213,7 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
     prevProps.client.updated_at === nextProps.client.updated_at &&
     prevProps.client.stage === nextProps.client.stage &&
     prevProps.client.cancellation_reason === nextProps.client.cancellation_reason &&
+    prevProps.client.responsible_user_id === nextProps.client.responsible_user_id &&
     prevProps.index === nextProps.index &&
     prevProps.selectable === nextProps.selectable &&
     prevProps.selected === nextProps.selected

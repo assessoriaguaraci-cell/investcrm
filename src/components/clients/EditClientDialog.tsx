@@ -534,7 +534,7 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
                           {members.map(m => (
-                            <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                            <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
