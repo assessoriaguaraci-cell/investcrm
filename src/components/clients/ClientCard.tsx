@@ -4,8 +4,25 @@ import { Badge } from "@/components/ui/badge";
 import { TEMPERATURE_OPTIONS } from "@/lib/client-constants";
 import { formatCurrency } from "@/lib/property-constants";
 import EditClientDialog from "./EditClientDialog";
-import type { Client } from "@/hooks/useClients";
-import { Plus, Tag as TagIcon, Phone, Pencil, FolderOpen } from "lucide-react";
+import { useUpdateClient, type Client } from "@/hooks/useClients";
+import { 
+  Plus, 
+  Tag as TagIcon, 
+  Phone, 
+  Pencil, 
+  FolderOpen, 
+  ChevronDown, 
+  Check, 
+  ArrowRightLeft 
+} from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel 
+} from "@/components/ui/dropdown-menu";
+import { useKanbanStages } from "@/hooks/useKanbanStages";
 
 import { useClientPropertyLinks } from "@/hooks/useClientPropertyLinks";
 import { useBoardSettings } from "@/hooks/useBoardSettings";
@@ -34,12 +51,22 @@ const ClientCardComponent = ({ client, index, selectable, selected, onSelect }: 
   const { data: members = [] } = useApprovedMembers();
   const { data: dbTags = [] } = useClientTags();
   const settings = useBoardSettings();
+  const { stages = [] } = useKanbanStages("client" as any);
+  const updateClient = useUpdateClient();
 
   const clientLinks = links.filter(l => l.client_id === client.id);
   const tempLabel = TEMPERATURE_OPTIONS.find(t => t.value === client.temperature)?.label ?? "";
   
   // Find responsible name from members list
   const responsible = members.find(m => m.user_id === client.responsible_user_id);
+
+  const handleQuickMove = (targetStage: string) => {
+    updateClient.mutate({
+      id: client.id,
+      stage: targetStage as any,
+      updated_at: new Date().toISOString()
+    });
+  };
 
   return (
     <>
@@ -71,6 +98,32 @@ const ClientCardComponent = ({ client, index, selectable, selected, onSelect }: 
                   <span className={`font-bold text-foreground truncate ${settings.cardSize === "small" ? "text-xs" : settings.cardSize === "large" ? "text-base" : "text-[13px]"}`}>
                     {client.full_name}
                   </span>
+
+                  {/* Quick Stage Move Dropdown Trigger */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="h-5 w-5 shrink-0 flex items-center justify-center rounded hover:bg-muted text-muted-foreground transition-all duration-200"
+                        title="Mover etapa"
+                      >
+                        <ArrowRightLeft className="h-3 w-3 text-primary" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="start" className="w-52 p-1.5 shadow-xl bg-card border border-border z-50">
+                      <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-wider text-muted-foreground px-2 py-1">Alterar Etapa</DropdownMenuLabel>
+                      {stages.map((stg) => (
+                        <DropdownMenuItem 
+                          key={stg.value} 
+                          onClick={() => handleQuickMove(stg.value)}
+                          className={`text-xs font-semibold py-1.5 px-2 rounded-lg cursor-pointer flex items-center justify-between ${client.stage === stg.value ? "bg-primary/10 text-primary" : ""}`}
+                        >
+                          <span>{stg.label}</span>
+                          {client.stage === stg.value && <Check className="h-3.5 w-3.5" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                   <div className="flex items-center gap-1.5 ml-2 shrink-0">
                     <TimeInStageBadge updatedAt={(client as any).stage_updated_at || client.updated_at} stage={client.stage} />
