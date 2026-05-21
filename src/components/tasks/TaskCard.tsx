@@ -52,12 +52,13 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
   const isOverdue =
     !isDone && !isInProgress && dueDateLocal && isPast(dueDateLocal) && !isToday(dueDateLocal);
   const isDueToday = dueDateLocal && isToday(dueDateLocal);
-
   // Parse JSON metadata or fallback to plain text notes
   let hasDescription = false;
   let checklistTotal = 0;
   let checklistCompleted = 0;
   let commentsCount = 0;
+  let labels: string[] = [];
+  let customLabels: { id: string, name: string, color: string }[] = [];
 
   const notesRaw = activity.notes || "";
   if (notesRaw.trim().startsWith("{") && notesRaw.trim().endsWith("}")) {
@@ -67,12 +68,24 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
       checklistTotal = parsed.checklist?.length || 0;
       checklistCompleted = parsed.checklist?.filter((i: any) => i.done).length || 0;
       commentsCount = parsed.comments?.length || 0;
+      labels = parsed.labels || [];
+      customLabels = parsed.customLabels || [];
     } catch (e) {
       hasDescription = !!notesRaw.trim();
     }
   } else {
     hasDescription = !!notesRaw.trim();
   }
+
+  const DEFAULT_LABELS = [
+    { id: "lbl-1", name: "Pedido de Texto", color: "#e2b203" },
+    { id: "lbl-2", name: "Mais um passo", color: "#ea7e00" },
+    { id: "lbl-3", name: "Prioridade", color: "#cf2e2e" },
+    { id: "lbl-4", name: "Time de Design", color: "#7f53f1" },
+    { id: "lbl-5", name: "Marketing de Produto", color: "#0079bf" },
+    { id: "lbl-6", name: "Dica do Trello", color: "#00c2e0" },
+    { id: "lbl-7", name: "Socorro", color: "#61bd4f" }
+  ];
 
   return (
     <div 
@@ -130,7 +143,25 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
       </div>
 
       {/* Middle row: Card title */}
-      <div className="space-y-1">
+      <div className="space-y-1.5">
+        {labels.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-0.5 select-none">
+            {labels.map((labelId) => {
+              const custom = customLabels.find(l => l.id === labelId);
+              const def = DEFAULT_LABELS.find(l => l.id === labelId);
+              const color = custom?.color || def?.color || "#6b7280";
+              const name = custom?.name || def?.name || "";
+              return (
+                <span 
+                  key={labelId}
+                  className="h-1.5 w-6 rounded-full shrink-0 transition-all hover:w-10"
+                  style={{ backgroundColor: color }}
+                  title={name}
+                />
+              );
+            })}
+          </div>
+        )}
         <p className={cn("text-xs font-semibold leading-snug text-foreground/90 font-sans", isDone && "line-through text-muted-foreground/75")}>
           {activity.description}
         </p>

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { 
   DropdownMenu, 
   DropdownMenuTrigger, 
@@ -39,7 +41,10 @@ import {
   Eye,
   UserPlus,
   Archive,
-  ArrowRight
+  ArrowRight,
+  Tags,
+  Check,
+  Settings
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -60,6 +65,16 @@ const STATUS_LABELS: Record<string, string> = {
   feito: "Concluído",
   atrasado: "Atrasado",
 };
+
+const DEFAULT_LABELS = [
+  { id: "lbl-1", name: "Pedido de Texto", color: "#e2b203" },
+  { id: "lbl-2", name: "Mais um passo", color: "#ea7e00" },
+  { id: "lbl-3", name: "Prioridade", color: "#cf2e2e" },
+  { id: "lbl-4", name: "Time de Design", color: "#7f53f1" },
+  { id: "lbl-5", name: "Marketing de Produto", color: "#0079bf" },
+  { id: "lbl-6", name: "Dica do Trello", color: "#00c2e0" },
+  { id: "lbl-7", name: "Socorro", color: "#61bd4f" }
+];
 
 interface ChecklistItem {
   id: string;
@@ -86,6 +101,15 @@ interface TaskMetaData {
   checklist: ChecklistItem[];
   comments: CommentItem[];
   history: HistoryItem[];
+  labels?: string[];
+  customLabels?: { id: string, name: string, color: string }[];
+  dates?: {
+    dueDate?: string;
+    hasDueDate: boolean;
+    dueTime: string;
+    recurrence: string;
+    reminder: string;
+  };
 }
 
 interface Props {
@@ -119,6 +143,25 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [newComment, setNewComment] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // Labels and customisations
+  const [labels, setLabels] = useState<string[]>([]);
+  const [customLabels, setCustomLabels] = useState<{ id: string, name: string, color: string }[]>([]);
+  const [searchLabel, setSearchLabel] = useState("");
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [editingLabelName, setEditingLabelName] = useState("");
+
+  // Dates state
+  const [dueTime, setDueTime] = useState("12:00");
+  const [recurrence, setRecurrence] = useState("never");
+  const [reminder, setReminder] = useState("1_day");
+
+  // Members search inside popover
+  const [searchMember, setSearchMember] = useState("");
+
+  // Checklist title inside popover
+  const [checklistTitle, setChecklistTitle] = useState("Checklist");
+  const [copyChecklistFrom, setCopyChecklistFrom] = useState("none");
 
   // Comment edit state
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -155,33 +198,63 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
           setChecklist(parsed.checklist || []);
           setComments(parsed.comments || []);
           setHistory(parsed.history || []);
+          setLabels(parsed.labels || []);
+          setCustomLabels(parsed.customLabels || []);
+          if (parsed.dates) {
+            setDueTime(parsed.dates.dueTime || "12:00");
+            setRecurrence(parsed.dates.recurrence || "never");
+            setReminder(parsed.dates.reminder || "1_day");
+          }
         } catch (e) {
           setRichDescription(notesRaw);
           setChecklist([]);
           setComments([]);
           setHistory([]);
+          setLabels([]);
+          setCustomLabels([]);
         }
       } else {
         setRichDescription(notesRaw);
         setChecklist([]);
         setComments([]);
         setHistory([]);
+        setLabels([]);
+        setCustomLabels([]);
       }
     }
   }, [activity]);
 
   // Saves changes and packages them back into serialised JSON
-  const handleSave = (updatedFields?: Partial<Activity>, newComments?: CommentItem[], newHistory?: HistoryItem[]) => {
+  const handleSave = (
+    updatedFields?: Partial<Activity>, 
+    newComments?: CommentItem[], 
+    newHistory?: HistoryItem[],
+    newLabels?: string[],
+    newCustoms?: typeof customLabels,
+    newChecklist?: ChecklistItem[]
+  ) => {
     if (!activity) return;
 
     const finalComments = newComments ?? comments;
     const finalHistory = newHistory ?? history;
+    const finalLabels = newLabels ?? labels;
+    const finalCustoms = newCustoms ?? customLabels;
+    const finalChecklist = newChecklist ?? checklist;
 
     const metaData: TaskMetaData = {
       description: richDescription,
-      checklist,
+      checklist: finalChecklist,
       comments: finalComments,
-      history: finalHistory
+      history: finalHistory,
+      labels: finalLabels,
+      customLabels: finalCustoms,
+      dates: {
+        dueDate: updatedFields?.due_date !== undefined ? (updatedFields.due_date || "") : dueDate,
+        hasDueDate: !!(updatedFields?.due_date !== undefined ? updatedFields.due_date : dueDate),
+        dueTime,
+        recurrence,
+        reminder
+      }
     };
 
     const finalDescription = updatedFields?.description ?? description;
@@ -236,7 +309,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
     setHistory([log, ...history]);
 
     // Save automatically
-    setTimeout(() => handleSave(), 50);
+    setTimeout(() => handleSave(undefined, undefined, undefined, undefined, undefined, updatedList), 50);
   };
 
   // Toggle checklist item
@@ -248,7 +321,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       return item;
     });
     setChecklist(updated);
-    setTimeout(() => handleSave(), 50);
+    setTimeout(() => handleSave(undefined, undefined, undefined, undefined, undefined, updated), 50);
   };
 
   // Delete checklist item
@@ -266,7 +339,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       };
       setHistory([log, ...history]);
     }
-    setTimeout(() => handleSave(), 50);
+    setTimeout(() => handleSave(undefined, undefined, undefined, undefined, undefined, updated), 50);
   };
 
   // Post comment
@@ -333,6 +406,70 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
     setTimeout(() => handleSave(undefined, updatedComments, updatedHistory), 50);
   };
 
+  // Trello Actions: Labels Toggling
+  const handleToggleLabel = (labelId: string) => {
+    const updated = labels.includes(labelId)
+      ? labels.filter(id => id !== labelId)
+      : [...labels, labelId];
+    setLabels(updated);
+
+    const labelName = customLabels.find(l => l.id === labelId)?.name || DEFAULT_LABELS.find(l => l.id === labelId)?.name || "etiqueta";
+    const log: HistoryItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      user: activeUserName,
+      action: labels.includes(labelId) ? `removeu a etiqueta "${labelName}"` : `adicionou a etiqueta "${labelName}"`,
+      date: new Date().toISOString()
+    };
+    const updatedHistory = [log, ...history];
+    setHistory(updatedHistory);
+
+    setTimeout(() => handleSave(undefined, undefined, updatedHistory, updated), 50);
+  };
+
+  // Trello Actions: Save label name inline
+  const handleSaveLabelName = (labelId: string) => {
+    if (!editingLabelName.trim()) return;
+    const updatedCustoms = [...customLabels];
+    const idx = updatedCustoms.findIndex(l => l.id === labelId);
+    if (idx >= 0) {
+      updatedCustoms[idx].name = editingLabelName.trim();
+    } else {
+      const def = DEFAULT_LABELS.find(l => l.id === labelId);
+      updatedCustoms.push({
+        id: labelId,
+        name: editingLabelName.trim(),
+        color: def?.color || "#6b7280"
+      });
+    }
+    setCustomLabels(updatedCustoms);
+    setEditingLabelId(null);
+    setTimeout(() => handleSave(undefined, undefined, undefined, undefined, updatedCustoms), 50);
+  };
+
+  // Trello Actions: Create new label
+  const handleCreateNewLabel = () => {
+    const name = prompt("Digite o nome da nova etiqueta:");
+    if (!name?.trim()) return;
+    const colors = ["#e2b203", "#ea7e00", "#cf2e2e", "#7f53f1", "#0079bf", "#00c2e0", "#61bd4f"];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const newId = `lbl-custom-${Math.random().toString(36).substring(2, 9)}`;
+    const updatedCustoms = [...customLabels, { id: newId, name: name.trim(), color: randomColor }];
+    setCustomLabels(updatedCustoms);
+    const updatedLabels = [...labels, newId];
+    setLabels(updatedLabels);
+
+    const log: HistoryItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      user: activeUserName,
+      action: `criou e adicionou uma nova etiqueta: "${name}"`,
+      date: new Date().toISOString()
+    };
+    const updatedHistory = [log, ...history];
+    setHistory(updatedHistory);
+
+    setTimeout(() => handleSave(undefined, undefined, updatedHistory, updatedLabels, updatedCustoms), 50);
+  };
+
   // Advanced header actions: Ingressar (Join)
   const handleJoinCard = () => {
     if (!authUser) return;
@@ -375,7 +512,9 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
           user: activeUserName, 
           action: `copiou esta tarefa a partir do cartão original`, 
           date: new Date().toISOString() 
-        }]
+        }],
+        labels,
+        customLabels
       };
 
       const { error } = await supabase
@@ -427,6 +566,15 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   const totalItems = checklist.length;
   const completedItems = checklist.filter(i => i.done).length;
   const checklistPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+  // Filtered members & labels for popovers
+  const filteredMembers = members.filter(m => m.full_name?.toLowerCase().includes(searchMember.toLowerCase()));
+  const allLabels = DEFAULT_LABELS.map(def => {
+    const custom = customLabels.find(l => l.id === def.id);
+    return custom ? custom : def;
+  }).concat(customLabels.filter(l => !l.id.startsWith("lbl-")));
+
+  const filteredLabels = allLabels.filter(l => l.name.toLowerCase().includes(searchLabel.toLowerCase()));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -494,7 +642,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
         </div>
 
         {/* Scrollable Layout */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col md:flex-row gap-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col md:flex-row gap-6">
           
           {/* Main Content Area (70%) */}
           <div className="flex-1 space-y-6 md:pr-4">
@@ -529,6 +677,310 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                 </div>
               </div>
             </div>
+
+            {/* Trello Top Action Bar (Horizontal Popover Controls matching screenshot) */}
+            <div className="flex flex-wrap gap-2 items-center pl-9 pt-1 pb-2 border-b border-border/10">
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-1.5 select-none">Adicionar ao cartão</span>
+
+              {/* Etiquetas Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-tight gap-1.5 rounded bg-muted/40 border-border/40 hover:bg-muted/80 shadow-none">
+                    <Tags className="h-3.5 w-3.5 text-muted-foreground" /> Etiquetas
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-4 bg-background border border-border shadow-xl rounded-xl z-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3">
+                    <div className="w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground font-heading">Etiquetas</span>
+                    <PopoverPrimitive.Close asChild>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted text-muted-foreground"><X className="h-3 w-3" /></Button>
+                    </PopoverPrimitive.Close>
+                  </div>
+                  <Input 
+                    placeholder="Buscar etiquetas..." 
+                    value={searchLabel}
+                    onChange={(e) => setSearchLabel(e.target.value)}
+                    className="h-8 text-xs mb-3 shadow-none focus:ring-0 focus:border-primary"
+                  />
+                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                    {filteredLabels.map((lbl) => {
+                      const isChecked = labels.includes(lbl.id);
+                      return (
+                        <div key={lbl.id} className="flex items-center gap-2">
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            onChange={() => handleToggleLabel(lbl.id)}
+                            className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-0 shrink-0 cursor-pointer"
+                          />
+                          {editingLabelId === lbl.id ? (
+                            <div className="flex-1 flex gap-1">
+                              <Input 
+                                value={editingLabelName}
+                                onChange={(e) => setEditingLabelName(e.target.value)}
+                                className="h-7 text-[11px] py-0 px-1.5 shadow-none"
+                                autoFocus
+                                onKeyDown={(e) => { if (e.key === "Enter") handleSaveLabelName(lbl.id); }}
+                              />
+                              <Button size="icon" className="h-7 w-7" onClick={() => handleSaveLabelName(lbl.id)}>
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div 
+                              onClick={() => handleToggleLabel(lbl.id)}
+                              className="flex-1 h-7 rounded px-2.5 flex items-center text-[10px] font-black uppercase text-white shadow-sm cursor-pointer select-none transition-all hover:brightness-95"
+                              style={{ backgroundColor: lbl.color }}
+                            >
+                              {lbl.name}
+                            </div>
+                          )}
+                          {editingLabelId !== lbl.id && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6 text-muted-foreground hover:bg-muted shrink-0"
+                              onClick={() => {
+                                setEditingLabelId(lbl.id);
+                                setEditingLabelName(lbl.name);
+                              }}
+                            >
+                              <Plus className="h-3.5 w-3.5 rotate-45" />
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full h-8 text-[10px] font-black uppercase tracking-tight mt-3 bg-background hover:bg-muted border-border/40"
+                    onClick={handleCreateNewLabel}
+                  >
+                    Criar uma nova etiqueta
+                  </Button>
+                </PopoverContent>
+              </Popover>
+
+              {/* Datas Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-tight gap-1.5 rounded bg-muted/40 border-border/40 hover:bg-muted/80 shadow-none">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" /> Datas
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-4 bg-background border border-border shadow-xl rounded-xl z-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3">
+                    <div className="w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground font-heading">Datas</span>
+                    <PopoverPrimitive.Close asChild>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted text-muted-foreground"><X className="h-3 w-3" /></Button>
+                    </PopoverPrimitive.Close>
+                  </div>
+                  <div className="space-y-4 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">Prazo / Entrega</span>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="date" 
+                          value={dueDate}
+                          onChange={(e) => setDueDate(e.target.value)}
+                          className="flex-1 h-8 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm focus:ring-0 focus:border-primary"
+                        />
+                        <input 
+                          type="time" 
+                          value={dueTime}
+                          onChange={(e) => setDueTime(e.target.value)}
+                          className="w-[90px] h-8 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm focus:ring-0 focus:border-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">Recorrente</span>
+                      <Select value={recurrence} onValueChange={(v: any) => setRecurrence(v)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="never">Nunca</SelectItem>
+                          <SelectItem value="daily">Diariamente</SelectItem>
+                          <SelectItem value="weekly">Semanalmente</SelectItem>
+                          <SelectItem value="monthly">Mensalmente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">Definir Lembrete</span>
+                      <Select value={reminder} onValueChange={(v: any) => setReminder(v)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum</SelectItem>
+                          <SelectItem value="on_time">No momento do prazo</SelectItem>
+                          <SelectItem value="5_min">5 minutos antes</SelectItem>
+                          <SelectItem value="15_min">15 minutos antes</SelectItem>
+                          <SelectItem value="1_hour">1 hora antes</SelectItem>
+                          <SelectItem value="1_day">1 dia antes</SelectItem>
+                          <SelectItem value="2_days">2 dias antes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="pt-2 flex flex-col gap-2">
+                      <Button 
+                        className="w-full h-8 text-[10px] font-black uppercase tracking-tight bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                        onClick={() => {
+                          handleSave({ due_date: dueDate || null });
+                          toast.success("Datas e prazos salvos!");
+                        }}
+                      >
+                        Salvar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-8 text-[10px] font-black uppercase tracking-tight border-border/40"
+                        onClick={() => {
+                          setDueDate("");
+                          setDueTime("12:00");
+                          handleSave({ due_date: null });
+                          toast.success("Prazo removido!");
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Checklist Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-tight gap-1.5 rounded bg-muted/40 border-border/40 hover:bg-muted/80 shadow-none">
+                    <CheckSquare className="h-3.5 w-3.5 text-muted-foreground" /> Checklist
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-4 bg-background border border-border shadow-xl rounded-xl z-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3">
+                    <div className="w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground font-heading">Adicionar Checklist</span>
+                    <PopoverPrimitive.Close asChild>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted text-muted-foreground"><X className="h-3 w-3" /></Button>
+                    </PopoverPrimitive.Close>
+                  </div>
+                  <div className="space-y-1.5 mb-3">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">Título</span>
+                    <Input 
+                      value={checklistTitle}
+                      onChange={(e) => setChecklistTitle(e.target.value)}
+                      placeholder="Checklist"
+                      className="h-8 text-xs shadow-none focus:ring-0 focus:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5 mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">Copiar itens de...</span>
+                    <Select value={copyChecklistFrom} onValueChange={(v) => setCopyChecklistFrom(v)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="(nenhum)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">(nenhum)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button 
+                    className="w-full h-8 text-[10px] font-black uppercase tracking-tight bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                    onClick={() => {
+                      const newItem: ChecklistItem = {
+                        id: Math.random().toString(36).substring(2, 9),
+                        text: `--- ${checklistTitle} ---`,
+                        done: false
+                      };
+                      const updated = [...checklist, newItem];
+                      setChecklist(updated);
+                      setChecklistTitle("Checklist");
+                      toast.success("Novo checklist adicionado!");
+                      setTimeout(() => handleSave(undefined, undefined, undefined, undefined, undefined, updated), 50);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </PopoverContent>
+              </Popover>
+
+              {/* Membros Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-tight gap-1.5 rounded bg-muted/40 border-border/40 hover:bg-muted/80 shadow-none">
+                    <User className="h-3.5 w-3.5 text-muted-foreground" /> Membros
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-4 bg-background border border-border shadow-xl rounded-xl z-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40 mb-3">
+                    <div className="w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-foreground font-heading">Membros</span>
+                    <PopoverPrimitive.Close asChild>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-muted text-muted-foreground"><X className="h-3 w-3" /></Button>
+                    </PopoverPrimitive.Close>
+                  </div>
+                  <Input 
+                    placeholder="Pesquisar membros" 
+                    value={searchMember}
+                    onChange={(e) => setSearchMember(e.target.value)}
+                    className="h-8 text-xs mb-3 shadow-none focus:ring-0 focus:border-primary"
+                  />
+                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground block mb-1">Membros do Quadro</span>
+                    {filteredMembers.map((m) => {
+                      const isAssigned = responsibleUserId === m.user_id;
+                      return (
+                        <div 
+                          key={m.user_id}
+                          onClick={() => {
+                            const finalUserId = isAssigned ? "" : m.user_id;
+                            setResponsibleUserId(finalUserId);
+                            handleSave({ responsible_user_id: finalUserId });
+                            toast.success(isAssigned ? "Responsável removido!" : `Responsável alterado para ${m.full_name}`);
+                          }}
+                          className="flex items-center justify-between p-1.5 rounded-lg hover:bg-muted/60 cursor-pointer select-none transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px]">
+                              {m.full_name?.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">{m.full_name}</span>
+                          </div>
+                          {isAssigned && <Check className="h-4 w-4 text-primary shrink-0" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Active Labels List Display */}
+            {labels.length > 0 && (
+              <div className="pl-9 space-y-1.5">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block select-none">Etiquetas</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {labels.map((labelId) => {
+                    const custom = customLabels.find(l => l.id === labelId);
+                    const def = DEFAULT_LABELS.find(l => l.id === labelId);
+                    const color = custom?.color || def?.color || "#6b7280";
+                    const name = custom?.name || def?.name || "";
+                    return (
+                      <span 
+                        key={labelId}
+                        className="h-6 px-2.5 rounded flex items-center text-[10px] font-black uppercase text-white shadow-sm select-none"
+                        style={{ backgroundColor: color }}
+                      >
+                        {name}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Quick Badges Row (Membros, Data) */}
             <div className="flex flex-wrap gap-6 pl-9">
@@ -808,6 +1260,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                   </SelectContent>
                 </Select>
               </div>
+
               {/* Client Selection */}
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Cliente Vinculado</span>
