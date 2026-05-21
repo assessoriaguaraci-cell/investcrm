@@ -535,28 +535,35 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               {/* Responsible Badge */}
               <div className="space-y-1.5">
                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">Responsável</span>
-                {responsibleUserId ? (
-                  <div className="flex items-center gap-2 bg-muted/60 hover:bg-muted px-2.5 py-1.5 rounded-lg border border-border/50 text-xs font-semibold text-foreground transition-all cursor-pointer">
-                    <div className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[9px]">
-                      {members.find(m => m.user_id === responsibleUserId)?.full_name?.substring(0, 2).toUpperCase() || "SR"}
+                <Select value={responsibleUserId || "none"} onValueChange={(v) => { setResponsibleUserId(v === "none" ? "" : v); handleSave({ responsible_user_id: v }); }}>
+                  <SelectTrigger className="h-8 w-auto text-xs font-semibold bg-muted/60 hover:bg-muted border border-border/40 py-1.5 px-2.5 rounded-lg shadow-none focus:ring-0 gap-2 inline-flex">
+                    <div className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[9px] shrink-0">
+                      {members.find(m => m.user_id === responsibleUserId)?.full_name?.substring(0, 2).toUpperCase() || "👤"}
                     </div>
-                    <span>{members.find(m => m.user_id === responsibleUserId)?.full_name}</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground italic block">Sem responsável</span>
-                )}
+                    <SelectValue placeholder="Sem responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">👤 Sem responsável</SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Due Date Badge */}
-              {dueDate && (
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">Data de Entrega</span>
-                  <div className="flex items-center gap-2 bg-muted/60 px-2.5 py-1.5 rounded-lg border border-border/50 text-xs font-semibold text-foreground">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>{format(parseLocalDate(dueDate), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
-                  </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">Data de Entrega</span>
+                <div className="relative">
+                  <Input 
+                    type="date" 
+                    value={dueDate} 
+                    onChange={(e) => { setDueDate(e.target.value); handleSave({ due_date: e.target.value || null }); }} 
+                    className="h-8 text-xs font-semibold bg-muted/60 hover:bg-muted border border-border/40 py-1.5 pl-8 pr-2.5 rounded-lg shadow-none focus:ring-0 w-[160px] cursor-pointer"
+                  />
+                  <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Rich Description */}
@@ -801,49 +808,6 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Status Picker */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Status / Lista</span>
-                <Select value={status} onValueChange={(v) => handleMoveCard(v as any)}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pendente">📋 A Fazer</SelectItem>
-                    <SelectItem value="em_andamento">⚡ Em Andamento</SelectItem>
-                    <SelectItem value="feito">✅ Concluído</SelectItem>
-                    <SelectItem value="atrasado">🚨 Atrasado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Date Input */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Prazo</span>
-                <div className="relative">
-                  <Input 
-                    type="date" 
-                    value={dueDate} 
-                    onChange={(e) => { setDueDate(e.target.value); handleSave({ due_date: e.target.value || null }); }} 
-                    className="h-9 text-xs pl-8"
-                  />
-                  <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/60" />
-                </div>
-              </div>
-
-              {/* Responsible Selection */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Responsável</span>
-                <Select value={responsibleUserId || "none"} onValueChange={(v) => { setResponsibleUserId(v === "none" ? "" : v); handleSave({ responsible_user_id: v }); }}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Sem responsável" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">👤 Sem responsável</SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Client Selection */}
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Cliente Vinculado</span>
