@@ -4,11 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent
+} from "@/components/ui/dropdown-menu";
 import { useUpdateActivity, type Activity } from "@/hooks/useActivities";
 import { useClients } from "@/hooks/useClients";
 import { useProperties } from "@/hooks/useProperties";
 import { useApprovedMembers } from "@/hooks/useTeamMembers";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { 
   AlignLeft, 
@@ -21,9 +33,13 @@ import {
   Plus, 
   X, 
   Activity as ActivityIcon,
-  Check,
-  ChevronRight,
-  Clock
+  Clock,
+  MoreHorizontal,
+  Copy,
+  Eye,
+  UserPlus,
+  Archive,
+  ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -84,6 +100,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   const { data: clients } = useClients();
   const { data: properties } = useProperties();
   const { data: members } = useApprovedMembers();
+  const qc = useQueryClient();
 
   // Primary fields
   const [description, setDescription] = useState("");
@@ -102,6 +119,10 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [newComment, setNewComment] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // Comment edit state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
 
   // Resolve active user profile details
   const activeMember = members.find(m => m.user_id === authUser?.id);
@@ -150,14 +171,17 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
   }, [activity]);
 
   // Saves changes and packages them back into serialised JSON
-  const handleSave = (updatedFields?: Partial<Activity>) => {
+  const handleSave = (updatedFields?: Partial<Activity>, newComments?: CommentItem[], newHistory?: HistoryItem[]) => {
     if (!activity) return;
+
+    const finalComments = newComments ?? comments;
+    const finalHistory = newHistory ?? history;
 
     const metaData: TaskMetaData = {
       description: richDescription,
       checklist,
-      comments,
-      history
+      comments: finalComments,
+      history: finalHistory
     };
 
     const finalDescription = updatedFields?.description ?? description;
@@ -183,7 +207,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       },
       {
         onSuccess: () => {
-          toast.success("Cartão atualizado com sucesso!");
+          qc.invalidateQueries({ queryKey: ["activities"] });
         },
         onError: () => toast.error("Erro ao atualizar o cartão")
       }
@@ -264,8 +288,139 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       action: `comentou: "${commentItem.text.substring(0, 40)}${commentItem.text.length > 40 ? '...' : ''}"`,
       date: new Date().toISOString()
     };
+    const updatedHistory = [log, ...history];
+    setHistory(updatedHistory);
+    setTimeout(() => handleSave(undefined, updatedComments, updatedHistory), 50);
+  };
+
+  // Edit Comment Text
+  const handleSaveCommentEdit = (commentId: string) => {
+    if (!editingCommentText.trim()) return;
+    const updatedComments = comments.map(c => {
+      if (c.id === commentId) {
+        return { ...c, text: editingCommentText.trim() };
+      }
+      return c;
+    });
+    setComments(updatedComments);
+    setEditingCommentId(null);
+
+    const log: HistoryItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      user: activeUserName,
+      action: `editou um comentário anterior`,
+      date: new Date().toISOString()
+    };
+    const updatedHistory = [log, ...history];
+    setHistory(updatedHistory);
+    setTimeout(() => handleSave(undefined, updatedComments, updatedHistory), 50);
+  };
+
+  // Delete Comment
+  const handleDeleteComment = (commentId: string) => {
+    if (!confirm("Tem certeza de que deseja excluir este comentário?")) return;
+    const updatedComments = comments.filter(c => c.id !== commentId);
+    setComments(updatedComments);
+
+    const log: HistoryItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      user: activeUserName,
+      action: `excluiu um comentário`,
+      date: new Date().toISOString()
+    };
+    const updatedHistory = [log, ...history];
+    setHistory(updatedHistory);
+    setTimeout(() => handleSave(undefined, updatedComments, updatedHistory), 50);
+  };
+
+  // Advanced header actions: Ingressar (Join)
+  const handleJoinCard = () => {
+    if (!authUser) return;
+    setResponsibleUserId(authUser.id);
+    const log: HistoryItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      user: activeUserName,
+      action: `ingressou nesta tarefa como responsável`,
+      date: new Date().toISOString()
+    };
     setHistory([log, ...history]);
-    setTimeout(() => handleSave(), 50);
+    toast.success("Você agora é o responsável por esta tarefa!");
+    setTimeout(() => handleSave({ responsible_user_id: authUser.id }), 50);
+  };
+
+  // Advanced header actions: Mover (Move)
+  const handleMoveCard = (targetStatus: "pendente" | "feito" | "atrasado" | "em_andamento") => {
+    setStatus(targetStatus);
+    const log: HistoryItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      user: activeUserName,
+      action: `moveu este cartão para a lista "${STATUS_LABELS[targetStatus]}"`,
+      date: new Date().toISOString()
+    };
+    setHistory([log, ...history]);
+    toast.success(`Movido para ${STATUS_LABELS[targetStatus]}`);
+    setTimeout(() => handleSave({ status: targetStatus }), 50);
+  };
+
+  // Advanced header actions: Copiar (Clone)
+  const handleCopyCard = async () => {
+    if (!activity) return;
+    try {
+      const metaData: TaskMetaData = {
+        description: richDescription,
+        checklist: checklist.map(i => ({ ...i, id: Math.random().toString(36).substring(2, 9) })),
+        comments: [], // clear comments for the clone
+        history: [{ 
+          id: Math.random().toString(36).substring(2, 9), 
+          user: activeUserName, 
+          action: `copiou esta tarefa a partir do cartão original`, 
+          date: new Date().toISOString() 
+        }]
+      };
+
+      const { error } = await supabase
+        .from("activities")
+        .insert({
+          description: `${description} (Cópia)`,
+          activity_type: activityType,
+          due_date: dueDate || null,
+          client_id: clientId && clientId !== "none" ? clientId : null,
+          property_id: propertyId && propertyId !== "none" ? propertyId : null,
+          status: status,
+          responsible_user_id: responsibleUserId || null,
+          created_by: authUser?.id || null,
+          notes: JSON.stringify(metaData),
+        });
+
+      if (error) throw error;
+      
+      toast.success("Cartão copiado com sucesso!");
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      onOpenChange(false); // Close dialog
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao copiar o cartão");
+    }
+  };
+
+  // Advanced header actions: Arquivar (Excluir)
+  const handleArchiveCard = async () => {
+    if (!activity) return;
+    if (!confirm("Tem certeza que deseja arquivar/excluir este cartão?")) return;
+    try {
+      const { error } = await supabase
+        .from("activities")
+        .delete()
+        .eq("id", activity.id);
+
+      if (error) throw error;
+
+      toast.success("Cartão arquivado!");
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      onOpenChange(false);
+    } catch (e) {
+      toast.error("Erro ao arquivar cartão");
+    }
   };
 
   // Checklist percentage calculations
@@ -277,6 +432,67 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] md:h-[80vh] flex flex-col p-0 overflow-hidden bg-background border border-border shadow-2xl rounded-xl animate-in zoom-in-95 duration-200">
         
+        {/* Advanced Action Bar on Top Right (to the left of close button) */}
+        <div className="absolute right-12 top-4 flex items-center gap-1.5 z-50">
+          
+          {/* Join button directly */}
+          {responsibleUserId !== authUser?.id && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleJoinCard}
+              className="h-8 text-[10px] font-black uppercase tracking-tight gap-1 bg-background hover:bg-muted"
+            >
+              <UserPlus className="h-3.5 w-3.5" /> Ingressar
+            </Button>
+          )}
+
+          {/* Three dots dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-muted">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[180px]">
+              <DropdownMenuItem onClick={handleJoinCard} className="gap-2">
+                <UserPlus className="h-4 w-4" /> Ingressar
+              </DropdownMenuItem>
+              
+              {/* Move Submenu */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="gap-2">
+                  <ArrowRight className="h-4 w-4" /> Mover
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => handleMoveCard("pendente")}>
+                    📋 A Fazer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleMoveCard("em_andamento")}>
+                    ⚡ Em Andamento
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleMoveCard("feito")}>
+                    ✅ Concluído
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleMoveCard("atrasado")}>
+                    🚨 Atrasado
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuItem onClick={handleCopyCard} className="gap-2">
+                <Copy className="h-4 w-4" /> Copiar
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={handleArchiveCard} className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive">
+                <Archive className="h-4 w-4" /> Arquivar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {/* Scrollable Layout */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col md:flex-row gap-8">
           
@@ -294,9 +510,22 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                     onBlur={() => handleSave()}
                     className="text-lg md:text-xl font-bold border-transparent hover:border-border focus:border-primary px-1 -ml-1 bg-transparent hover:bg-muted/30 focus:bg-background h-auto py-1 shadow-none focus:ring-0 leading-tight transition-all font-heading"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    na lista <span className="font-semibold underline text-foreground">{STATUS_LABELS[status]}</span>
-                  </p>
+                  <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5 flex-wrap">
+                    <span>na lista</span>
+                    
+                    {/* Interactive List Dropdown Picker */}
+                    <Select value={status} onValueChange={(v) => handleMoveCard(v as any)}>
+                      <SelectTrigger className="h-6 w-auto text-[10px] font-black uppercase bg-muted/65 hover:bg-muted/90 border-border/40 py-0.5 px-2 rounded-md shadow-none focus:ring-0 gap-1.5 inline-flex shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pendente">📋 A Fazer</SelectItem>
+                        <SelectItem value="em_andamento">⚡ Em Andamento</SelectItem>
+                        <SelectItem value="feito">✅ Concluído</SelectItem>
+                        <SelectItem value="atrasado">🚨 Atrasado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -492,7 +721,46 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                             {format(new Date(comment.date), "dd/MM 'às' HH:mm", { locale: ptBR })}
                           </span>
                         </div>
-                        <p className="text-xs text-foreground mt-1 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+                        
+                        {/* Edit Inline Comment View */}
+                        {editingCommentId === comment.id ? (
+                          <div className="space-y-2 mt-2 animate-in fade-in duration-100">
+                            <Textarea 
+                              value={editingCommentText}
+                              onChange={(e) => setEditingCommentText(e.target.value)}
+                              rows={2}
+                              className="text-xs"
+                            />
+                            <div className="flex gap-1.5">
+                              <Button size="sm" className="h-7 text-[10px] px-2.5" onClick={() => handleSaveCommentEdit(comment.id)}>Salvar</Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2.5" onClick={() => setEditingCommentId(null)}>Cancelar</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs text-foreground mt-1 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+                            
+                            {/* Edit / Delete small triggers */}
+                            <div className="flex items-center gap-2 mt-1.5 select-none">
+                              <button 
+                                onClick={() => {
+                                  setEditingCommentId(comment.id);
+                                  setEditingCommentText(comment.text);
+                                }}
+                                className="text-[10px] font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                              >
+                                Editar
+                              </button>
+                              <span className="text-[9px] text-muted-foreground/30">•</span>
+                              <button 
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-[10px] font-semibold text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                              >
+                                Excluir
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -537,7 +805,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               {/* Status Picker */}
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Status / Lista</span>
-                <Select value={status} onValueChange={(v) => { setStatus(v as any); handleSave({ status: v as any }); }}>
+                <Select value={status} onValueChange={(v) => handleMoveCard(v as any)}>
                   <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pendente">📋 A Fazer</SelectItem>
