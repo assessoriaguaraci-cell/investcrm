@@ -29,6 +29,7 @@ export interface CityContact {
   payment_date: string | null;
   monthly_value: number | null;
   property_id: string | null;
+  is_recurring: boolean | null;
   served_cities?: {
     city_info: CityInfo;
   }[];
@@ -82,6 +83,7 @@ export function useAllCityContacts() {
           payment_date,
           monthly_value,
           property_id,
+          is_recurring,
           city_info:city_info_id(city, state),
           served_cities:contact_served_cities(
             city_info:city_info_id(city, state)

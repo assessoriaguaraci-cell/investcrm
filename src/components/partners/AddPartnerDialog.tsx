@@ -59,7 +59,8 @@ export default function AddPartnerDialog({
     diligence_history: editingContact?.diligence_history || "",
     payment_date: editingContact?.payment_date || "",
     monthly_value: editingContact?.monthly_value || "" as any,
-    property_id: editingContact?.property_id || ""
+    property_id: editingContact?.property_id || "",
+    is_recurring: editingContact?.is_recurring || false
   }));
 
   // Fail-safe: ensure state updates if editingContact changes while open
@@ -75,7 +76,8 @@ export default function AddPartnerDialog({
         diligence_history: editingContact.diligence_history || "",
         payment_date: editingContact.payment_date || "",
         monthly_value: editingContact.monthly_value || "" as any,
-        property_id: editingContact.property_id || ""
+        property_id: editingContact.property_id || "",
+        is_recurring: editingContact.is_recurring || false
       });
       setSelectedServedCities(
         editingContact.served_cities?.map(sc => ({ state: sc.city_info.state, city: sc.city_info.city })) || []
@@ -128,7 +130,8 @@ export default function AddPartnerDialog({
           served_city_ids: cityInfoIds,
           payment_date: newContact.contact_type === 'VIZINHO' ? newContact.payment_date || null : null,
           monthly_value: newContact.contact_type === 'VIZINHO' ? (newContact.monthly_value ? Number(newContact.monthly_value) : null) : null,
-          property_id: newContact.contact_type === 'VIZINHO' ? newContact.property_id || null : null
+          property_id: newContact.contact_type === 'VIZINHO' ? newContact.property_id || null : null,
+          is_recurring: newContact.contact_type === 'VIZINHO' ? newContact.is_recurring : false
         });
         finalId = editingContact.id;
       } else {
@@ -145,7 +148,8 @@ export default function AddPartnerDialog({
           served_city_ids: cityInfoIds,
           payment_date: newContact.contact_type === 'VIZINHO' ? newContact.payment_date || null : null,
           monthly_value: newContact.contact_type === 'VIZINHO' ? (newContact.monthly_value ? Number(newContact.monthly_value) : null) : null,
-          property_id: newContact.contact_type === 'VIZINHO' ? newContact.property_id || null : null
+          property_id: newContact.contact_type === 'VIZINHO' ? newContact.property_id || null : null,
+          is_recurring: newContact.contact_type === 'VIZINHO' ? newContact.is_recurring : false
         });
         finalId = res.id;
       }
@@ -278,6 +282,32 @@ export default function AddPartnerDialog({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg border-2 border-primary/10 bg-background">
+                      <div className="space-y-0.5">
+                        <Label className="text-[11px] font-black uppercase text-primary">Agendar Recorrência?</Label>
+                        <p className="text-[9px] text-muted-foreground font-semibold">Cria 12 lembretes mensais na agenda</p>
+                      </div>
+                      <Switch 
+                        checked={newContact.is_recurring} 
+                        onCheckedChange={(val) => setNewContact({ ...newContact, is_recurring: val })} 
+                      />
+                    </div>
+
+                    {editingContact?.is_recurring && newContact.is_recurring && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="w-full text-[10px] font-black uppercase tracking-tight py-2 h-9"
+                        onClick={() => {
+                          setNewContact({ ...newContact, is_recurring: false });
+                          toast.success("Recorrência desativada! Salve o formulário para limpar todos os lembretes futuros.");
+                        }}
+                      >
+                        Cancelar Recorrência de Lembretes
+                      </Button>
+                    )}
                   </div>
                 )}
 

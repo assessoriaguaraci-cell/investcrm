@@ -278,9 +278,16 @@ export default function Partners() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col gap-1.5 items-start">
-                                                <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] font-black uppercase px-2">
-                                                    {contact.contact_type}
-                                                </Badge>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[10px] font-black uppercase px-2">
+                                                        {contact.contact_type}
+                                                    </Badge>
+                                                    {contact.contact_type === 'VIZINHO' && contact.is_recurring && (
+                                                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-black uppercase px-1.5 py-0">
+                                                            Recorrente 🔁
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                                 {contact.contact_type === 'VIZINHO' && (
                                                     <div className="flex flex-col gap-1 text-[10px] font-bold text-muted-foreground">
                                                         {contact.property && (
