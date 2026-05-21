@@ -218,9 +218,9 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
 
           {/* Client badge */}
           {activity.clients && (
-            <span className="text-[9px] text-muted-foreground flex items-center gap-0.5 max-w-[80px] truncate" title={`Cliente: ${activity.clients.full_name}`}>
+            <span className="text-[9px] text-muted-foreground flex items-center gap-0.5" title={`Cliente: ${activity.clients.full_name}`}>
               <User className="h-2.5 w-2.5 shrink-0" />
-              <span className="truncate">{activity.clients.full_name}</span>
+              <span className="font-semibold break-words leading-tight">{activity.clients.full_name}</span>
             </span>
           )}
 
@@ -228,7 +228,7 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
           {activity.properties && (
             <span className="text-[9px] text-muted-foreground flex items-center gap-0.5" title={`Imóvel: ${activity.properties.code}`}>
               <Building2 className="h-2.5 w-2.5 shrink-0" />
-              <span>{activity.properties.code}</span>
+              <span className="font-semibold break-words leading-tight">{activity.properties.code}</span>
             </span>
           )}
         </div>

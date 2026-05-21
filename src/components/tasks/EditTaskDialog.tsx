@@ -663,10 +663,11 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
             </div>
 
             {/* Trello Top Action Bar (Horizontal Popover Controls matching screenshot) */}
-            <div className="flex flex-wrap gap-2 items-center pl-9 pt-1 pb-2 border-b border-border/10">
-              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-1.5 select-none">Adicionar ao cartão</span>
-
-              {/* Etiquetas Popover */}
+            <div className="pl-9 pt-1 pb-2 border-b border-border/10 space-y-1.5 select-none">
+              <span className="text-[9.5px] font-black uppercase tracking-widest text-muted-foreground block">Adicionar ao cartão</span>
+              
+              <div className="flex flex-wrap gap-2 items-center">
+                {/* Etiquetas Popover */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-tight gap-1.5 rounded bg-muted/40 border-border/40 hover:bg-muted/80 shadow-none">
@@ -941,6 +942,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
 
             {/* Active Labels List Display */}
             {labels.length > 0 && (
