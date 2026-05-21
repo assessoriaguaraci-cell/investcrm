@@ -74,6 +74,17 @@ export default function Tasks() {
     }
   }, [dashboardFilter]);
 
+  // Silently trigger monthly neighbor recurrence sync on mount
+  useEffect(() => {
+    supabase.rpc('sync_vizinho_reminders')
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ["activities"] });
+      })
+      .catch((err) => {
+        console.error("Erro ao sincronizar lembretes de vizinhos:", err);
+      });
+  }, []);
+
   // Default to "pending" tab when coming from dashboard
   // const defaultTab = dashboardFilter === "pending" ? "pending" : "pending";
 
