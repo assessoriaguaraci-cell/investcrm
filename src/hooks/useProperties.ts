@@ -51,27 +51,66 @@ export function useProperties(funnelId?: string) {
 }
 
 async function createAppraisalReminders(propertyId: string, propertyCode: string, expiryDate: string, userId: string) {
-  // Delete existing appraisal reminders for this property
-  await supabase
-    .from("activities")
-    .delete()
-    .eq("property_id", propertyId)
-    .like("description", "Laudo vencendo%");
-
   const expiry = new Date(expiryDate + "T12:00:00");
-  const reminders = [30, 15, 7, 1];
+  const today = new Date();
+  
+  // Calculate remaining days
+  const diffTime = expiry.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Determine which reminder threshold we are currently in: 30, 15, 7 or 1
+  let daysThreshold = 30;
+  if (diffDays <= 1) {
+    daysThreshold = 1;
+  } else if (diffDays <= 7) {
+    daysThreshold = 7;
+  } else if (diffDays <= 15) {
+    daysThreshold = 15;
+  }
+  
+  const targetDueDate = format(subDays(expiry, daysThreshold), "yyyy-MM-dd");
+  const targetDescription = `Laudo vencendo em ${daysThreshold} dia(s) — ${propertyCode}`;
 
-  const rows = reminders.map(days => ({
-    property_id: propertyId,
-    description: `Laudo vencendo em ${days} dia(s) — ${propertyCode}`,
-    activity_type: "lembrete",
-    due_date: format(subDays(expiry, days), "yyyy-MM-dd"),
-    created_by: userId,
-    responsible_user_id: userId,
-    status: "pendente" as const,
-  }));
+  // Fetch existing appraisal reminders
+  const { data: existingReminders } = await supabase
+    .from("activities")
+    .select("id, description, status")
+    .eq("property_id", propertyId)
+    .like("description", "Laudo vencendo%")
+    .order("created_at", { ascending: false });
 
-  await supabase.from("activities").insert(rows);
+  if (existingReminders && existingReminders.length > 0) {
+    // If one exists, update it to the appropriate bracket
+    const primaryReminder = existingReminders[0];
+    await supabase
+      .from("activities")
+      .update({
+        description: targetDescription,
+        due_date: targetDueDate,
+        status: "pendente", // Reset to pending for the new alert phase
+      })
+      .eq("id", primaryReminder.id);
+
+    // Delete any other duplicate reminders that might exist from legacy logic
+    if (existingReminders.length > 1) {
+      const extraIds = existingReminders.slice(1).map(r => r.id);
+      await supabase
+        .from("activities")
+        .delete()
+        .in("id", extraIds);
+    }
+  } else {
+    // Insert exactly one new active appraisal reminder
+    await supabase.from("activities").insert({
+      property_id: propertyId,
+      description: targetDescription,
+      activity_type: "lembrete",
+      due_date: targetDueDate,
+      created_by: userId,
+      responsible_user_id: userId,
+      status: "pendente",
+    });
+  }
 }
 
 export function useCreateProperty() {
