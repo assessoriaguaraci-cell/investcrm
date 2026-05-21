@@ -363,7 +363,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
     };
     const updatedHistory = [log, ...history];
     setHistory(updatedHistory);
-    setTimeout(() => handleSave(undefined, updatedComments, updatedHistory), 50);
+    setTimeout(() => handleSave(updatedComments, undefined), 50); // correct parameter placement
   };
 
   // Edit Comment Text
@@ -506,7 +506,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       const metaData: TaskMetaData = {
         description: richDescription,
         checklist: checklist.map(i => ({ ...i, id: Math.random().toString(36).substring(2, 9) })),
-        comments: [], // clear comments for the clone
+        comments: [], 
         history: [{ 
           id: Math.random().toString(36).substring(2, 9), 
           user: activeUserName, 
@@ -535,7 +535,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
       
       toast.success("Cartão copiado com sucesso!");
       qc.invalidateQueries({ queryKey: ["activities"] });
-      onOpenChange(false); // Close dialog
+      onOpenChange(false);
     } catch (e: any) {
       console.error(e);
       toast.error("Erro ao copiar o cartão");
@@ -578,7 +578,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] md:h-[80vh] flex flex-col p-0 overflow-hidden bg-background border border-border shadow-2xl rounded-xl animate-in zoom-in-95 duration-200">
+      <DialogContent className="max-w-5xl h-[90vh] md:h-[80vh] flex flex-col p-0 overflow-hidden bg-background border border-border shadow-2xl rounded-xl animate-in zoom-in-95 duration-200">
         
         {/* Advanced Action Bar on Top Right (to the left of close button) */}
         <div className="absolute right-12 top-4 flex items-center gap-1.5 z-50">
@@ -641,10 +641,10 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
           </DropdownMenu>
         </div>
 
-        {/* Scrollable Layout */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col md:flex-row gap-6">
+        {/* Scrollable Layout - Expanded Width for Trello two-column fidelity */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 flex flex-col md:flex-row gap-8">
           
-          {/* Main Content Area (70%) */}
+          {/* Main Content Area (65%) */}
           <div className="flex-1 space-y-6 md:pr-4">
             
             {/* Task Description Title Header */}
@@ -658,22 +658,6 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                     onBlur={() => handleSave()}
                     className="text-lg md:text-xl font-bold border-transparent hover:border-border focus:border-primary px-1 -ml-1 bg-transparent hover:bg-muted/30 focus:bg-background h-auto py-1 shadow-none focus:ring-0 leading-tight transition-all font-heading"
                   />
-                  <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5 flex-wrap">
-                    <span>na lista</span>
-                    
-                    {/* Interactive List Dropdown Picker */}
-                    <Select value={status} onValueChange={(v) => handleMoveCard(v as any)}>
-                      <SelectTrigger className="h-6 w-auto text-[10px] font-black uppercase bg-muted/65 hover:bg-muted/90 border-border/40 py-0.5 px-2 rounded-md shadow-none focus:ring-0 gap-1.5 inline-flex shrink-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pendente">📋 A Fazer</SelectItem>
-                        <SelectItem value="em_andamento">⚡ Em Andamento</SelectItem>
-                        <SelectItem value="feito">✅ Concluído</SelectItem>
-                        <SelectItem value="atrasado">🚨 Atrasado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
               </div>
             </div>
@@ -723,7 +707,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                                 autoFocus
                                 onKeyDown={(e) => { if (e.key === "Enter") handleSaveLabelName(lbl.id); }}
                               />
-                              <Button size="icon" className="h-7 w-7" onClick={() => handleSaveLabelName(lbl.id)}>
+                              <Button size="icon" className="h-7 w-7 animate-in fade-in" onClick={() => handleSaveLabelName(lbl.id)}>
                                 <Check className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -982,42 +966,6 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               </div>
             )}
 
-            {/* Quick Badges Row (Membros, Data) */}
-            <div className="flex flex-wrap gap-6 pl-9">
-              {/* Responsible Badge */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">Responsável</span>
-                <Select value={responsibleUserId || "none"} onValueChange={(v) => { setResponsibleUserId(v === "none" ? "" : v); handleSave({ responsible_user_id: v }); }}>
-                  <SelectTrigger className="h-8 w-auto text-xs font-semibold bg-muted/60 hover:bg-muted border border-border/40 py-1.5 px-2.5 rounded-lg shadow-none focus:ring-0 gap-2 inline-flex">
-                    <div className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[9px] shrink-0">
-                      {members.find(m => m.user_id === responsibleUserId)?.full_name?.substring(0, 2).toUpperCase() || "👤"}
-                    </div>
-                    <SelectValue placeholder="Sem responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">👤 Sem responsável</SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Due Date Badge */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block">Data de Entrega</span>
-                <div className="relative">
-                  <Input 
-                    type="date" 
-                    value={dueDate} 
-                    onChange={(e) => { setDueDate(e.target.value); handleSave({ due_date: e.target.value || null }); }} 
-                    className="h-8 text-xs font-semibold bg-muted/60 hover:bg-muted border border-border/40 py-1.5 pl-8 pr-2.5 rounded-lg shadow-none focus:ring-0 w-[160px] cursor-pointer"
-                  />
-                  <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
             {/* Rich Description */}
             <div className="space-y-3 pt-2">
               <div className="flex items-center gap-3">
@@ -1111,7 +1059,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
                       variant="ghost" 
                       size="icon" 
                       onClick={() => handleDeleteChecklistItem(item.id)}
-                      className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity animate-in fade-in"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -1139,120 +1087,67 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               </div>
             </div>
 
-            {/* Comments Feed / History */}
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="h-5 w-5 text-primary shrink-0" />
-                <h3 className="text-sm font-black uppercase text-foreground tracking-wider font-heading">Atividades & Comentários</h3>
-              </div>
-
-              <div className="pl-9 space-y-4">
-                {/* Add comment textarea */}
-                <div className="flex gap-3 items-start">
-                  <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                    {activeUserName.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Textarea 
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Escreva um comentário..."
-                      rows={2}
-                      className="text-sm shadow-sm"
-                    />
-                    <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
-                      Enviar comentário
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Combined Feed */}
-                <div className="space-y-3 pt-2">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-3 items-start p-3 bg-muted/20 border border-border/30 rounded-xl">
-                      <div className="h-7 w-7 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
-                        {comment.author.substring(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-black text-foreground">{comment.author}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(comment.date), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                          </span>
-                        </div>
-                        
-                        {/* Edit Inline Comment View */}
-                        {editingCommentId === comment.id ? (
-                          <div className="space-y-2 mt-2 animate-in fade-in duration-100">
-                            <Textarea 
-                              value={editingCommentText}
-                              onChange={(e) => setEditingCommentText(e.target.value)}
-                              rows={2}
-                              className="text-xs"
-                            />
-                            <div className="flex gap-1.5">
-                              <Button size="sm" className="h-7 text-[10px] px-2.5" onClick={() => handleSaveCommentEdit(comment.id)}>Salvar</Button>
-                              <Button size="sm" variant="ghost" className="h-7 text-[10px] px-2.5" onClick={() => setEditingCommentId(null)}>Cancelar</Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-xs text-foreground mt-1 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
-                            
-                            {/* Edit / Delete small triggers */}
-                            <div className="flex items-center gap-2 mt-1.5 select-none">
-                              <button 
-                                onClick={() => {
-                                  setEditingCommentId(comment.id);
-                                  setEditingCommentText(comment.text);
-                                }}
-                                className="text-[10px] font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                              >
-                                Editar
-                              </button>
-                              <span className="text-[9px] text-muted-foreground/30">•</span>
-                              <button 
-                                onClick={() => handleDeleteComment(comment.id)}
-                                className="text-[10px] font-semibold text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                              >
-                                Excluir
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* System Audit logs */}
-                  {history.map((log) => (
-                    <div key={log.id} className="flex gap-3 items-center text-[10px] text-muted-foreground pl-3 py-0.5 border-l-2 border-border/30">
-                      <ActivityIcon className="h-3 w-3 text-muted-foreground/70 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-foreground/80">{log.user}</span>{" "}
-                        <span>{log.action}</span>
-                      </div>
-                      <span>
-                        {format(new Date(log.date), "dd/MM HH:mm", { locale: ptBR })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
           </div>
 
-          {/* Sidebar Action Buttons (30%) */}
-          <div className="w-full md:w-[240px] space-y-6 border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-6 shrink-0">
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Adicionar à tarefa</h4>
-              
-              {/* Type Picker */}
+          {/* Sidebar Properties and Activities Column (35%) */}
+          <div className="w-full md:w-[320px] space-y-6 border-t md:border-t-0 md:border-l border-border/60 pt-6 md:pt-0 md:pl-6 shrink-0">
+            
+            {/* Trello properties block matching request */}
+            <div className="space-y-4 bg-muted/20 border border-border/30 rounded-xl p-4 shadow-sm animate-in fade-in duration-200">
+              <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block select-none">Propriedades da Tarefa</span>
+
+              {/* Status / Na Lista */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Na Lista</span>
+                <Select value={status} onValueChange={(v) => handleMoveCard(v as any)}>
+                  <SelectTrigger className="h-8 text-xs font-semibold bg-background border border-border/40 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">📋 A Fazer</SelectItem>
+                    <SelectItem value="em_andamento">⚡ Em Andamento</SelectItem>
+                    <SelectItem value="feito">✅ Concluído</SelectItem>
+                    <SelectItem value="atrasado">🚨 Atrasado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Responsável */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Responsável</span>
+                <Select value={responsibleUserId || "none"} onValueChange={(v) => { setResponsibleUserId(v === "none" ? "" : v); handleSave({ responsible_user_id: v }); }}>
+                  <SelectTrigger className="h-8 text-xs font-semibold bg-background border border-border/40 shadow-none focus:ring-0 gap-2">
+                    <div className="h-4 w-4 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[8px] shrink-0">
+                      {members.find(m => m.user_id === responsibleUserId)?.full_name?.substring(0, 2).toUpperCase() || "👤"}
+                    </div>
+                    <SelectValue placeholder="Sem responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">👤 Sem responsável</SelectItem>
+                    {members.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Data de Entrega */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Data de Entrega</span>
+                <div className="relative">
+                  <Input 
+                    type="date" 
+                    value={dueDate} 
+                    onChange={(e) => { setDueDate(e.target.value); handleSave({ due_date: e.target.value || null }); }} 
+                    className="h-8 text-xs font-semibold bg-background border border-border/40 py-1.5 pl-8 pr-2.5 rounded-lg shadow-none focus:ring-0 w-full cursor-pointer"
+                  />
+                  <Calendar className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground/60 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Tipo de Atividade */}
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Tipo de Atividade</span>
                 <Select value={activityType} onValueChange={(v) => { setActivityType(v); handleSave({ activity_type: v }); }}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs bg-background border border-border/40 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {ACTIVITY_TYPES.map((t) => (
                       <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -1265,7 +1160,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Cliente Vinculado</span>
                 <Select value={clientId || "none"} onValueChange={(v) => { setClientId(v); handleSave({ client_id: v }); }}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs bg-background border border-border/40 shadow-none focus:ring-0"><SelectValue placeholder="Nenhum" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">👥 Nenhum cliente</SelectItem>
                     {clients?.map((c) => (
@@ -1279,7 +1174,7 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               <div className="space-y-1">
                 <span className="text-[9px] font-black uppercase text-muted-foreground tracking-wider block">Imóvel Vinculado</span>
                 <Select value={propertyId || "none"} onValueChange={(v) => { setPropertyId(v); handleSave({ property_id: v }); }}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs bg-background border border-border/40 shadow-none focus:ring-0"><SelectValue placeholder="Nenhum" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">🏢 Nenhum imóvel</SelectItem>
                     {properties?.map((p) => (
@@ -1290,10 +1185,113 @@ export default function EditTaskDialog({ activity, open, onOpenChange }: Props) 
               </div>
 
               {/* Close Modal Button */}
-              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="w-full mt-4 h-9 font-black uppercase text-[10px] tracking-tight">
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="w-full mt-2 h-8 font-black uppercase text-[9px] tracking-tight border-border/40">
                 Fechar Cartão
               </Button>
             </div>
+
+            {/* Comments Feed / History - Now beautifully positioned on the right-hand column like Trello screenshot 6 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="h-4.5 w-4.5 text-primary shrink-0" />
+                <h3 className="text-xs font-black uppercase text-foreground tracking-wider font-heading">Comentários & atividade</h3>
+              </div>
+
+              <div className="space-y-4">
+                {/* Add comment textarea */}
+                <div className="flex gap-2 items-start">
+                  <div className="h-7 w-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-sm mt-0.5">
+                    {activeUserName.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <Textarea 
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Escrever um comentário..."
+                      rows={2}
+                      className="text-xs shadow-sm min-h-[60px]"
+                    />
+                    <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()} className="h-7 text-[10px] px-3">
+                      Enviar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Combined Feed */}
+                <div className="space-y-3 pt-1">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-2.5 items-start p-2.5 bg-muted/20 border border-border/30 rounded-xl">
+                      <div className="h-6 w-6 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-[9px] shrink-0">
+                        {comment.author.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-black text-foreground">{comment.author}</span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {format(new Date(comment.date), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                        
+                        {/* Edit Inline Comment View */}
+                        {editingCommentId === comment.id ? (
+                          <div className="space-y-2 mt-2 animate-in fade-in duration-100">
+                            <Textarea 
+                              value={editingCommentText}
+                              onChange={(e) => setEditingCommentText(e.target.value)}
+                              rows={2}
+                              className="text-[11px]"
+                            />
+                            <div className="flex gap-1.5">
+                              <Button size="sm" className="h-6 text-[9px] px-2.5" onClick={() => handleSaveCommentEdit(comment.id)}>Salvar</Button>
+                              <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2.5" onClick={() => setEditingCommentId(null)}>Cancelar</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-[11px] text-foreground mt-1 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+                            
+                            {/* Edit / Delete small triggers */}
+                            <div className="flex items-center gap-2 mt-1 select-none">
+                              <button 
+                                onClick={() => {
+                                  setEditingCommentId(comment.id);
+                                  setEditingCommentText(comment.text);
+                                }}
+                                className="text-[9px] font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                              >
+                                Editar
+                              </button>
+                              <span className="text-[9px] text-muted-foreground/30">•</span>
+                              <button 
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-[9px] font-semibold text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                              >
+                                Excluir
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* System Audit logs */}
+                  {history.map((log) => (
+                    <div key={log.id} className="flex gap-2.5 items-center text-[9px] text-muted-foreground pl-2 py-0.5 border-l border-border/30">
+                      <ActivityIcon className="h-2.5 w-2.5 text-muted-foreground/70 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-foreground/80">{log.user}</span>{" "}
+                        <span>{log.action}</span>
+                      </div>
+                      <span>
+                        {format(new Date(log.date), "dd/MM HH:mm", { locale: ptBR })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>
