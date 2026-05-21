@@ -85,7 +85,7 @@ export default function NewTaskDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-tight shadow-md">
+        <Button id="btn-new-task" size="sm" className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-tight shadow-md">
           <Plus className="h-4 w-4" /> Nova Tarefa
         </Button>
       </DialogTrigger>

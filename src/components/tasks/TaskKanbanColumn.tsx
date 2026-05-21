@@ -1,8 +1,9 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard";
 import type { Activity } from "@/hooks/useActivities";
-import { GripVertical, CheckSquare } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface Props {
     columnId: string;
@@ -31,31 +32,23 @@ export default function TaskKanbanColumn({
     onSelectAll,
     selectable
 }: Props) {
-    // Map tailwind color classes to CSS variables if possible
-    const colorVarMap: Record<string, string> = {
-        "bg-slate-400": "--preset-slate",
-        "bg-blue-500": "--preset-blue",
-        "bg-yellow-500": "--preset-yellow",
-        "bg-green-500": "--preset-green",
-        "bg-purple-500": "--preset-purple",
+    
+    // Map status types to colored indicator lines for a visual wow factor
+    const indicatorColors: Record<string, string> = {
+        "overdue": "bg-destructive",
+        "todo": "bg-slate-400",
+        "inProgress": "bg-blue-500",
+        "done": "bg-green-500",
     };
 
-    const colorVar = colorVarMap[colorClass] || "--preset-slate";
-    const bgColor = `hsl(var(${colorVar}) / 0.1)`;
-    const borderColor = `hsl(var(${colorVar}) / 0.2)`;
-    const headerBgColor = `hsl(var(${colorVar}) / 0.15)`;
-    const borderBottomColor = `hsl(var(${colorVar}))`;
+    const topIndicatorColor = indicatorColors[columnId] || "bg-slate-400";
 
     return (
-        <div className="flex flex-col min-w-[260px] max-w-[300px] w-[280px] shrink-0">
-            <div
-                className="flex flex-col mb-3 px-3 py-2 rounded-t-lg border-b-2 group/header cursor-grab active:cursor-grabbing"
-                style={{
-                    backgroundColor: headerBgColor,
-                    borderBottomColor: borderBottomColor
-                }}
-            >
-                <div className="flex items-center gap-2">
+        <div className="flex flex-col w-[282px] bg-[#F1F2F4] dark:bg-muted/20 border border-border/40 rounded-2xl p-3 shrink-0 h-full max-h-full overflow-hidden shadow-sm hover:shadow transition-shadow">
+            
+            {/* Trello Header bar */}
+            <div className="flex items-center justify-between mb-3 px-1 pt-0.5 shrink-0 group/header cursor-grab active:cursor-grabbing">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                     {selectable && (
                         <Checkbox 
                             checked={tasks.length > 0 && tasks.every(t => selectedIds.includes(t.id))}
@@ -64,32 +57,34 @@ export default function TaskKanbanColumn({
                                     onSelectAll(tasks.map(t => t.id), !!checked);
                                 }
                             }}
-                            className="h-3.5 w-3.5 border-border data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                            className="h-3.5 w-3.5 border-border data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500 shrink-0"
                         />
                     )}
                     <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover/header:text-primary/50 transition-colors shrink-0" />
-                    <div className={`w-1.5 h-1.5 rounded-full ${colorClass}`} />
-                    <h3 className="text-[10px] font-black truncate text-foreground flex-1 uppercase tracking-tight">{title}</h3>
-                    <span className="ml-auto text-xs font-medium text-muted-foreground bg-background/50 backdrop-blur-sm rounded-full px-2 py-0.5 border border-border/50">
-                        {tasks.length}
-                    </span>
+                    
+                    {/* Status colored pill */}
+                    <div className={cn("w-2 h-2 rounded-full shrink-0", topIndicatorColor)} />
+                    
+                    <h3 className="text-xs font-bold truncate text-foreground/80 uppercase tracking-wider font-heading">{title}</h3>
                 </div>
+
+                <span className="ml-2 text-[10px] font-black text-muted-foreground bg-background/60 dark:bg-background/30 rounded-full px-2 py-0.5 border border-border/25">
+                    {tasks.length}
+                </span>
             </div>
 
+            {/* Scrollable list content */}
             <Droppable droppableId={columnId}>
                 {(provided, snapshot) => (
                     <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-h-[120px] overflow-y-auto custom-scrollbar rounded-b-lg p-2 transition-all duration-200 ${snapshot.isDraggingOver ? "ring-2 ring-primary/20 ring-inset" : ""
-                            }`}
-                        style={{
-                            backgroundColor: snapshot.isDraggingOver ? undefined : bgColor,
-                            border: snapshot.isDraggingOver ? "1px dashed hsl(var(--primary))" : `1px solid ${borderColor}`,
-                            borderTop: 'none'
-                        }}
+                        className={cn(
+                            "flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3 min-h-[150px] transition-all rounded-lg duration-200",
+                            snapshot.isDraggingOver && "bg-muted-foreground/5 shadow-inner ring-1 ring-primary/5"
+                        )}
                     >
-                        <div className="space-y-3">
+                        <div className="space-y-3 pt-0.5">
                             {tasks.map((task, index) => (
                                 <Draggable key={task.id} draggableId={task.id} index={index}>
                                     {(provided, snapshot) => (
@@ -97,7 +92,7 @@ export default function TaskKanbanColumn({
                                             ref={provided.innerRef}
                                             {...provided.draggableProps}
                                             {...provided.dragHandleProps}
-                                            className={snapshot.isDragging ? "opacity-90 shadow-2xl" : ""}
+                                            className={snapshot.isDragging ? "opacity-90 shadow-2xl scale-[1.02] rotate-1 transition-transform" : ""}
                                         >
                                             <TaskCard
                                                 activity={task}
@@ -117,6 +112,20 @@ export default function TaskKanbanColumn({
                     </div>
                 )}
             </Droppable>
+
+            {/* Bottom Actions Add Card shortcut */}
+            <div className="pt-2 shrink-0 border-t border-border/10 mt-1">
+                <button 
+                    onClick={() => {
+                        const addBtn = document.getElementById("btn-new-task");
+                        if (addBtn) (addBtn as HTMLButtonElement).click();
+                    }}
+                    className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted-foreground/15 hover:text-foreground rounded-xl transition-all text-left"
+                >
+                    <Plus className="h-3.5 w-3.5 text-muted-foreground/80" />
+                    <span>Adicionar um cartão</span>
+                </button>
+            </div>
         </div>
     );
 }

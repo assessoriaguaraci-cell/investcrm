@@ -20,6 +20,7 @@ import GoogleCalendarView from "@/components/tasks/GoogleCalendarView";
 import MultiSelectFilter from "@/components/properties/MultiSelectFilter";
 import { SavedFiltersButton } from "@/components/ui/saved-filters-button";
 import { supabase } from "@/integrations/supabase/client";
+import { useApprovedMembers } from "@/hooks/useTeamMembers";
 
 export interface TaskFilterValues {
   types: string[];
@@ -93,6 +94,18 @@ export default function Tasks() {
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionModeActive, setSelectionModeActive] = useState(false);
+  const { data: members = [] } = useApprovedMembers();
+  const [selectedMemberTab, setSelectedMemberTab] = useState<string>("todos");
+
+  const getMemberPendingCount = (memberUserId: string) => {
+    if (!activities) return 0;
+    return activities.filter(a => a.status !== "feito" && a.responsible_user_id === memberUserId).length;
+  };
+
+  const getAllPendingCount = () => {
+    if (!activities) return 0;
+    return activities.filter(a => a.status !== "feito").length;
+  };
 
   const matchesMultiSelect = (value: string | null | undefined, selected: string[]) => {
     if (selected.length === 0) return true; // "all"
@@ -108,6 +121,9 @@ export default function Tasks() {
       
       // Responsável
       if (!matchesMultiSelect(a.responsible_user_id, filters.responsibles)) return false;
+
+      // Top overlap fichário tab filtering
+      if (selectedMemberTab !== "todos" && a.responsible_user_id !== selectedMemberTab) return false;
       
       // Data de Criação
       if (filters.createdFrom || filters.createdTo) {
@@ -143,7 +159,7 @@ export default function Tasks() {
       }
       return true;
     });
-  }, [activities, search, filters]);
+  }, [activities, search, filters, selectedMemberTab]);
 
   const columns = useMemo(() => {
     const overdue = filtered.filter(
@@ -423,15 +439,67 @@ export default function Tasks() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="kanban" className="flex-1 mt-0 overflow-hidden">
+        <TabsContent value="kanban" className="flex-1 mt-0 overflow-hidden flex flex-col">
           {isLoading ? (
             <div className="flex justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <DragDropContext onDragEnd={onDragEnd}>
-              <div className="flex gap-4 h-full overflow-x-auto overflow-y-auto pb-4 items-stretch custom-scrollbar">
-                <TaskKanbanColumn
+            <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+              {/* Overlapping File Folder Fichário Tab Row */}
+              <div className="flex flex-wrap items-end pl-1 pr-1 border-b border-border/60 mb-4 shrink-0 gap-1.5 overflow-x-auto custom-scrollbar select-none pb-[1px]">
+                {/* All Tab */}
+                <div 
+                  onClick={() => setSelectedMemberTab("todos")}
+                  className={cn(
+                    "relative px-4 py-2 text-xs font-black uppercase tracking-wider rounded-t-2xl border-t border-x cursor-pointer transition-all duration-200 flex items-center gap-2 shrink-0 select-none",
+                    selectedMemberTab === "todos" 
+                      ? "bg-[#F1F2F4] dark:bg-muted/30 border-border/60 text-foreground z-10 -mb-[1px] h-10 shadow-[0_-2px_6px_rgba(0,0,0,0.03)]"
+                      : "bg-muted/20 hover:bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground h-9"
+                  )}
+                >
+                  <span>📋 Todos</span>
+                  <span className={cn(
+                    "text-[9px] font-black rounded-full px-1.5 py-0.5 transition-colors",
+                    selectedMemberTab === "todos" ? "bg-primary text-white" : "bg-muted dark:bg-muted/50 text-muted-foreground"
+                  )}>
+                    {getAllPendingCount()}
+                  </span>
+                </div>
+
+                {/* Member Tabs */}
+                {members.map(member => {
+                  const count = getMemberPendingCount(member.user_id);
+                  return (
+                    <div 
+                      key={member.user_id}
+                      onClick={() => setSelectedMemberTab(member.user_id)}
+                      className={cn(
+                        "relative px-4 py-2 text-xs font-black uppercase tracking-wider rounded-t-2xl border-t border-x cursor-pointer transition-all duration-200 flex items-center gap-2 shrink-0 select-none",
+                        selectedMemberTab === member.user_id 
+                          ? "bg-[#F1F2F4] dark:bg-muted/30 border-border/60 text-foreground z-10 -mb-[1px] h-10 shadow-[0_-2px_6px_rgba(0,0,0,0.03)]"
+                          : "bg-muted/20 hover:bg-muted/40 border-border/30 text-muted-foreground hover:text-foreground h-9"
+                      )}
+                    >
+                      <div className="h-4.5 w-4.5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[8px] border border-primary/20 shrink-0">
+                        {member.full_name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <span>{member.full_name}</span>
+                      <span className={cn(
+                        "text-[9px] font-black rounded-full px-1.5 py-0.5 transition-colors",
+                        selectedMemberTab === member.user_id ? "bg-primary text-white" : "bg-muted dark:bg-muted/50 text-muted-foreground"
+                      )}>
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Trello Board columns */}
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden pb-4 items-stretch custom-scrollbar min-h-0">
+                  <TaskKanbanColumn
                   columnId="overdue"
                   title="Atrasadas"
                   tasks={columns.overdue}
@@ -484,7 +552,8 @@ export default function Tasks() {
                   selectable={selectionModeActive}
                 />
               </div>
-            </DragDropContext>
+              </DragDropContext>
+            </div>
           )}
         </TabsContent>
 
