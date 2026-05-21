@@ -28,11 +28,20 @@ interface Props {
 }
 
 export default function TaskCard({ activity, onToggle, onEdit, onDelete, selected, onSelect, selectable }: Props) {
+  const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const isDone = activity.status === "feito";
   const isInProgress = activity.status === "em_andamento";
+  
+  const dueDateLocal = activity.due_date ? parseLocalDate(activity.due_date) : null;
+  
   const isOverdue =
-    !isDone && !isInProgress && activity.due_date && isPast(new Date(activity.due_date)) && !isToday(new Date(activity.due_date));
-  const isDueToday = activity.due_date && isToday(new Date(activity.due_date));
+    !isDone && !isInProgress && dueDateLocal && isPast(dueDateLocal) && !isToday(dueDateLocal);
+  const isDueToday = dueDateLocal && isToday(dueDateLocal);
 
   return (
     <Card className={cn(
@@ -85,7 +94,7 @@ export default function TaskCard({ activity, onToggle, onEdit, onDelete, selecte
               )}
             >
               <Clock className="h-3 w-3" />
-              {format(new Date(activity.due_date), "dd/MM/yyyy", { locale: ptBR })}
+              {dueDateLocal && format(dueDateLocal, "dd/MM/yyyy", { locale: ptBR })}
             </span>
           )}
 

@@ -53,6 +53,12 @@ const TYPE_OPTIONS = [
 import TaskFilters from "@/components/tasks/TaskFilters";
 
 export default function Tasks() {
+  const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const { data: activities, isLoading } = useActivities();
   const updateActivity = useUpdateActivity();
   const deleteActivity = useDeleteActivity();
@@ -106,7 +112,7 @@ export default function Tasks() {
 
       // Prazo (Vencimento)
       if (filters.dueFrom || filters.dueTo) {
-        const dueDate = a.due_date ? new Date(a.due_date).toISOString().split('T')[0] : null;
+        const dueDate = a.due_date;
         if (dueDate) {
           if (filters.dueFrom && dueDate < filters.dueFrom) return false;
           if (filters.dueTo && dueDate > filters.dueTo) return false;
@@ -130,7 +136,7 @@ export default function Tasks() {
 
   const columns = useMemo(() => {
     const overdue = filtered.filter(
-      (a) => a.status !== "feito" && a.due_date && isPast(new Date(a.due_date)) && !isToday(new Date(a.due_date))
+      (a) => a.status !== "feito" && a.due_date && isPast(parseLocalDate(a.due_date)) && !isToday(parseLocalDate(a.due_date))
     );
     const remaining = filtered.filter(a => !overdue.find(o => o.id === a.id));
 
@@ -179,14 +185,14 @@ export default function Tasks() {
       updates.completed_at = null;
       // If moving OUT of overdue to in-progress, we might want to reset the date to today
       const task = activities?.find(a => a.id === draggableId);
-      if (task && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
+      if (task && task.due_date && isPast(parseLocalDate(task.due_date)) && !isToday(parseLocalDate(task.due_date))) {
         updates.due_date = today;
       }
     } else if (destColumnId === "todo") {
       updates.status = "pendente";
       updates.completed_at = null;
       const task = activities?.find(a => a.id === draggableId);
-      if (task && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
+      if (task && task.due_date && isPast(parseLocalDate(task.due_date)) && !isToday(parseLocalDate(task.due_date))) {
         updates.due_date = today;
       }
     } else if (destColumnId === "overdue") {
@@ -274,7 +280,7 @@ export default function Tasks() {
           }
           
           // If moving OUT of overdue view to a non-done status, reset date to today
-          if (task && task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date))) {
+          if (task && task.due_date && isPast(parseLocalDate(task.due_date)) && !isToday(parseLocalDate(task.due_date))) {
              if (destColumnId !== "overdue") {
                updates.due_date = today;
              }
