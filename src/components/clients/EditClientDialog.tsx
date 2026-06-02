@@ -60,7 +60,18 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
   const [notes, setNotes] = useState(client.notes ?? "");
   const [driveUrl, setDriveUrl] = useState((client as any).drive_url ?? "");
   const [lostReason, setLostReason] = useState(client.lost_reason ?? "");
-  const [cancellationReason, setCancellationReason] = useState(client.cancellation_reason ?? "");
+  const [cancellationReason, setCancellationReason] = useState(() => {
+    const raw = client.cancellation_reason ?? "";
+    const normalized = raw.toLowerCase().trim();
+    if (normalized === "cliente não respondeu" || normalized === "cliente nao respondeu") return "cliente nao respondeu";
+    if (normalized === "comprou em outro lugar") return "comprou em outro lugar";
+    if (normalized === "localização não agradou" || normalized === "localizacao nao agradou") return "localização não agradou";
+    if (normalized === "não possui renda" || normalized === "nao possui renda") return "não possui renda";
+    if (normalized === "desistiu") return "desistiu";
+    if (normalized === "outro") return "outro";
+    return raw;
+  });
+  const [cancellationObs, setCancellationObs] = useState("");
   
   const { data: dbTags = [] } = useClientTags();
   const createTag = useCreateClientTag();
@@ -102,7 +113,24 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
       setNotes(client.notes ?? "");
       setDriveUrl((client as any).drive_url ?? "");
       setLostReason(client.lost_reason ?? "");
-      setCancellationReason(client.cancellation_reason ?? "");
+      const rawCancel = client.cancellation_reason ?? "";
+      const normalizedCancel = rawCancel.toLowerCase().trim();
+      if (normalizedCancel === "cliente não respondeu" || normalizedCancel === "cliente nao respondeu") {
+        setCancellationReason("cliente nao respondeu");
+      } else if (normalizedCancel === "comprou em outro lugar") {
+        setCancellationReason("comprou em outro lugar");
+      } else if (normalizedCancel === "localização não agradou" || normalizedCancel === "localizacao nao agradou") {
+        setCancellationReason("localização não agradou");
+      } else if (normalizedCancel === "não possui renda" || normalizedCancel === "nao possui renda") {
+        setCancellationReason("não possui renda");
+      } else if (normalizedCancel === "desistiu") {
+        setCancellationReason("desistiu");
+      } else if (normalizedCancel === "outro") {
+        setCancellationReason("outro");
+      } else {
+        setCancellationReason(rawCancel);
+      }
+      setCancellationObs("");
       const raw = (client as any).tags;
       let initialTags: string[] = [];
       if (Array.isArray(raw)) initialTags = raw;
@@ -151,6 +179,10 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
       toast({ title: "Motivo da desistência é obrigatório", variant: "destructive" });
       return;
     }
+    if (isCancellationStage && cancellationReason === "outro" && !cancellationObs.trim()) {
+      toast({ title: "Por favor, preencha a observação para o motivo Outro", variant: "destructive" });
+      return;
+    }
     try {
       const updateData: any = {
         id: client.id,
@@ -172,10 +204,33 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
         has_financial_pending: hasFinancialPending,
         financial_pending_description: financialPendingDesc,
         can_compose_income: canComposeIncome,
-        notes: notes || null,
+        notes: (() => {
+          if (isCancellationStage && cancellationReason === "outro" && cancellationObs.trim()) {
+            const timestamp = new Date().toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+            const obsText = `\n\n[Desistência - ${timestamp}]: ${cancellationObs.trim()}`;
+            return notes ? `${notes}${obsText}` : cancellationObs.trim();
+          }
+          return notes || null;
+        })(),
         drive_url: driveUrl || null,
         lost_reason: lostReason || null,
-        cancellation_reason: isCancellationStage ? cancellationReason || null : null,
+        cancellation_reason: (() => {
+          if (!isCancellationStage) return null;
+          const val = cancellationReason;
+          if (val === "cliente nao respondeu") return "Cliente não respondeu";
+          if (val === "comprou em outro lugar") return "Comprou em outro lugar";
+          if (val === "localização não agradou") return "Localização não agradou";
+          if (val === "não possui renda") return "Não possui renda";
+          if (val === "desistiu") return "Desistiu";
+          if (val === "outro") return "Outro";
+          return val || null;
+        })(),
         responsible_user_id: responsibleUserId || null,
         tags: tags
       };
@@ -549,19 +604,35 @@ export default function EditClientDialog({ client, open, onOpenChange }: Props) 
                   )}
 
                   {isCancellationStage && (
-                    <div className="space-y-1 pt-4 border-t border-red-100">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-red-600">Motivo da Desistência *</Label>
-                      <Select value={cancellationReason} onValueChange={setCancellationReason}>
-                        <SelectTrigger className="border-red-200 focus-visible:ring-red-200 font-bold uppercase">
-                          <SelectValue placeholder="Selecione o motivo da desistência..." />
-                        </SelectTrigger>
-                        <SelectContent className="font-bold uppercase text-[11px]">
-                          <SelectItem value="cliente nao respondeu">Cliente não respondeu</SelectItem>
-                          <SelectItem value="comprou em outro lugar">Comprou em outro lugar</SelectItem>
-                          <SelectItem value="localização não agradou">Localização não agradou</SelectItem>
-                          <SelectItem value="não possui renda">Não possui renda</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-3 pt-4 border-t border-red-100">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-red-600">Motivo da Desistência *</Label>
+                        <Select value={cancellationReason} onValueChange={setCancellationReason}>
+                          <SelectTrigger className="border-red-200 focus-visible:ring-red-200 font-bold uppercase">
+                            <SelectValue placeholder="Selecione o motivo da desistência..." />
+                          </SelectTrigger>
+                          <SelectContent className="font-bold uppercase text-[11px]">
+                            <SelectItem value="cliente nao respondeu">Cliente não respondeu</SelectItem>
+                            <SelectItem value="comprou em outro lugar">Comprou em outro lugar</SelectItem>
+                            <SelectItem value="localização não agradou">Localização não agradou</SelectItem>
+                            <SelectItem value="não possui renda">Não possui renda</SelectItem>
+                            <SelectItem value="desistiu">Desistiu</SelectItem>
+                            <SelectItem value="outro">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {cancellationReason === "outro" && (
+                        <div className="space-y-1 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-red-600">Observação *</Label>
+                          <Textarea 
+                            placeholder="Descreva o motivo detalhadamente..." 
+                            value={cancellationObs} 
+                            onChange={e => setCancellationObs(e.target.value)} 
+                            className="border-red-200 focus-visible:ring-red-200 min-h-[80px]"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

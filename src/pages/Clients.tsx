@@ -46,7 +46,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { CLIENT_PHASES, getPhaseForStage } from "@/lib/KanbanPhases";
-import { Check, Eye, EyeOff, ScrollText, Trash2 } from "lucide-react";
+import { Check, Eye, EyeOff, ScrollText, Trash2, Archive, Ban } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AddPhaseDialog from "@/components/kanban/AddPhaseDialog";
@@ -73,6 +73,7 @@ export default function Clients() {
   const [cancellationOpen, setCancellationOpen] = useState(false);
   const [cancellationClientId, setCancellationClientId] = useState<string | null>(null);
   const [cancellationStageId, setCancellationStageId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { toast } = useToast();
   const location = useLocation();
@@ -193,6 +194,7 @@ export default function Clients() {
   }, [filtered, stages]);
 
   const onDragEnd = async (result: DropResult) => {
+    setIsDragging(false);
     try {
         const { draggableId, destination, source, type } = result;
         if (!destination) return;
@@ -236,13 +238,28 @@ export default function Clients() {
     }
   };
 
-  const handleConfirmCancellation = async (reason: string) => {
+  const handleConfirmCancellation = async (reason: string, observation?: string) => {
     if (cancellationClientId && cancellationStageId) {
       try {
+        const currentClient = clients?.find(c => c.id === cancellationClientId);
+        let updatedNotes = currentClient?.notes || "";
+        if (observation) {
+          const timestamp = new Date().toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+          const obsText = `\n\n[Desistência - ${timestamp}]: ${observation}`;
+          updatedNotes = updatedNotes ? `${updatedNotes}${obsText}` : observation;
+        }
+
         await updateClient.mutateAsync({
           id: cancellationClientId,
           stage: cancellationStageId as any,
           cancellation_reason: reason,
+          notes: updatedNotes || null,
           updated_at: new Date().toISOString()
         });
         toast({
@@ -790,7 +807,7 @@ export default function Clients() {
         <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar bg-slate-50/30 rounded-xl border border-slate-100 shadow-inner p-4 mt-2">
           <div className="flex flex-col h-full min-w-full">
             
-            <DragDropContext onDragEnd={onDragEnd}>
+            <DragDropContext onDragStart={() => setIsDragging(true)} onDragEnd={onDragEnd}>
               <Droppable droppableId="board" type="column" direction="horizontal">
                 {(provided) => (
                   <div
@@ -915,6 +932,54 @@ export default function Clients() {
                   </div>
                 )}
               </Droppable>
+
+              {/* Floating quick-discard dropzones at bottom right */}
+              {isDragging && (
+                <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2 animate-in slide-in-from-bottom duration-300 pointer-events-none">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 select-none pr-1 drop-shadow-sm bg-white/60 px-2 py-0.5 rounded-full">
+                    Solte aqui para mover rápido
+                  </div>
+                  <div className="flex gap-4 bg-white/80 backdrop-blur-md border border-slate-200/50 p-4 rounded-3xl shadow-2xl pointer-events-auto">
+                    <Droppable droppableId="desistencia">
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={cn(
+                            "flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 border-dashed transition-all duration-300 pointer-events-auto",
+                            snapshot.isDraggingOver 
+                              ? "bg-red-50 border-red-500 text-red-500 scale-105 shadow-lg shadow-red-100" 
+                              : "bg-white border-slate-200 text-slate-400 hover:border-red-400 hover:text-red-400 hover:bg-red-50/20"
+                          )}
+                        >
+                          <Ban className={cn("h-7 w-7 mb-1.5 transition-transform duration-300", snapshot.isDraggingOver ? "scale-125 animate-pulse text-red-500" : "text-slate-400")} />
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">Desistência</span>
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+
+                    <Droppable droppableId="arquivo">
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={cn(
+                            "flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 border-dashed transition-all duration-300 pointer-events-auto",
+                            snapshot.isDraggingOver 
+                              ? "bg-slate-100 border-slate-700 text-slate-700 scale-105 shadow-lg shadow-slate-200" 
+                              : "bg-white border-slate-200 text-slate-400 hover:border-slate-400 hover:text-slate-400 hover:bg-slate-50/20"
+                          )}
+                        >
+                          <Archive className={cn("h-7 w-7 mb-1.5 transition-transform duration-300", snapshot.isDraggingOver ? "scale-125 animate-pulse text-slate-700" : "text-slate-400")} />
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">Arquivo</span>
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                </div>
+              )}
             </DragDropContext>
           </div>
         </div>

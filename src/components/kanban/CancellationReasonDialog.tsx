@@ -17,11 +17,12 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onConfirm: (reason: string) => Promise<void>;
+    onConfirm: (reason: string, observation?: string) => Promise<void>;
     onCancel: () => void;
 }
 
@@ -29,20 +30,27 @@ const REASONS = [
     { value: "cliente nao respondeu", label: "Cliente não respondeu" },
     { value: "comprou em outro lugar", label: "Comprou em outro lugar" },
     { value: "localização não agradou", label: "Localização não agradou" },
-    { value: "não possui renda", label: "Não possui renda" }
+    { value: "não possui renda", label: "Não possui renda" },
+    { value: "desistiu", label: "Desistiu" },
+    { value: "outro", label: "Outro" }
 ];
 
 export function CancellationReasonDialog({ open, onOpenChange, onConfirm, onCancel }: Props) {
     const [reason, setReason] = useState<string>("");
+    const [observation, setObservation] = useState<string>("");
     const [loading, setLoading] = useState(false);
 
     const handleConfirm = async () => {
         if (!reason) return;
+        if (reason === "outro" && !observation.trim()) return;
+        
         setLoading(true);
         try {
-            await onConfirm(reason);
+            const selectedLabel = REASONS.find(r => r.value === reason)?.label || reason;
+            await onConfirm(selectedLabel, reason === "outro" ? observation.trim() : undefined);
             onOpenChange(false);
             setReason("");
+            setObservation("");
         } catch (e) {
             console.error(e);
         } finally {
@@ -54,6 +62,7 @@ export function CancellationReasonDialog({ open, onOpenChange, onConfirm, onCanc
         onCancel();
         onOpenChange(false);
         setReason("");
+        setObservation("");
     };
 
     return (
@@ -87,13 +96,30 @@ export function CancellationReasonDialog({ open, onOpenChange, onConfirm, onCanc
                             </SelectContent>
                         </Select>
                     </div>
+
+                    {reason === "outro" && (
+                        <div className="grid gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <Label htmlFor="cancellation-observation">Observação *</Label>
+                            <Textarea
+                                id="cancellation-observation"
+                                placeholder="Descreva o motivo detalhadamente..."
+                                value={observation}
+                                onChange={(e) => setObservation(e.target.value)}
+                                className="min-h-[80px]"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter>
                     <Button variant="ghost" onClick={handleClose} disabled={loading}>
                         Cancelar
                     </Button>
-                    <Button variant="destructive" onClick={handleConfirm} disabled={!reason || loading}>
+                    <Button 
+                        variant="destructive" 
+                        onClick={handleConfirm} 
+                        disabled={!reason || (reason === "outro" && !observation.trim()) || loading}
+                    >
                         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                         Confirmar
                     </Button>
