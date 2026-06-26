@@ -20,10 +20,6 @@ const navItems = [{
   label: "Imóveis",
   icon: Building2
 }, {
-  path: "/clients",
-  label: "Clientes",
-  icon: Users
-}, {
   path: "/tasks",
   label: "Tarefas",
   icon: CheckSquare
