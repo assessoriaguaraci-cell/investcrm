@@ -10,7 +10,6 @@ import AppLayout from "@/components/layout/AppLayout";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import Properties from "@/pages/Properties";
-import Clients from "@/pages/Clients";
 import Matches from "@/pages/Matches";
 import Tasks from "@/pages/Tasks";
 import Calendar from "@/pages/Calendar";
@@ -54,11 +53,6 @@ const App = () => {
                   <Route path="/properties" element={
                     <ErrorBoundary name="Imóveis">
                       <Properties />
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/clients" element={
-                    <ErrorBoundary name="Clientes">
-                      <Clients />
                     </ErrorBoundary>
                   } />
                   <Route path="/matches" element={<Matches />} />
